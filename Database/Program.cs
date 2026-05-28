@@ -1,0 +1,1 @@
+﻿Console.WriteLine("REQUIRED – use DbUp scripts for migrations. EF of Dapper for\ndata access");
