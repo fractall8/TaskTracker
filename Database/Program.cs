@@ -1,9 +1,20 @@
 ﻿using System.Reflection;
 using DbUp;
+using Microsoft.Extensions.Configuration;
 
 Console.WriteLine("Starting migration...");
 
-var connectionString = args.FirstOrDefault() ?? "here connection string"; // local docker move to .env or smth 
+var configuration = new ConfigurationBuilder()
+    .AddEnvironmentVariables()
+    .Build();
+
+var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+if (string.IsNullOrEmpty(connectionString))
+{
+    Console.WriteLine("Error: ConnectionString is null or empty");
+    return -1;
+}
 
 EnsureDatabase.For.PostgresqlDatabase(connectionString);
 
