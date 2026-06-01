@@ -1,12 +1,16 @@
+using Domain.Constants;
+using Microsoft.EntityFrameworkCore;
+using Persistence.Contexts;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+builder.Services.AddDbContext<TaskTrackerDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString(ConnectionStrings.PostgresConnection)));
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
