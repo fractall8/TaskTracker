@@ -1,6 +1,6 @@
 ﻿namespace Domain.Entities;
 
-public class Board : BaseEntity
+public class Board : BaseEntity<Guid>
 {
     public string Name { get; set; }
     

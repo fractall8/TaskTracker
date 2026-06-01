@@ -17,6 +17,8 @@ public class ColumnConfiguration : IEntityTypeConfiguration<Column>
             .HasForeignKey(c => c.BoardId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasQueryFilter(e => !e.IsDeleted);
+        
         builder.ToTable(t => t.HasCheckConstraint("CK_Columns_Position", "\"Position\" >= 0"));
     }
 }

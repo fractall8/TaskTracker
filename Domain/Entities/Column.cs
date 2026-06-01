@@ -1,6 +1,6 @@
 ﻿namespace Domain.Entities;
 
-public class Column : BaseEntity
+public class Column : BaseEntity<Guid>
 {
     public string Name { get; set; }
     

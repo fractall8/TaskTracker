@@ -1,6 +1,6 @@
 ﻿namespace Domain.Entities;
 
-public class TaskItem : BaseEntity
+public class TaskItem : BaseEntity<Guid>
 {
     public string Title { get; set; }
     

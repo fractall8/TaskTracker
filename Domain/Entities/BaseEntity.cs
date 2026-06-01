@@ -1,8 +1,8 @@
 ﻿namespace Domain.Entities;
 
-public abstract class BaseEntity
+public abstract class BaseEntity<TId> : IAuditableEntity
 {
-    public Guid Id { get; set; }
+    public TId Id { get; set; }
     
     public DateTimeOffset CreatedAt { get; set; }
     
