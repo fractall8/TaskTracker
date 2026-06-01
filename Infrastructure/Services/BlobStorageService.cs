@@ -15,13 +15,15 @@ public class BlobStorageService(BlobServiceClient blobServiceClient) : IFileServ
         
         await containerClient.CreateIfNotExistsAsync(PublicAccessType.Blob, cancellationToken: cancellationToken);
 
-        var uniqueFileName = $"{{Guid.NewGuid()}}_{fileName}";
+        var uniqueFileName = $"{Guid.NewGuid()}_{fileName}";
         var blobClient = containerClient.GetBlobClient(uniqueFileName);
 
         var httpHeaders = new BlobHttpHeaders { ContentType = contentType };
         await blobClient.UploadAsync(fileStream, new BlobUploadOptions { HttpHeaders = httpHeaders }, cancellationToken);
 
-        return blobClient.Uri.ToString();
+        var fileUrl = blobClient.Uri.ToString();
+        
+        return fileUrl.Replace("azurite", "localhost");
     }
 
     public Task DeleteFileAsync(string fileName, CancellationToken cancellationToken = default)

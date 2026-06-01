@@ -40,14 +40,18 @@
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__PostgresConnection=Host=postgres-db;Port=5432;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD};
+      # It is hardcoded development credentials for the Azurite Emulator (Not the real azure, only local emulator)
+      - ConnectionStrings__AzureBlobStorage=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;
     depends_on:
       - postgres-db
+      - azurite
       
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite
     container_name: azurite
     ports:
       - "10000:10000"
+    command: "azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --skipApiVersionCheck"
 
 volumes:
   postgres-data:

@@ -4,24 +4,34 @@ using Domain.Constants;
 using Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Persistence.Contexts;
+using Application;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddOpenApi();
+var postgresSqlConnectionString = builder.Configuration.GetConnectionString(ConnectionStrings.PostgresConnection);
+builder.Services.AddDbContext<TaskTrackerDbContext>(options => options.UseNpgsql(postgresSqlConnectionString));
 
-builder.Services.AddDbContext<TaskTrackerDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString(ConnectionStrings.PostgresConnection)));
-builder.Services.AddSingleton(x => new BlobServiceClient(ConnectionStrings.AzureBlobStorageConnection));
+var blobConnectionString = builder.Configuration.GetConnectionString(ConnectionStrings.AzureBlobStorageConnection);
+builder.Services.AddSingleton(_ => new BlobServiceClient(blobConnectionString));
 
 builder.Services.AddScoped<IFileService, BlobStorageService>();
+
+builder.Services.AddApplicationServices();
+
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer(); 
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
+
+app.MapControllers();
 
 app.Run();

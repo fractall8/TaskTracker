@@ -10,8 +10,4 @@
       <ProjectReference Include="..\Application\Application.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <PackageReference Include="Azure.Storage.Blobs" Version="12.28.0" />
-    </ItemGroup>
-
 </Project>
