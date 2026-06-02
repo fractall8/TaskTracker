@@ -1,22 +1,18 @@
-using Application.Interfaces.Services;
-using Azure.Storage.Blobs;
 using Domain.Constants;
-using Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Persistence.Contexts;
 using Application;
+using Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// this already moved to extension method in Persistence project
+// but this PR created before then PR with repos and uow merged
 var postgresSqlConnectionString = builder.Configuration.GetConnectionString(ConnectionStrings.PostgresConnection);
 builder.Services.AddDbContext<TaskTrackerDbContext>(options => options.UseNpgsql(postgresSqlConnectionString));
 
-var blobConnectionString = builder.Configuration.GetConnectionString(ConnectionStrings.AzureBlobStorageConnection);
-builder.Services.AddSingleton(_ => new BlobServiceClient(blobConnectionString));
-
-builder.Services.AddScoped<IFileService, BlobStorageService>();
-
-builder.Services.AddApplicationServices();
+builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddApplication();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer(); 
