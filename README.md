@@ -9,7 +9,11 @@ Before you begin, ensure you have the following installed:
 DB_USER="DB_USER"
 DB_PASSWORD="DB_PASSWORD"
 DB_NAME="DB_NAME"
+AZURITE_CONNECTION_STRING="DefaultEndpointsProtocol=http;AccountName=ACCOUNT_NAME;AccountKey=ACCOUNT_KEY;BlobEndpoint=BLOB_ENDPOINT"
 ```
+*Note: copy ACCOUNT_NAME and ACCOUNT_KEY from [official documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-connect-azurite?tabs=blob-storage#use-a-well-known-storage-account-and-key) as it is well-known constants for development*<br>
+*Create BLOB_ENDPOINT from this template ```http://CONTAINER_NAME:CONTAINER_PORT/ACCOUNT_NAME```*<br>
+*If you are using my version of docker compose it will be ```http://azurite:10000/ACCOUNT_NAME```*
 
 2. Start the Application via docker compose<br>
 **Option A: Full Docker Deployment**<br>
