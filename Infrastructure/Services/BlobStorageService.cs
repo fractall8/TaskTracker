@@ -22,13 +22,18 @@ public class BlobStorageService(BlobServiceClient blobServiceClient) : IFileServ
 
         var fileUrl = blobClient.Uri.ToString();
 
+        // This is only for local Docker development (Azurite). 
+        // In production, the URL won't contain "azurite", so this replace is safely ignored.
         return fileUrl.Replace("azurite", "localhost");
     }
 
-    public Task DeleteFileAsync(string fileName, string containerName, CancellationToken cancellationToken = default)
+    public Task DeleteFileAsync(string fileUrl, CancellationToken cancellationToken = default)
     {
-        var containerClient = blobServiceClient.GetBlobContainerClient(containerName);
-        var blobClient = containerClient.GetBlobClient(fileName);
+        var blobUriBuilder = new BlobUriBuilder(new Uri(fileUrl));
+        
+        var containerClient = blobServiceClient.GetBlobContainerClient(blobUriBuilder.BlobContainerName);
+        var blobClient = containerClient.GetBlobClient(blobUriBuilder.BlobName);
+        
         return blobClient.DeleteIfExistsAsync(cancellationToken: cancellationToken);
     }
 }
