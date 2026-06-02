@@ -7,6 +7,8 @@ public class TaskItem : BaseEntity<Guid>
     public string? Description { get; set; }
     
     public int Position { get; set; }
+    
+    public DateTimeOffset? DueDate { get; set; }
  
     public Guid ColumnId { get; set; }
     
