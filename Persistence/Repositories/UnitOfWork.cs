@@ -1,7 +1,7 @@
 ﻿using Application.Interfaces;
 using Persistence.Contexts;
 
-namespace Persistence.UnitOfWork;
+namespace Persistence.Repositories;
 
 public class UnitOfWork(TaskTrackerDbContext dbContext) : IUnitOfWork
 {
