@@ -2,7 +2,9 @@ using Domain.Constants;
 using Microsoft.EntityFrameworkCore;
 using Persistence.Contexts;
 using Application;
+using Application.Settings;
 using Infrastructure;
+using Microsoft.AspNetCore.Http.Features;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +19,22 @@ builder.Services.AddApplication(builder.Configuration);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer(); 
 builder.Services.AddSwaggerGen();
+
+var fileSettings = builder.Configuration.GetSection("FileSettings").Get<FileSettings>();
+if (fileSettings != null)
+{
+    var maxAllowedBytes = (fileSettings.Attachments.MaxSizeMb * 1024 * 1024) + (1 * 1024 * 1024);
+    
+    builder.Services.Configure<FormOptions>(options =>
+    {
+        options.MultipartBodyLengthLimit = maxAllowedBytes;
+    });
+
+    builder.WebHost.ConfigureKestrel(serverOptions =>
+    {
+        serverOptions.Limits.MaxRequestBodySize = maxAllowedBytes;
+    });
+}
 
 var app = builder.Build();
 

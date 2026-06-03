@@ -1,24 +1,37 @@
 ﻿using Application.Interfaces.Services;
+using Azure.Storage;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
+using Microsoft.AspNetCore.Http;
 
 namespace Infrastructure.Services;
 
 public class BlobStorageService(BlobServiceClient blobServiceClient) : IFileService
 {
-    public async Task<string> UploadFileAsync(Stream fileStream, string fileName, string contentType,
+    public async Task<string> UploadFileAsync(IFormFile formFile,
         string containerName, CancellationToken cancellationToken = default)
     {
         var containerClient = blobServiceClient.GetBlobContainerClient(containerName);
 
         await containerClient.CreateIfNotExistsAsync(PublicAccessType.Blob, cancellationToken: cancellationToken);
 
-        var uniqueFileName = $"{Guid.NewGuid()}_{fileName}";
+        var uniqueFileName = $"{Guid.NewGuid()}_{formFile.FileName}";
         var blobClient = containerClient.GetBlobClient(uniqueFileName);
+        var httpHeaders = new BlobHttpHeaders { ContentType = formFile.ContentType };
 
-        var httpHeaders = new BlobHttpHeaders { ContentType = contentType };
-        await blobClient.UploadAsync(fileStream, new BlobUploadOptions { HttpHeaders = httpHeaders },
-            cancellationToken);
+        var uploadOptions = new BlobUploadOptions
+        {
+            HttpHeaders = httpHeaders,
+            TransferOptions = new StorageTransferOptions
+            {
+                MaximumTransferSize = 2 * 1024 * 1024,
+                InitialTransferSize = 2 * 1024 * 1024,
+                MaximumConcurrency = 3
+            }
+        };
+
+        await using var stream = formFile.OpenReadStream();
+        await blobClient.UploadAsync(stream, uploadOptions, cancellationToken);
 
         var fileUrl = blobClient.Uri.ToString();
 
@@ -30,10 +43,10 @@ public class BlobStorageService(BlobServiceClient blobServiceClient) : IFileServ
     public Task DeleteFileAsync(string fileUrl, CancellationToken cancellationToken = default)
     {
         var blobUriBuilder = new BlobUriBuilder(new Uri(fileUrl));
-        
+
         var containerClient = blobServiceClient.GetBlobContainerClient(blobUriBuilder.BlobContainerName);
         var blobClient = containerClient.GetBlobClient(blobUriBuilder.BlobName);
-        
+
         return blobClient.DeleteIfExistsAsync(cancellationToken: cancellationToken);
     }
 }

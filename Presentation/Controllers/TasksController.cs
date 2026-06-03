@@ -16,14 +16,10 @@ public class TasksController(IMediator mediator) : ControllerBase
         {
             return BadRequest("File is empty or was not provided.");
         }
-        
-        using var memoryStream = new MemoryStream();
-        await file.CopyToAsync(memoryStream, cancellationToken);
-        memoryStream.Position = 0; 
     
         // For now taskId is not provided to command because we need to create new table for it
         // This will be done when we have basic crud for tasks
-        var command = new UploadAttachmentCommand(memoryStream, file.FileName, file.ContentType);
+        var command = new UploadAttachmentCommand(file);
         var fileUrl = await mediator.Send(command, cancellationToken);
 
         return Ok(new { Url = fileUrl });
