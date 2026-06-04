@@ -44,6 +44,17 @@
     depends_on:
       - postgres-db
       - azurite
+    
+  frontend:
+    image: tasktracker-frontend
+    container_name: tasktracker-frontend
+    build:
+      context: .
+      dockerfile: src/Frontend/WebApp/Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
       
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite
