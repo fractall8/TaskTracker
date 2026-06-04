@@ -22,7 +22,7 @@
     container_name: tasktracker-migration
     build:
       context: .
-      dockerfile: ./Database/Dockerfile
+      dockerfile: ./src/Backend/Database/Dockerfile
     environment:
       - ConnectionStrings__PostgresConnection=Host=postgres-db;Port=5432;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD};
     depends_on:
@@ -34,7 +34,7 @@
     container_name: tasktracker-api
     build:
       context: .
-      dockerfile: ./Presentation/Dockerfile
+      dockerfile: ./src/Backend/Presentation/Dockerfile
     ports:
       - "8080:8080"
     environment:

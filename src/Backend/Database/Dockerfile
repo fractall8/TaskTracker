@@ -5,10 +5,11 @@ WORKDIR /app
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["Database/Database.csproj", "Database/"]
-RUN dotnet restore "Database/Database.csproj"
+COPY ["src/Backend/Database/Database.csproj", "src/Backend/Database/"]
+COPY ["src/Backend/Domain/Domain.csproj", "src/Backend/Domain/"]
+RUN dotnet restore "src/Backend/Database/Database.csproj"
 COPY . .
-WORKDIR "/src/Database"
+WORKDIR "/src/src/Backend/Database"
 RUN dotnet build "./Database.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
