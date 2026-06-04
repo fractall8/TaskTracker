@@ -41,6 +41,8 @@
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__PostgresConnection=Host=postgres-db;Port=5432;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD};
       - ConnectionStrings__AzureBlobStorage=${AZURITE_CONNECTION_STRING};
+      - AzureAd__TenantId=${AZURE_TENANT_ID};
+      - AzureAd__ClientId=${AZURE_CLIENT_ID};
     depends_on:
       - postgres-db
       - azurite

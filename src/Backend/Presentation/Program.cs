@@ -1,6 +1,7 @@
 using Application;
 using Application.Settings;
 using Infrastructure;
+using Infrastructure.DI;
 using Microsoft.AspNetCore.Http.Features;
 using Persistence;
 
@@ -39,6 +40,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 
