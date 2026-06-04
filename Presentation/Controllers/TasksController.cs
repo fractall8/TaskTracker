@@ -19,7 +19,9 @@ public class TasksController(IMediator mediator) : ControllerBase
     
         // For now taskId is not provided to command because we need to create new table for it
         // This will be done when we have basic crud for tasks
-        var command = new UploadAttachmentCommand(file);
+        await using var stream = file.OpenReadStream();
+        
+        var command = new UploadAttachmentCommand(stream, file.FileName, file.ContentType);
         var fileUrl = await mediator.Send(command, cancellationToken);
 
         return Ok(new { Url = fileUrl });

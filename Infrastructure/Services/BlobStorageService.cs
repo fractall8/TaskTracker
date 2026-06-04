@@ -2,22 +2,21 @@
 using Azure.Storage;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
-using Microsoft.AspNetCore.Http;
 
 namespace Infrastructure.Services;
 
 public class BlobStorageService(BlobServiceClient blobServiceClient) : IFileService
 {
-    public async Task<string> UploadFileAsync(IFormFile formFile,
+    public async Task<string> UploadFileAsync(Stream fileStream, string fileName, string contentType,
         string containerName, CancellationToken cancellationToken = default)
     {
         var containerClient = blobServiceClient.GetBlobContainerClient(containerName);
 
         await containerClient.CreateIfNotExistsAsync(PublicAccessType.Blob, cancellationToken: cancellationToken);
 
-        var uniqueFileName = $"{Guid.NewGuid()}_{formFile.FileName}";
+        var uniqueFileName = $"{Guid.NewGuid()}_{fileName}";
         var blobClient = containerClient.GetBlobClient(uniqueFileName);
-        var httpHeaders = new BlobHttpHeaders { ContentType = formFile.ContentType };
+        var httpHeaders = new BlobHttpHeaders { ContentType = contentType };
 
         var uploadOptions = new BlobUploadOptions
         {
@@ -30,8 +29,7 @@ public class BlobStorageService(BlobServiceClient blobServiceClient) : IFileServ
             }
         };
 
-        await using var stream = formFile.OpenReadStream();
-        await blobClient.UploadAsync(stream, uploadOptions, cancellationToken);
+        await blobClient.UploadAsync(fileStream, uploadOptions, cancellationToken);
 
         var fileUrl = blobClient.Uri.ToString();
 

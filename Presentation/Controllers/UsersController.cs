@@ -17,7 +17,9 @@ public class UsersController(IMediator mediator) : ControllerBase
             return BadRequest("File is empty or was not provided.");
         }
     
-        var command = new UploadAvatarCommand(file);
+        await using var stream = file.OpenReadStream();
+        
+        var command = new UploadAvatarCommand(stream, file.FileName, file.ContentType);
         var fileUrl = await mediator.Send(command, cancellationToken);
 
         return Ok(new { Url = fileUrl });
