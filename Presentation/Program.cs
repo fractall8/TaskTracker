@@ -1,3 +1,7 @@
+using Application;
+using Application.Settings;
+using Infrastructure;
+using Microsoft.AspNetCore.Http.Features;
 using Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
