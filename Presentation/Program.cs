@@ -1,20 +1,10 @@
-using Domain.Constants;
-using Microsoft.EntityFrameworkCore;
-using Persistence.Contexts;
-using Application;
-using Application.Settings;
-using Infrastructure;
-using Microsoft.AspNetCore.Http.Features;
+using Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// this already moved to extension method in Persistence project
-// but this PR created before then PR with repos and uow merged
-var postgresSqlConnectionString = builder.Configuration.GetConnectionString(ConnectionStrings.PostgresConnection);
-builder.Services.AddDbContext<TaskTrackerDbContext>(options => options.UseNpgsql(postgresSqlConnectionString));
-
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddApplication(builder.Configuration);
+builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer(); 
