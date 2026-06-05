@@ -1,10 +1,11 @@
 ﻿using System.Security.Claims;
+using Application.Interfaces.Services;
 using Infrastructure.Auth.Constants;
 using Microsoft.AspNetCore.Http;
 
 namespace Infrastructure.Auth;
 
-public class CurrentuserAccessor(IHttpContextAccessor httpContextAccessor)
+public class CurrentuserAccessor(IHttpContextAccessor httpContextAccessor) : ICurrentUserAccessor
 {
     private ClaimsPrincipal User => httpContextAccessor.HttpContext?.User
                                     ?? throw new InvalidOperationException("No HttpContext.");

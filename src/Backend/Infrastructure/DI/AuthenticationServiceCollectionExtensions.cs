@@ -1,5 +1,6 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using Application.Interfaces.Services;
+using Infrastructure.Auth;
 using Infrastructure.Auth.Constants;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
@@ -13,7 +14,7 @@ public static class AuthenticationServiceCollectionExtensions
     public static IServiceCollection AddEntraIdAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddHttpContextAccessor();
-        services.AddScoped<ICurrentUserAccessor, ICurrentUserAccessor>();
+        services.AddScoped<ICurrentUserAccessor, CurrentuserAccessor>();
 
         JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
         
