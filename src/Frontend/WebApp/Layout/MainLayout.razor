@@ -1,12 +1,41 @@
 ﻿@inherits LayoutComponentBase
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+@implements IDisposable
+@inject IProfileStore ProfileStore
+@inject AuthenticationStateProvider AuthStateProvider
 
-    <main>
-        <article class="content px-4">
-            @Body
-        </article>
+<MudThemeProvider Theme="@_theme" IsDarkMode="true" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<div class="layout-wrapper">
+    <AppNavBar />
+    <main class="layout-main">
+        @Body
     </main>
 </div>
+
+@code {
+    private static readonly MudTheme _theme = new()
+    {
+        PaletteDark = new PaletteDark
+        {
+            Primary = "#95CD41",
+            PrimaryContrastText = "#1a1a1a",
+        }
+    };
+
+    protected override void OnInitialized() =>
+        ProfileStore.StateChanged += OnStoreStateChanged;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+            await ProfileStore.EnsureLoadedAsync();
+    }
+
+    public void Dispose() => ProfileStore.StateChanged -= OnStoreStateChanged;
+
+    private void OnStoreStateChanged() => InvokeAsync(StateHasChanged);
+}

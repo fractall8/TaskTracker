@@ -20,4 +20,11 @@ COPY --from=build /app/publish/wwwroot .
 
 COPY src/Frontend/WebApp/nginx.conf /etc/nginx/nginx.conf
 
+COPY src/Frontend/WebApp/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+
+CMD ["nginx", "-g", "daemon off;"]
+
 EXPOSE 80

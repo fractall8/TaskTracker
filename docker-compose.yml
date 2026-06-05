@@ -55,6 +55,10 @@
       dockerfile: src/Frontend/WebApp/Dockerfile
     ports:
       - "3000:80"
+    environment:
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+      - API_CLIENT_SCOPES=api://${AZURE_CLIENT_ID}/access_as_user
     depends_on:
       - api
       

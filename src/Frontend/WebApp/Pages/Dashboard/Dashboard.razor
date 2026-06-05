@@ -1,0 +1,52 @@
+﻿@page "/dashboard"
+@attribute [Authorize]
+@implements IDisposable
+@inject IProfileStore ProfileStore
+@inject NavigationManager Navigation
+
+<PageTitle>Dashboard — JustTaskTracker</PageTitle>
+
+<div class="layout-content">
+    @if (ProfileStore.IsLoading)
+    {
+        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (ProfileStore.IsLoaded && ProfileStore.Profile is { } profile)
+    {
+        <div class="card-surface-grain dashboard-card">
+            <MudText Typo="Typo.h5" Style="margin-bottom: 0.25rem;">
+                Welcome, @(profile.DisplayName ?? profile.Email)
+            </MudText>
+            <MudText Typo="Typo.body2" Style="color: rgba(255,255,255,0.55); margin-bottom: 1.25rem;">
+                @profile.Email
+            </MudText>
+            <MudStack Row="true" Spacing="1">
+                @foreach (var role in profile.Roles)
+                {
+                    <MudChip T="string" Color="Color.Primary" Size="Size.Small">@role</MudChip>
+                }
+            </MudStack>
+        </div>
+    }
+    else if (ProfileStore.ErrorMessage is { } error)
+    {
+        <MudAlert Severity="Severity.Error">@error</MudAlert>
+    }
+</div>
+
+@code {
+    protected override void OnInitialized() =>
+        ProfileStore.StateChanged += OnStoreStateChanged;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ProfileStore.EnsureLoadedAsync();
+
+        if (ProfileStore.RequiresLogin)
+            Navigation.NavigateTo("/login");
+    }
+
+    public void Dispose() => ProfileStore.StateChanged -= OnStoreStateChanged;
+
+    private void OnStoreStateChanged() => InvokeAsync(StateHasChanged);
+}
