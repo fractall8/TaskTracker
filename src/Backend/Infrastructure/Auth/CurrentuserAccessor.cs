@@ -19,6 +19,8 @@ public class CurrentuserAccessor(IHttpContextAccessor httpContextAccessor) : ICu
     public string Email =>
         GetClaim(User, EntraClaimTypes.PreferredUsername)
         ?? GetClaim(User, ClaimTypes.Email)
+        ?? GetClaim(User, "preferred_username")
+        ?? GetClaim(User, ClaimTypes.Upn)
         ?? throw new InvalidOperationException("Missing email claim.");
 
     public string? DisplayName =>

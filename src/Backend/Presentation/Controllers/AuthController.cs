@@ -6,7 +6,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-[Route("auth")]
+[Route("api/auth")]
 [ApiController]
 public class AuthController(ISender sender) : ControllerBase
 {
