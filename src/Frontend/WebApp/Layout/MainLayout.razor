@@ -3,28 +3,21 @@
 @inject IProfileStore ProfileStore
 @inject AuthenticationStateProvider AuthStateProvider
 
-<MudThemeProvider Theme="@_theme" IsDarkMode="true" />
+<MudThemeProvider/>
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-<div class="layout-wrapper">
+<MudLayout>
     <AppNavBar />
-    <main class="layout-main">
-        @Body
-    </main>
-</div>
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Large" Class="pt-8 pb-8">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
 
 @code {
-    private static readonly MudTheme _theme = new()
-    {
-        PaletteDark = new PaletteDark
-        {
-            Primary = "#95CD41",
-            PrimaryContrastText = "#1a1a1a",
-        }
-    };
-
     protected override void OnInitialized() =>
         ProfileStore.StateChanged += OnStoreStateChanged;
 

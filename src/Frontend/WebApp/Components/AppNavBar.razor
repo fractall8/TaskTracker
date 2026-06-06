@@ -1,4 +1,4 @@
-﻿@inject NavigationManager Navigation
+﻿@inject NavigationManager NavigationManager
 @inject IProfileStore ProfileStore
 
 <MudAppBar Color="Color.Primary" Fixed="true">
@@ -15,10 +15,11 @@
             else if (ProfileStore.Profile != null)
             {
                 <MudText Class="mr-4">Hi, @ProfileStore.Profile.DisplayName</MudText>
-                <MudButton Color="Color.Inherit" OnClick="BeginSignOut" StartIcon="@Icons.Material.Filled.Logout">
-                    Log out
-                </MudButton>
             }
+            
+            <MudButton Color="Color.Inherit" OnClick="BeginSignOut" StartIcon="@Icons.Material.Filled.Logout">
+                Log out
+            </MudButton>
         </Authorized>
         
         <NotAuthorized>
@@ -32,11 +33,11 @@
 @code {
     private void BeginSignIn()
     {
-        Navigation.NavigateTo("authentication/login");
+        NavigationManager.NavigateTo("authentication/login");
     }
 
     private void BeginSignOut()
     {
-        Navigation.NavigateTo("authentication/logout"); 
+        NavigationManager.NavigateToLogout("authentication/logout", "./");
     }
 }

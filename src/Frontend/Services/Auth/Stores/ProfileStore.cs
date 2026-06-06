@@ -63,6 +63,8 @@ internal sealed class ProfileStore(IAuthApiService authApiService) : IProfileSto
 
     private async Task LoadProfileAsync()
     {
+        await Task.Yield();
+        
         IsLoading = true;
         ErrorMessage = null;
         NotifyStateChanged();
