@@ -1,9 +1,10 @@
-using Application;
+using Application.DI;
 using Application.Settings;
-using Infrastructure;
+using Domain.Constants;
 using Infrastructure.DI;
 using Microsoft.AspNetCore.Http.Features;
-using Persistence;
+using Persistence.DI;
+using Presentation.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,16 +16,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer(); 
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins("http://localhost:3000")
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials();
-    });
-});
+builder.Services.AddPresentationCors(builder.Configuration);
 
 var fileSettings = builder.Configuration.GetSection("FileSettings").Get<FileSettings>();
 if (fileSettings != null)
@@ -51,8 +43,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseRouting();
 
-app.UseCors("AllowFrontend");
+app.UseCors(CorsPolicies.DefaultCorsPolicy);
 
 app.UseAuthentication();
 app.UseAuthorization();

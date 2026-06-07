@@ -2,35 +2,40 @@
 using Application.Interfaces.Services;
 using Infrastructure.Auth;
 using Infrastructure.Auth.Constants;
+using Infrastructure.Auth.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Identity.Web;
 
-namespace Infrastructure.DI;
+namespace Infrastructure.DI.Modules;
 
-public static class AuthenticationServiceCollectionExtensions
+internal static class AuthenticationModule
 {
-    public static IServiceCollection AddEntraIdAuthentication(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddAuthenticationModule(this IServiceCollection services,
+        IConfiguration configuration)
     {
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserAccessor, CurrentuserAccessor>();
+        
+        var azureAdSection = configuration.GetSection("AzureAd");
+        var azureAdOptions = azureAdSection.Get<AzureAdOptions>() 
+                             ?? throw new InvalidOperationException("AzureAd configuration is missing.");
+        
+        services.Configure<AzureAdOptions>(azureAdSection);
 
         JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
         
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddMicrosoftIdentityWebApi(configuration.GetSection("AzureAd"));
-
-
+            .AddMicrosoftIdentityWebApi(azureAdSection);
+        
         services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
             .Configure(options =>
             {
-                var clientId = configuration["AzureAd:ClientId"];
-
                 options.TokenValidationParameters.ValidAudiences =
                 [
-                    clientId,
-                    $"api://{clientId}"
+                    azureAdOptions.ClientId,
+                    $"api://{azureAdOptions.ClientId}"
                 ];
 
                 options.TokenValidationParameters.RoleClaimType = EntraClaimTypes.Roles;
