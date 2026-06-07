@@ -1,33 +1,38 @@
 ﻿@inject NavigationManager NavigationManager
 @inject IProfileStore ProfileStore
 
-<MudAppBar Color="Color.Primary" Fixed="true">
-    <MudText Typo="Typo.h6" Class="mr-4">TaskTracker</MudText>
-    
-    <MudSpacer />
-
-    <AuthorizeView>
-        <Authorized>
-            @if (ProfileStore.IsLoading)
-            {
-                <MudProgressCircular Color="Color.Inherit" Size="Size.Small" Indeterminate="true" Class="mr-4" />
-            }
-            else if (ProfileStore.Profile != null)
-            {
-                <MudText Class="mr-4">Hi, @ProfileStore.Profile.DisplayName</MudText>
-            }
-            
-            <MudButton Color="Color.Inherit" OnClick="BeginSignOut" StartIcon="@Icons.Material.Filled.Logout">
-                Log out
-            </MudButton>
-        </Authorized>
+<MudAppBar Elevation="1" Color="Color.Surface" Fixed="true">
+    <MudContainer MaxWidth="MaxWidth.Large" Class="d-flex align-center w-100 px-0">
         
-        <NotAuthorized>
-            <MudButton Color="Color.Inherit" OnClick="BeginSignIn" StartIcon="@Icons.Material.Filled.Login">
-                Log In
-            </MudButton>
-        </NotAuthorized>
-    </AuthorizeView>
+        <MudIcon Icon="@Icons.Material.Filled.TaskAlt" Color="Color.Primary" Size="Size.Large" Class="mr-2" />
+        <MudText Typo="Typo.h5" Color="Color.Primary" Class="font-weight-bold">TaskTracker</MudText>
+        
+        <MudSpacer />
+
+        <AuthorizeView>
+            <Authorized>
+                @if (ProfileStore.IsLoading)
+                {
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Small" Indeterminate="true" Class="mr-4" />
+                }
+                else if (ProfileStore.Profile != null)
+                {
+                    <MudText Color="Color.Dark" Class="mr-4 font-weight-medium">Hi, @ProfileStore.Profile.DisplayName</MudText>
+                }
+                
+                <MudButton Variant="Variant.Outlined" Color="Color.Dark" OnClick="BeginSignOut" StartIcon="@Icons.Material.Filled.Logout">
+                    Log out
+                </MudButton>
+            </Authorized>
+            
+            <NotAuthorized>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="BeginSignIn" StartIcon="@Icons.Material.Filled.Login" Class="font-weight-bold px-6">
+                    Log In
+                </MudButton>
+            </NotAuthorized>
+        </AuthorizeView>
+
+    </MudContainer>
 </MudAppBar>
 
 @code {

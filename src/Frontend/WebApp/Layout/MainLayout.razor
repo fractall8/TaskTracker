@@ -3,7 +3,7 @@
 @inject IProfileStore ProfileStore
 @inject AuthenticationStateProvider AuthStateProvider
 
-<MudThemeProvider/>
+<MudThemeProvider Theme="@_myCustomTheme"/>
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -18,6 +18,25 @@
 </MudLayout>
 
 @code {
+    private readonly MudTheme _myCustomTheme = new MudTheme()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary = "#2563EB",
+            Secondary = "#64748B",
+            Background = "#F8FAFC",
+            Surface = "#FFFFFF",
+            AppbarBackground = "#FFFFFF",
+            AppbarText = "#0F172A",
+            TextPrimary = "#0F172A",
+            TextSecondary = "#475569",
+            Info = "#0EA5E9",
+            Success = "#10B981",
+            Warning = "#F59E0B",
+            Error = "#EF4444"
+        }
+    };
+    
     protected override void OnInitialized() =>
         ProfileStore.StateChanged += OnStoreStateChanged;
 

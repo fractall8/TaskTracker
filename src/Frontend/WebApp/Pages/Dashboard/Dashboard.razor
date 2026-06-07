@@ -6,33 +6,67 @@
 
 <PageTitle>Dashboard - TaskTracker</PageTitle>
 
-<div class="layout-content">
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8">
     @if (ProfileStore.IsLoading)
     {
-        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+        <div class="d-flex justify-center align-center" style="height: 50vh;">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
+        </div>
     }
     else if (ProfileStore.IsLoaded && ProfileStore.Profile is { } profile)
     {
-        <div class="card-surface-grain dashboard-card">
-            <MudText Typo="Typo.h5" Style="margin-bottom: 0.25rem;">
-                Welcome, @(profile.DisplayName ?? profile.Email)
-            </MudText>
-            <MudText Typo="Typo.body2" Style="color: rgba(255,255,255,0.55); margin-bottom: 1.25rem;">
-                @profile.Email
-            </MudText>
-            <MudStack Row="true" Spacing="1">
-                @foreach (var role in profile.Roles)
-                {
-                    <MudChip T="string" Color="Color.Primary" Size="Size.Small">@role</MudChip>
-                }
-            </MudStack>
-        </div>
+        <MudGrid>
+            <MudItem xs="12" sm="8" md="6" lg="5">
+                <MudPaper Elevation="2" Class="pa-6 rounded-lg">
+                    
+                    <div class="d-flex align-center mb-6">
+                        <MudAvatar Color="Color.Primary" Size="Size.Large" Class="mr-4 elevation-1 font-weight-bold">
+                            @(profile.DisplayName?.FirstOrDefault() ?? profile.Email?.FirstOrDefault() ?? '?')
+                        </MudAvatar>
+                        
+                        <div>
+                            <MudText Typo="Typo.h5" Class="font-weight-bold">
+                                Welcome, @(profile.DisplayName ?? "User")
+                            </MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                @profile.Email
+                            </MudText>
+                        </div>
+                    </div>
+                    
+                    <MudDivider Class="mb-4" />
+                    
+                    <MudText Typo="Typo.subtitle2" Class="mb-3 font-weight-bold" Color="Color.Secondary">
+                        ACCOUNT ROLES
+                    </MudText>
+                    
+                    <MudStack Row="true" Spacing="2" Wrap="Wrap.Wrap">
+                        @if (profile.Roles.Any())
+                        {
+                            @foreach (var role in profile.Roles)
+                            {
+                                <MudChip T="string" Color="Color.Info" Variant="Variant.Outlined" Size="Size.Small" Class="font-weight-medium">
+                                    @role
+                                </MudChip>
+                            }
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">No roles assigned.</MudText>
+                        }
+                    </MudStack>
+
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
     }
     else if (ProfileStore.ErrorMessage is { } error)
     {
-        <MudAlert Severity="Severity.Error">@error</MudAlert>
+        <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mt-4">
+            @error
+        </MudAlert>
     }
-</div>
+</MudContainer>
 
 @code {
     protected override void OnInitialized() =>
