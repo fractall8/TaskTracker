@@ -6,5 +6,4 @@ public interface ICurrentUserAccessor
     string Email { get; }
     string? DisplayName { get; }
     IReadOnlyList<string> AppRoles { get; }
-
 }

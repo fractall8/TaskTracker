@@ -9,18 +9,21 @@ public record GetCurrentUserQuery : IRequest<UserWithRolesDto?>;
 
 public class GetCurrentUserQueryHandler(
     ICurrentUserAccessor currentUser,
-    IUserRepository userRepository) 
+    IUserRepository userRepository)
     : IRequestHandler<GetCurrentUserQuery, UserWithRolesDto?>
 {
     public async Task<UserWithRolesDto?> Handle(GetCurrentUserQuery request, CancellationToken ct)
     {
-        var userDto = await userRepository.GetUserDtoByAzureAdIdAsync(currentUser.AzureAdObjectId, ct);
+        var userDto = await userRepository.GetUserByAzureAdIdAsync(
+            currentUser.AzureAdObjectId,
+            u => new UserDto(u.Id, u.Email, u.DisplayName),
+            ct);
 
         if (userDto == null)
         {
             return null;
         }
-        
+
         var rolesFromToken = currentUser.AppRoles ?? [];
 
         var userWithRoles = new UserWithRolesDto(

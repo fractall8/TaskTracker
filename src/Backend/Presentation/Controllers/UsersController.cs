@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Presentation.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("[controller]")]
 public class UsersController(IMediator mediator) : ControllerBase
 {
     [HttpPost("avatars")]

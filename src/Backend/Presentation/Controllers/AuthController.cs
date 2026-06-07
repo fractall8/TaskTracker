@@ -6,11 +6,10 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-[Route("api/auth")]
+[Route("auth")]
 [ApiController]
 public class AuthController(ISender sender) : ControllerBase
 {
-    [Authorize]
     [HttpPost("login")]
     public async Task<IActionResult> Login(CancellationToken ct)
     {

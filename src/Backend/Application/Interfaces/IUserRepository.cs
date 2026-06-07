@@ -1,11 +1,12 @@
-﻿using Contracts.DTOs;
+﻿using System.Linq.Expressions;
 using Domain.Entities;
 
 namespace Application.Interfaces;
 
 public interface IUserRepository : IRepository<User, Guid>
 {
-    Task<UserDto?> GetUserDtoByAzureAdIdAsync(Guid azureAdObjectId, CancellationToken ct = default);
-
-    Task<User?> GetUserByAzureAdIdAsync(Guid azureAdObjectId, CancellationToken ct = default);
+    Task<TProjection?> GetUserByAzureAdIdAsync<TProjection>(
+        Guid azureAdObjectId, 
+        Expression<Func<User, TProjection>> selector, 
+        CancellationToken ct = default);
 }

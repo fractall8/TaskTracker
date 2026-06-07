@@ -16,7 +16,10 @@ public class LoginCommandHandler(
 {
     public async Task<UserWithRolesDto> Handle(LoginCommand request, CancellationToken ct)
     {
-        var user = await userRepository.GetUserByAzureAdIdAsync(currentUser.AzureAdObjectId, ct);
+        var user = await userRepository.GetUserByAzureAdIdAsync(
+            currentUser.AzureAdObjectId, 
+            u => u, 
+            ct);
 
         user ??= await CreateUser();
 
