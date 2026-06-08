@@ -2,7 +2,7 @@
 
 public class TaskItem : BaseEntity<Guid>
 {
-    public string Title { get; set; }
+    public required string Title { get; set; }
     
     public string? Description { get; set; }
     
@@ -10,7 +10,15 @@ public class TaskItem : BaseEntity<Guid>
     
     public DateTimeOffset? DueDate { get; set; }
  
-    public Guid ColumnId { get; set; }
+    public required Guid ColumnId { get; init; }
     
-    public Column Column { get; set; }
+    public Guid? AssigneeId { get; set; }
+    
+    public required Guid ReporterId { get; init; }
+    
+    public Column? Column { get; set; }
+    
+    public User? Assignee { get; set; }
+    
+    public User? Reporter { get; set; }
 }

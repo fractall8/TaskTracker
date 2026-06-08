@@ -1,0 +1,15 @@
+﻿ALTER TABLE "Tasks"
+    ADD COLUMN "AssigneeId" UUID NULL,
+ADD COLUMN "ReporterId" UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000';
+
+ALTER TABLE "Tasks"
+    ALTER COLUMN "ReporterId" DROP DEFAULT;
+
+ALTER TABLE "Tasks"
+    ADD CONSTRAINT "FK_Tasks_Assignee" FOREIGN KEY ("AssigneeId") REFERENCES "Users" ("Id") ON DELETE SET NULL,
+ADD CONSTRAINT "FK_Tasks_Reporter" FOREIGN KEY ("ReporterId") REFERENCES "Users"("Id") ON
+DELETE
+RESTRICT;
+
+CREATE INDEX "IX_Tasks_AssigneeId" ON "Tasks" ("AssigneeId");
+CREATE INDEX "IX_Tasks_ReporterId" ON "Tasks" ("ReporterId");
