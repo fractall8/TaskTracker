@@ -1,4 +1,6 @@
 ﻿@page "/"
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
 
 <PageTitle>TaskTracker - Home</PageTitle>
 
@@ -35,3 +37,15 @@
     </MudItem>
 
 </MudGrid>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            NavigationManager.NavigateTo("/dashboard");
+        }
+    }
+}
