@@ -1,6 +1,6 @@
 ﻿namespace Contracts.Enums;
 
-public enum BoardRoleDto
+public enum BoardRoleDto : byte
 {
     User = 1,
     ScrumMaster = 2,

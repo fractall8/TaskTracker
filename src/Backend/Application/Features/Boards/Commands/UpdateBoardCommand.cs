@@ -14,6 +14,8 @@ public class UpdateBoardCommandHandler(
     IBoardRepository boardRepository,
     IUnitOfWork unitOfWork) : IRequestHandler<UpdateBoardCommand, BoardPreviewDto>
 {
+    private readonly List<BoardRole> _allowedRoles = [BoardRole.Admin, BoardRole.ScrumMaster];
+    
     public async Task<BoardPreviewDto> Handle(UpdateBoardCommand request, CancellationToken ct)
     {
         var currentUserId = await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => (Guid?)u.Id, ct);
@@ -30,10 +32,14 @@ public class UpdateBoardCommandHandler(
             throw new KeyNotFoundException($"Board with ID {request.BoardId} not found.");
         }
 
-        var hasRequiredRole = await boardRepository.HasRoleAsync(request.BoardId, currentUserId.Value, ct, BoardRole.Admin,
-            BoardRole.ScrumMaster);
-
-        if (!hasRequiredRole)
+        var userRole = await boardRepository.GetUserRoleAsync(request.BoardId, currentUserId.Value, ct);
+        
+        if (userRole == null)
+        {
+            throw new UnauthorizedAccessException("You are not a member of this board.");
+        }
+        
+        if (!_allowedRoles.Contains(userRole.Value))
         {
             throw new UnauthorizedAccessException("You don't have permission to edit this board.");
         }
@@ -47,7 +53,8 @@ public class UpdateBoardCommandHandler(
             Id: board.Id,
             Name: board.Name,
             Description: board.Description,
-            CreatedAt: board.CreatedAt
+            CreatedAt: board.CreatedAt,
+            Role: (Contracts.Enums.BoardRoleDto)userRole.Value
         );
     }
 }

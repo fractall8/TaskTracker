@@ -7,5 +7,7 @@ public interface IBoardRepository : IRepository<Board, Guid>
 {
     Task<Board?> GetBoardWithHierarchyAsync(Guid id, CancellationToken cancellationToken = default);
     
-    Task<bool> HasRoleAsync(Guid boardId, Guid userId, CancellationToken ct = default, params BoardRole[] allowedRoles);
+    Task<IEnumerable<Board>> GetUserBoardsAsync(Guid userId, CancellationToken ct = default);
+    
+    Task<BoardRole?> GetUserRoleAsync(Guid boardId, Guid userId, CancellationToken ct = default);
 }

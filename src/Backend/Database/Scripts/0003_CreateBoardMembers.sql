@@ -6,7 +6,7 @@
     "UserId"      UUID                     NOT NULL REFERENCES "Users" ("Id") ON DELETE RESTRICT,
 
     "JoinedAtUtc" TIMESTAMP WITH TIME ZONE NOT NULL,
-    "Role"        INTEGER                  NOT NULL,
+    "Role"        SMALLINT                 NOT NULL,
 
     "CreatedAt"   TIMESTAMP WITH TIME ZONE NOT NULL,
     "CreatedById" UUID,

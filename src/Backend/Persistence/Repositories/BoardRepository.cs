@@ -16,19 +16,21 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
             .FirstOrDefaultAsync(b => b.Id.Equals(id), cancellationToken);
     }
 
-    // Will be used to check whether user have at least one role of allowedRoles
-    public async Task<bool> HasRoleAsync(Guid boardId, Guid userId, CancellationToken ct = default, params BoardRole[] allowedRoles)
+    public async Task<IEnumerable<Board>> GetUserBoardsAsync(Guid userId, CancellationToken ct = default)
     {
-        if (allowedRoles == null || allowedRoles.Length == 0)
-        {
-            return false;
-        }
+        return await _dbContext.Boards
+            .AsNoTracking()
+            .Include(b => b.Members.Where(m => m.UserId == userId))
+            .Where(b => b.Members.Any(m => m.UserId == userId))
+            .OrderByDescending(b => b.CreatedAt)
+            .ToListAsync(ct);
+    }
 
+    public async Task<BoardRole?> GetUserRoleAsync(Guid boardId, Guid userId, CancellationToken ct = default)
+    {
         return await _dbContext.Set<BoardMember>()
-            .AnyAsync(m => 
-                    m.BoardId == boardId && 
-                    m.UserId == userId && 
-                    allowedRoles.Contains(m.Role),
-                ct);
+            .Where(m => m.BoardId == boardId && m.UserId == userId)
+            .Select(m => (BoardRole?)m.Role)
+            .FirstOrDefaultAsync(ct);
     }
 }

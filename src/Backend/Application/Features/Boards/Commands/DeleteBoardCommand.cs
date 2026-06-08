@@ -13,6 +13,8 @@ public class DeleteBoardCommandHandler(
     IBoardRepository boardRepository,
     IUnitOfWork unitOfWork) : IRequestHandler<DeleteBoardCommand>
 {
+    private readonly List<BoardRole> _allowedRoles = [BoardRole.Admin];
+    
     public async Task Handle(DeleteBoardCommand request, CancellationToken ct)
     {
         var currentUserId =
@@ -23,11 +25,16 @@ public class DeleteBoardCommandHandler(
             throw new UnauthorizedAccessException("User is not authenticated");
         }
 
-        var hasAdminRole = await boardRepository.HasRoleAsync(request.BoardId, currentUserId.Value, ct, BoardRole.Admin);
+        var userRole = await boardRepository.GetUserRoleAsync(request.BoardId, currentUserId.Value, ct);
 
-        if (!hasAdminRole)
+        if (userRole == null)
         {
-            throw new UnauthorizedAccessException("You don't have access to this board or you are not an Admin.");
+            throw new UnauthorizedAccessException("You are not a member of this board.");
+        }
+        
+        if (!_allowedRoles.Contains(userRole.Value))
+        {
+            throw new UnauthorizedAccessException("You don't have permission to edit this board.");
         }
 
         var board = await boardRepository.GetByIdAsync(request.BoardId, ct)

@@ -1,8 +1,11 @@
-﻿namespace Contracts.DTOs;
+﻿using Contracts.Enums;
+
+namespace Contracts.DTOs;
 
 public record BoardPreviewDto(
     Guid Id,
     string Name,
     string? Description,
-    DateTimeOffset CreatedAt
+    DateTimeOffset CreatedAt,
+    BoardRoleDto Role
 );

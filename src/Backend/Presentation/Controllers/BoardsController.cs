@@ -1,4 +1,5 @@
 ﻿using Application.Features.Boards.Commands;
+using Application.Features.Boards.Queries;
 using Contracts.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -11,6 +12,14 @@ namespace Presentation.Controllers;
 [Route("[controller]")]
 public class BoardsController(ISender sender) : ControllerBase
 {
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<BoardPreviewDto>>> GetBoards(CancellationToken ct)
+    {
+        var result = await sender.Send(new GetBoardsQuery(), ct);
+    
+        return Ok(result);
+    }
+    
     [HttpPost]
     public async Task<ActionResult<BoardDto>> CreateBoard(
         [FromBody] CreateBoardCommand command, 

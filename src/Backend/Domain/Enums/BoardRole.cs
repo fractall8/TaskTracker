@@ -1,6 +1,6 @@
 ﻿namespace Domain.Enums;
 
-public enum BoardRole
+public enum BoardRole : byte
 {
     User = 1,
     ScrumMaster = 2,
