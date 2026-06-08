@@ -6,15 +6,15 @@ using MediatR;
 
 namespace Application.Features.Auth.Commands;
 
-public record LoginCommand : IRequest<UserWithRolesDto>;
+public record LoginCommand : IRequest<UserDto>;
 
 public class LoginCommandHandler(
     ICurrentUserAccessor currentUser,
     IUserRepository userRepository,
     IUnitOfWork unitOfWork)
-    : IRequestHandler<LoginCommand, UserWithRolesDto>
+    : IRequestHandler<LoginCommand, UserDto>
 {
-    public async Task<UserWithRolesDto> Handle(LoginCommand request, CancellationToken ct)
+    public async Task<UserDto> Handle(LoginCommand request, CancellationToken ct)
     {
         var user = await userRepository.GetUserByAzureAdIdAsync(
             currentUser.AzureAdObjectId, 
@@ -26,13 +26,10 @@ public class LoginCommandHandler(
         SyncProfile(user);
         await unitOfWork.SaveChangesAsync(ct);
 
-        var rolesFromToken = currentUser.AppRoles ?? [];
-
-        return new UserWithRolesDto(
+        return new UserDto(
             user.Id,
             user.Email,
-            user.DisplayName,
-            rolesFromToken
+            user.DisplayName
         );
     }
 

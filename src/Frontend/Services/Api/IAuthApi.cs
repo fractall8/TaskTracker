@@ -6,8 +6,8 @@ namespace Services.Api;
 public interface IAuthApi
 {
     [Post("/api/auth/login")]
-    Task<IApiResponse<UserWithRolesDto>> LoginAsync(CancellationToken ct = default);
+    Task<IApiResponse<UserWithRoleDto>> LoginAsync(CancellationToken ct = default);
 
     [Get("/api/auth/me")]
-    Task<IApiResponse<UserWithRolesDto>> GetCurrentUserAsync(CancellationToken ct = default);
+    Task<IApiResponse<UserWithRoleDto>> GetCurrentUserAsync(CancellationToken ct = default);
 }

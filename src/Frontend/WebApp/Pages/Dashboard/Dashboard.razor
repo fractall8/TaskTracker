@@ -19,7 +19,7 @@
             <MudItem xs="12" sm="8" md="6" lg="5">
                 <MudPaper Elevation="2" Class="pa-6 rounded-lg">
                     
-                    <div class="d-flex align-center mb-6">
+                    <div class="d-flex align-center">
                         <MudAvatar Color="Color.Primary" Size="Size.Large" Class="mr-4 elevation-1 font-weight-bold">
                             @(profile.DisplayName?.FirstOrDefault() ?? profile.Email?.FirstOrDefault() ?? '?')
                         </MudAvatar>
@@ -33,29 +33,6 @@
                             </MudText>
                         </div>
                     </div>
-                    
-                    <MudDivider Class="mb-4" />
-                    
-                    <MudText Typo="Typo.subtitle2" Class="mb-3 font-weight-bold" Color="Color.Secondary">
-                        ACCOUNT ROLES
-                    </MudText>
-                    
-                    <MudStack Row="true" Spacing="2" Wrap="Wrap.Wrap">
-                        @if (profile.Roles.Any())
-                        {
-                            @foreach (var role in profile.Roles)
-                            {
-                                <MudChip T="string" Color="Color.Info" Variant="Variant.Outlined" Size="Size.Small" Class="font-weight-medium">
-                                    @role
-                                </MudChip>
-                            }
-                        }
-                        else
-                        {
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">No roles assigned.</MudText>
-                        }
-                    </MudStack>
-
                 </MudPaper>
             </MudItem>
         </MudGrid>
