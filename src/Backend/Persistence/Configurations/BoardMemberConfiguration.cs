@@ -8,6 +8,7 @@ public class BoardMemberConfiguration : IEntityTypeConfiguration<BoardMember>
 {
     public void Configure(EntityTypeBuilder<BoardMember> builder)
     {
+        builder.ToTable("BoardMembers");
         builder.HasKey(m => m.Id);
 
         builder.Property(m => m.JoinedAt)

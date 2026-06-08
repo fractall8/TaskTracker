@@ -1,0 +1,174 @@
+﻿@page "/boards"
+@using Contracts.DTOs
+@using WebApp.Shared.Dialogs
+@using Refit
+@inject IBoardApiService BoardService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <div class="d-flex justify-space-between align-center mb-6">
+        <MudText Typo="Typo.h4">My Boards</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateDialog">
+            Create Board
+        </MudButton>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="d-flex justify-center mt-10">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+        </div>
+    }
+    else if (!_boards.Any())
+    {
+        <MudAlert Severity="Severity.Info" Class="mt-4">
+            You don't have any boards yet. Create your first one!
+        </MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            @foreach (var board in _boards)
+            {
+                <MudItem xs="12" sm="6" md="4" lg="3">
+                    <MudCard Elevation="3" Class="h-100 d-flex flex-column rounded-lg">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6" Class="fw-bold">@board.Name</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">Role: @board.Role.ToString()</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent Class="flex-grow-1">
+                            <MudText Typo="Typo.body2">
+                                @(string.IsNullOrWhiteSpace(board.Description) ? "No description provided." : board.Description)
+                            </MudText>
+                        </MudCardContent>
+                        <MudCardActions Class="justify-end px-4 pb-4">
+                            <MudTooltip Text="Edit Board">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Default" Size="Size.Small" OnClick="@(() => OpenEditDialog(board))" />
+                            </MudTooltip>
+                            <MudTooltip Text="Delete Board">
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteBoard(board))" />
+                            </MudTooltip>
+                            <MudButton Variant="Variant.Text" Color="Color.Primary" Class="ml-2">Open</MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    private List<BoardPreviewDto> _boards = new();
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBoards();
+    }
+
+    private async Task LoadBoards()
+    {
+        try
+        {
+            _isLoading = true;
+            _boards = await BoardService.GetMyBoardsAsync();
+        }
+        catch (ApiException ex)
+        {
+            if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                Snackbar.Add("Authorization error. Please try logging in again.", Severity.Error);
+            }
+            else
+            {
+                Snackbar.Add($"Failed to load boards: {ex.Message}", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("An unknown error occurred.", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged(); 
+        }
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        
+        var dialog = await DialogService.ShowAsync<BoardDialog>("Create Board", options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled && result.Data is UpdateBoardRequest request)
+        {
+            try
+            {
+                await BoardService.CreateBoardAsync(request);
+                Snackbar.Add("Board created successfully.", Severity.Success);
+                
+                await LoadBoards();
+            }
+            catch (ApiException ex)
+            {
+                Snackbar.Add($"Failed to create board: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenEditDialog(BoardPreviewDto board)
+    {
+        var parameters = new DialogParameters<BoardDialog> { { x => x.Board, board } };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        
+        var dialog = await DialogService.ShowAsync<BoardDialog>("Edit Board", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled && result.Data is UpdateBoardRequest request)
+        {
+            try
+            {
+                await BoardService.UpdateBoardAsync(board.Id, request);
+                Snackbar.Add("Board updated successfully.", Severity.Success);
+                
+                await LoadBoards();
+            }
+            catch (ApiException ex)
+            {
+                Snackbar.Add($"Failed to update board: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteBoard(BoardPreviewDto board)
+    {
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            "Delete Confirmation",
+            $"Are you sure you want to delete the board '{board.Name}'? This action cannot be undone.",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            try
+            {
+                await BoardService.DeleteBoardAsync(board.Id);
+                _boards.Remove(board);
+                Snackbar.Add("Board deleted successfully.", Severity.Success);
+                StateHasChanged();
+            }
+            catch (ApiException ex)
+            {
+                Snackbar.Add($"Failed to delete board: {ex.Message}", Severity.Error);
+            }
+            catch (Exception)
+            {
+                Snackbar.Add("An unknown error occurred while deleting.", Severity.Error);
+            }
+        }
+    }
+}

@@ -15,6 +15,7 @@ public class GetBoardsQueryHandler(
 {
     public async Task<IEnumerable<BoardPreviewDto>> Handle(GetBoardsQuery request, CancellationToken ct)
     {
+        Console.WriteLine($"[DEBUG] Accessor AzureAdObjectId: {currentUserAccessor.AzureAdObjectId}");
         var currentUserId = await userRepository.GetUserByAzureAdIdAsync(
                                 currentUserAccessor.AzureAdObjectId, 
                                 u => (Guid?)u.Id, 
