@@ -16,14 +16,19 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
             .FirstOrDefaultAsync(b => b.Id.Equals(id), cancellationToken);
     }
 
-    // Will be used to check whether user have Admin access to board without loading all users to memory  
-    public async Task<bool> IsUserAdminAsync(Guid boardId, Guid userId, CancellationToken ct = default)
+    // Will be used to check whether user have at least one role of allowedRoles
+    public async Task<bool> HasRoleAsync(Guid boardId, Guid userId, CancellationToken ct = default, params BoardRole[] allowedRoles)
     {
+        if (allowedRoles == null || allowedRoles.Length == 0)
+        {
+            return false;
+        }
+
         return await _dbContext.Set<BoardMember>()
             .AnyAsync(m => 
                     m.BoardId == boardId && 
                     m.UserId == userId && 
-                    m.Role == BoardRole.Admin, 
+                    allowedRoles.Contains(m.Role),
                 ct);
     }
 }

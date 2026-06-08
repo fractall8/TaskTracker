@@ -1,5 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Services;
+using Domain.Enums;
 using MediatR;
 
 namespace Application.Features.Boards.Commands;
@@ -22,7 +23,7 @@ public class DeleteBoardCommandHandler(
             throw new UnauthorizedAccessException("User is not authenticated");
         }
 
-        var hasAdminRole = await boardRepository.IsUserAdminAsync(request.BoardId, currentUserId.Value, ct);
+        var hasAdminRole = await boardRepository.HasRoleAsync(request.BoardId, currentUserId.Value, ct, BoardRole.Admin);
 
         if (!hasAdminRole)
         {
