@@ -1,0 +1,29 @@
+﻿@page "/login"
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>Log In — JustTaskTracker</PageTitle>
+
+<section class="login-scene">
+    <div class="card-surface-grain login-card">
+        <h1 class="login-card__title">Log in</h1>
+        <MudButton Variant="Variant.Filled"
+                   FullWidth="true"
+                   StartIcon="@Icons.Custom.Brands.Microsoft"
+                   Class="login-ms-btn"
+                   OnClick="BeginLogin">
+            Log in with Microsoft
+        </MudButton>
+    </div>
+</section>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState.GetAuthenticationStateAsync();
+        if (state.User.Identity?.IsAuthenticated == true)
+            Navigation.NavigateTo("/dashboard");
+    }
+
+    private void BeginLogin() => Navigation.NavigateToLogin("authentication/login");
+}

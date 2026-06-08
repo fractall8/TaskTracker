@@ -1,0 +1,73 @@
+﻿@page "/authentication/{action}"
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center justify-center" Style="min-height: 80vh;">
+    
+    <RemoteAuthenticatorView Action="@Action">
+        
+        <LoggingIn>
+            <div class="d-flex flex-column align-center justify-center text-center">
+                <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" Class="mb-4" />
+                <MudText Typo="Typo.h5" Class="font-weight-bold mb-2">Preparing your workspace...</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Securely connecting to your account.</MudText>
+            </div>
+        </LoggingIn>
+
+        <CompletingLoggingIn>
+            <div class="d-flex flex-column align-center justify-center text-center">
+                <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" Class="mb-4" />
+                <MudText Typo="Typo.h5" Class="font-weight-bold mb-2">Almost there!</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Finalizing your authentication.</MudText>
+            </div>
+        </CompletingLoggingIn>
+
+        <LogInFailed Context="error">
+            <MudPaper Elevation="2" Class="pa-8 d-flex flex-column align-center justify-center text-center rounded-lg">
+                <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Color="Color.Error" Style="font-size: 4rem;" Class="mb-4" />
+                <MudText Typo="Typo.h5" Class="font-weight-bold mb-2">Authentication Failed</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">@error</MudText>
+                <MudButton Href="/" Variant="Variant.Filled" Color="Color.Primary">Back to Home</MudButton>
+            </MudPaper>
+        </LogInFailed>
+
+        <LogOut>
+            <div class="d-flex flex-column align-center justify-center text-center">
+                <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" Class="mb-4" />
+                <MudText Typo="Typo.h5" Class="font-weight-bold mb-2">Signing out...</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Closing your session.</MudText>
+            </div>
+        </LogOut>
+
+        <CompletingLogOut>
+            <div class="d-flex flex-column align-center justify-center text-center">
+                <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" Class="mb-4" />
+                <MudText Typo="Typo.h5" Class="font-weight-bold mb-2">Finishing up...</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Please wait a moment.</MudText>
+            </div>
+        </CompletingLogOut>
+
+        <LogOutSucceeded>
+            <MudPaper Elevation="2" Class="pa-8 d-flex flex-column align-center justify-center text-center rounded-lg">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircleOutline" Color="Color.Success" Style="font-size: 4rem;" Class="mb-4" />
+                <MudText Typo="Typo.h5" Class="font-weight-bold mb-2">Signed Out</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">You have successfully logged out of your account.</MudText>
+                <MudButton Href="/" Variant="Variant.Filled" Color="Color.Primary">Back to Home</MudButton>
+            </MudPaper>
+        </LogOutSucceeded>
+
+        <LogOutFailed Context="error">
+            <MudPaper Elevation="2" Class="pa-8 d-flex flex-column align-center justify-center text-center rounded-lg">
+                <MudIcon Icon="@Icons.Material.Filled.WarningAmber" Color="Color.Warning" Style="font-size: 4rem;" Class="mb-4" />
+                <MudText Typo="Typo.h5" Class="font-weight-bold mb-2">Sign Out Failed</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-6">@error</MudText>
+                <MudButton Href="/" Variant="Variant.Filled" Color="Color.Primary">Back to Home</MudButton>
+            </MudPaper>
+        </LogOutFailed>
+
+    </RemoteAuthenticatorView>
+
+</MudContainer>
+
+@code {
+    [Parameter]
+    public string? Action { get; set; }
+}

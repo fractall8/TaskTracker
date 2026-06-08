@@ -6,9 +6,9 @@ using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Application;
+namespace Application.DI;
 
-public static class DependencyInjection
+public static class ApplicationServiceCollectionExtensions
 {
     public static IServiceCollection AddApplication(this IServiceCollection services, IConfiguration configuration)
     {
@@ -21,6 +21,7 @@ public static class DependencyInjection
             config.RegisterServicesFromAssembly(executingAssembly);
             
             config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+            config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
         });
         
         services.AddValidatorsFromAssembly(executingAssembly);

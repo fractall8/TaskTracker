@@ -1,8 +1,13 @@
-using Application;
+using Application.DI;
 using Application.Settings;
-using Infrastructure;
+using Domain.Constants;
+using Infrastructure.DI;
 using Microsoft.AspNetCore.Http.Features;
-using Persistence;
+using Persistence.DI;
+using Presentation.Configuration;
+using Presentation.Extensions;
+using Presentation.Logging;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,9 +15,18 @@ builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddApplication(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options => options.Conventions.Add(new PrefixConventionConfigurator("api")));
 builder.Services.AddEndpointsApiExplorer(); 
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddPresentationCors(builder.Configuration);
+
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .Destructure.With<SensitiveDataDestructuringPolicy>() 
+    
+    .ReadFrom.Configuration(context.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext());
 
 var fileSettings = builder.Configuration.GetSection("FileSettings").Get<FileSettings>();
 if (fileSettings != null)
@@ -39,6 +53,12 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseRouting();
+
+app.UseCors(CorsPolicies.DefaultCorsPolicy);
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

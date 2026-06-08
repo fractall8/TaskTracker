@@ -1,0 +1,30 @@
+﻿@page "/not-found"
+@layout MainLayout
+@inject NavigationManager NavigationManager
+
+<PageTitle>404 - Page Not Found</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="d-flex align-center justify-center" Style="min-height: 80vh;">
+    <div class="text-center">
+        <MudIcon Icon="@Icons.Material.Filled.BrokenImage" Color="Color.Primary" Style="font-size: 8rem;" Class="mb-4 opacity-75" />
+        
+        <MudText Typo="Typo.h1" Color="Color.Primary" Class="font-weight-bold mb-2">404</MudText>
+        
+        <MudText Typo="Typo.h4" Class="mb-6 font-weight-medium">Oops! Looks like you're lost.</MudText>
+        
+        <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-8 mx-auto" Style="max-width: 500px;">
+            The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.
+        </MudText>
+        
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="GoHome" StartIcon="@Icons.Material.Filled.Home" Class="px-8 py-3 font-weight-bold rounded-lg shadow-sm">
+            Back to Home
+        </MudButton>
+    </div>
+</MudContainer>
+
+@code {
+    private void GoHome()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+}

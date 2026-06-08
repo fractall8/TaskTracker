@@ -2,14 +2,14 @@
 using Azure.Storage.Blobs;
 using Domain.Constants;
 using Infrastructure.Services;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace Infrastructure;
+namespace Infrastructure.DI.Modules;
 
-public static class DependencyInjection
+internal static class BlobModule
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddBlobModule(this IServiceCollection services, IConfiguration configuration)
     {
         var blobConnectionString = configuration.GetConnectionString(ConnectionStrings.AzureBlobStorageConnection);
         services.AddSingleton(_ => new BlobServiceClient(blobConnectionString));

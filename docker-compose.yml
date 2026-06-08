@@ -24,7 +24,7 @@
       context: .
       dockerfile: ./src/Backend/Database/Dockerfile
     environment:
-      - ConnectionStrings__PostgresConnection=Host=postgres-db;Port=5432;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD};
+      - ConnectionStrings__PostgresConnection=Host=postgres-db;Port=5432;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}
     depends_on:
       postgres-db:
         condition: service_healthy
@@ -39,11 +39,29 @@
       - "8080:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__PostgresConnection=Host=postgres-db;Port=5432;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD};
-      - ConnectionStrings__AzureBlobStorage=${AZURITE_CONNECTION_STRING};
+      - ConnectionStrings__PostgresConnection=Host=postgres-db;Port=5432;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}
+      - ConnectionStrings__AzureBlobStorage=${AZURITE_CONNECTION_STRING}
+      - AzureAd__TenantId=${AZURE_TENANT_ID}
+      - AzureAd__ClientId=${AZURE_CLIENT_ID}
+      - AzureAd__Audience=api://${AZURE_CLIENT_ID}
     depends_on:
       - postgres-db
       - azurite
+    
+  frontend:
+    image: tasktracker-frontend
+    container_name: tasktracker-frontend
+    build:
+      context: .
+      dockerfile: src/Frontend/WebApp/Dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+      - API_CLIENT_SCOPES=api://${AZURE_CLIENT_ID}/access_as_user
+    depends_on:
+      - api
       
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite
