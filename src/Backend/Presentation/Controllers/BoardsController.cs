@@ -13,41 +13,43 @@ namespace Presentation.Controllers;
 public class BoardsController(ISender sender) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<BoardPreviewDto>>> GetBoards(CancellationToken ct)
+    public async Task<ActionResult<PagedList<BoardPreviewDto>>> GetBoards(CancellationToken ct,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20)
     {
-        var result = await sender.Send(new GetBoardsQuery(), ct);
-    
+        var result = await sender.Send(new GetBoardsQuery(pageNumber, pageSize), ct);
+
         return Ok(result);
     }
-    
+
     [HttpPost]
     public async Task<ActionResult<BoardDto>> CreateBoard(
-        [FromBody] CreateBoardCommand command, 
+        [FromBody] CreateBoardCommand command,
         CancellationToken ct)
     {
         var result = await sender.Send(command, ct);
-        
-        return Ok(result); 
+
+        return Ok(result);
     }
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteBoard(
-        Guid id, 
+        Guid id,
         CancellationToken ct)
     {
         await sender.Send(new DeleteBoardCommand(id), ct);
-        
-        return NoContent(); 
+
+        return NoContent();
     }
-    
+
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<BoardPreviewDto>> UpdateBoard(
-        Guid id, 
+        Guid id,
         [FromBody] UpdateBoardRequest request,
         CancellationToken ct)
     {
         var result = await sender.Send(new UpdateBoardCommand(id, request.Name, request.Description), ct);
-        
-        return Ok(result); 
+
+        return Ok(result);
     }
 }

@@ -9,5 +9,9 @@ public interface IBoardRepository : IRepository<Board, Guid>
     
     Task<IEnumerable<Board>> GetUserBoardsAsync(Guid userId, CancellationToken ct = default);
     
+    Task<int> CountUserBoardsAsync(Guid userId, CancellationToken ct = default);
+    
+    Task<List<Board>> GetUserBoardsPaginatedAsync(Guid userId, int pageNumber, int pageSize, CancellationToken ct = default);
+    
     Task<BoardRole?> GetUserRoleAsync(Guid boardId, Guid userId, CancellationToken ct = default);
 }

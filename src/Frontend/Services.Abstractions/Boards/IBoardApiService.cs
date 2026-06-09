@@ -4,7 +4,7 @@ namespace Services.Abstractions.Boards;
 
 public interface IBoardApiService
 {
-    Task<List<BoardPreviewDto>> GetMyBoardsAsync();
+    Task<PagedList<BoardPreviewDto>> GetMyBoardsAsync(int pageNumber, int pageSize);
     
     Task<BoardPreviewDto?> CreateBoardAsync(UpdateBoardRequest request);
     

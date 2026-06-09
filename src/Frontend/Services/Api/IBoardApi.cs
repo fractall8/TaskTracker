@@ -6,7 +6,10 @@ namespace Services.Api;
 public interface IBoardApi
 {
     [Get("/api/boards")]
-    Task<List<BoardPreviewDto>> GetBoardsAsync();
+    Task<PagedList<BoardPreviewDto>> GetBoardsAsync(
+        [Query] int pageNumber, 
+        [Query] int pageSize, 
+        CancellationToken ct = default);
 
     [Post("/api/boards")]
     Task<BoardPreviewDto> CreateBoardAsync([Body] UpdateBoardRequest request);

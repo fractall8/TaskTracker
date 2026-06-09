@@ -7,6 +7,7 @@ using Services.Api;
 using Services.Auth;
 using Services.Auth.Stores;
 using Services.Boards;
+using Services.Boards.Stores;
 using Services.Configuration;
 
 namespace Services.DI;
@@ -32,7 +33,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IProfileStore, ProfileStore>();
         
         services.AddScoped<IBoardApiService, BoardApiService>();
-
+        services.AddScoped<IBoardStore, BoardStore>();
+        
         return services;
     }
 }

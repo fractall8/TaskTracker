@@ -26,6 +26,23 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
             .ToListAsync(ct);
     }
 
+    public async Task<int> CountUserBoardsAsync(Guid userId, CancellationToken ct = default)
+    {
+        return await _dbContext.Boards.Where(b => b.Members.Any(m => m.UserId == userId)).CountAsync(ct);
+    }
+
+    public async Task<List<Board>> GetUserBoardsPaginatedAsync(Guid userId, int pageNumber, int pageSize, CancellationToken ct = default)
+    {
+        return await _dbContext.Boards
+            .AsNoTracking()
+            .Include(b => b.Members.Where(m => m.UserId == userId))
+            .Where(b => b.Members.Any(m => m.UserId == userId))
+            .OrderByDescending(b => b.CreatedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+    }
+
     public async Task<BoardRole?> GetUserRoleAsync(Guid boardId, Guid userId, CancellationToken ct = default)
     {
         return await _dbContext.Set<BoardMember>()

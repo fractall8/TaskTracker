@@ -6,11 +6,11 @@ namespace Services.Boards;
 
 public class BoardApiService(IBoardApi boardApi) : IBoardApiService
 {
-    public async Task<List<BoardPreviewDto>> GetMyBoardsAsync()
+    public async Task<PagedList<BoardPreviewDto>> GetMyBoardsAsync(int pageNumber, int pageSize)
     {
-        return await boardApi.GetBoardsAsync();
+        return await boardApi.GetBoardsAsync(pageNumber, pageSize);
     }
-
+    
     public async Task<BoardPreviewDto?> CreateBoardAsync(UpdateBoardRequest request)
     {
         return await boardApi.CreateBoardAsync(request);

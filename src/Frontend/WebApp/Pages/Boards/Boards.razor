@@ -1,49 +1,98 @@
 ﻿@page "/boards"
 @using Contracts.DTOs
-@using WebApp.Shared.Dialogs
 @using Refit
-@inject IBoardApiService BoardService
+@using WebApp.Shared.Dialogs
+@implements IDisposable
+@inject IBoardStore BoardStore
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
+<style>
+    .mud-card-header-content {
+        min-width: 0;
+    }
+    
+    .text-truncate-single {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+    }
+
+    .text-truncate-multi {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        word-break: break-all;
+    }
+</style>
+
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-    <div class="d-flex justify-space-between align-center mb-6">
+    <div class="d-flex flex-column flex-sm-row justify-space-between align-center mb-6 gap-4">
         <MudText Typo="Typo.h4">My Boards</MudText>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateDialog">
-            Create Board
-        </MudButton>
+        
+        <div class="d-flex align-center gap-4">
+            @if (BoardStore.Pagination.TotalCount > 0)
+            {
+                <div class="d-flex align-center gap-2">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Items per page:</MudText>
+                    <MudSelect T="int" Value="@BoardStore.PageSize" ValueChanged="OnPageSizeChangedAsync" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Style="width: 80px;">
+                        <MudSelectItem Value="12">12</MudSelectItem>
+                        <MudSelectItem Value="24">24</MudSelectItem>
+                        <MudSelectItem Value="48">48</MudSelectItem>
+                    </MudSelect>
+                </div>
+            }
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateDialog">
+                Create Board
+            </MudButton>
+        </div>
     </div>
 
-    @if (_isLoading)
+    @if (BoardStore.IsLoading && !BoardStore.IsLoaded)
     {
         <div class="d-flex justify-center mt-10">
             <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
         </div>
     }
-    else if (!_boards.Any())
+    else if (!string.IsNullOrEmpty(BoardStore.ErrorMessage))
+    {
+        <MudAlert Severity="Severity.Error" Class="mt-4">
+            @BoardStore.ErrorMessage
+        </MudAlert>
+    }
+    else if (!BoardStore.Boards.Any())
     {
         <MudAlert Severity="Severity.Info" Class="mt-4">
-            You don't have any boards yet. Create your first one!
+            @(BoardStore.CurrentPage > 1 
+                ? "This page is empty. Please return to the previous pages." 
+                : "You don't have any boards yet. Create your first one!")
         </MudAlert>
     }
     else
     {
         <MudGrid>
-            @foreach (var board in _boards)
+            @foreach (var board in BoardStore.Boards)
             {
                 <MudItem xs="12" sm="6" md="4" lg="3">
                     <MudCard Elevation="3" Class="h-100 d-flex flex-column rounded-lg">
                         <MudCardHeader>
                             <CardHeaderContent>
-                                <MudText Typo="Typo.h6" Class="fw-bold">@board.Name</MudText>
+                                <MudText Typo="Typo.h6" Class="fw-bold text-truncate-single" Title="@board.Name">
+                                    @board.Name
+                                </MudText>
                                 <MudText Typo="Typo.body2" Color="Color.Secondary">Role: @board.Role.ToString()</MudText>
                             </CardHeaderContent>
                         </MudCardHeader>
-                        <MudCardContent Class="flex-grow-1">
-                            <MudText Typo="Typo.body2">
+    
+                        <MudCardContent Class="flex-grow-1 overflow-hidden">
+                            <MudText Typo="Typo.body2" Class="text-truncate-multi" Title="@board.Description">
                                 @(string.IsNullOrWhiteSpace(board.Description) ? "No description provided." : board.Description)
                             </MudText>
                         </MudCardContent>
+    
                         <MudCardActions Class="justify-end px-4 pb-4">
                             <MudTooltip Text="Edit Board">
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Default" Size="Size.Small" OnClick="@(() => OpenEditDialog(board))" />
@@ -58,50 +107,44 @@
             }
         </MudGrid>
     }
+    
+    @if (BoardStore.Pagination.TotalPages > 1)
+    {
+        <div class="d-flex justify-center mt-6">
+            <MudPagination Color="Color.Primary" 
+                           Count="@BoardStore.Pagination.TotalPages" 
+                           Selected="@BoardStore.CurrentPage" 
+                           SelectedChanged="OnPageChangedAsync" />
+        </div>
+    }
 </MudContainer>
 
 @code {
-    private List<BoardPreviewDto> _boards = new();
-    private bool _isLoading = true;
+    [Inject] private IBoardApiService BoardApiService { get; set; } = null!;
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadBoards();
+        BoardStore.StateChanged += StateHasChanged;
+
+        if (!BoardStore.IsLoaded)
+        {
+            await BoardStore.LoadAsync(1);
+        }
     }
 
-    private async Task LoadBoards()
+    private async Task OnPageChangedAsync(int page)
     {
-        try
-        {
-            _isLoading = true;
-            _boards = await BoardService.GetMyBoardsAsync();
-        }
-        catch (ApiException ex)
-        {
-            if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-            {
-                Snackbar.Add("Authorization error. Please try logging in again.", Severity.Error);
-            }
-            else
-            {
-                Snackbar.Add($"Failed to load boards: {ex.Message}", Severity.Error);
-            }
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add("An unknown error occurred.", Severity.Error);
-        }
-        finally
-        {
-            _isLoading = false;
-            StateHasChanged(); 
-        }
+        await BoardStore.LoadAsync(page);
+    }
+
+    public void Dispose()
+    {
+        BoardStore.StateChanged -= StateHasChanged;
     }
 
     private async Task OpenCreateDialog()
     {
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        
         var dialog = await DialogService.ShowAsync<BoardDialog>("Create Board", options);
         var result = await dialog.Result;
 
@@ -109,10 +152,10 @@
         {
             try
             {
-                await BoardService.CreateBoardAsync(request);
+                await BoardApiService.CreateBoardAsync(request);
                 Snackbar.Add("Board created successfully.", Severity.Success);
                 
-                await LoadBoards();
+                await BoardStore.RefreshAsync();
             }
             catch (ApiException ex)
             {
@@ -125,7 +168,6 @@
     {
         var parameters = new DialogParameters<BoardDialog> { { x => x.Board, board } };
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        
         var dialog = await DialogService.ShowAsync<BoardDialog>("Edit Board", parameters, options);
         var result = await dialog.Result;
 
@@ -133,10 +175,10 @@
         {
             try
             {
-                await BoardService.UpdateBoardAsync(board.Id, request);
+                await BoardApiService.UpdateBoardAsync(board.Id, request);
                 Snackbar.Add("Board updated successfully.", Severity.Success);
                 
-                await LoadBoards();
+                await BoardStore.RefreshAsync();
             }
             catch (ApiException ex)
             {
@@ -147,28 +189,31 @@
 
     private async Task DeleteBoard(BoardPreviewDto board)
     {
+        var safeBoardName = board.Name.Length > 40 ? board.Name[..40] + "..." : board.Name;
+
         bool? result = await DialogService.ShowMessageBoxAsync(
             "Delete Confirmation",
-            $"Are you sure you want to delete the board '{board.Name}'? This action cannot be undone.",
+            $"Are you sure you want to delete the board '{safeBoardName}'? This action cannot be undone.",
             yesText: "Delete", cancelText: "Cancel");
 
         if (result == true)
         {
             try
             {
-                await BoardService.DeleteBoardAsync(board.Id);
-                _boards.Remove(board);
+                await BoardApiService.DeleteBoardAsync(board.Id);
                 Snackbar.Add("Board deleted successfully.", Severity.Success);
-                StateHasChanged();
+                
+                await BoardStore.RefreshAsync();
             }
             catch (ApiException ex)
             {
                 Snackbar.Add($"Failed to delete board: {ex.Message}", Severity.Error);
             }
-            catch (Exception)
-            {
-                Snackbar.Add("An unknown error occurred while deleting.", Severity.Error);
-            }
         }
+    }
+    
+    private async Task OnPageSizeChangedAsync(int newSize)
+    {
+        await BoardStore.ChangePageSizeAsync(newSize);
     }
 }
