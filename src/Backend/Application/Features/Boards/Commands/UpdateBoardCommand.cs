@@ -2,6 +2,7 @@
 using Application.Interfaces.Services;
 using Contracts.DTOs;
 using Domain.Enums;
+using FluentValidation;
 using MediatR;
 
 namespace Application.Features.Boards.Commands;
@@ -56,5 +57,21 @@ public class UpdateBoardCommandHandler(
             CreatedAt: board.CreatedAt,
             Role: (Contracts.Enums.BoardRoleDto)userRole.Value
         );
+    }
+}
+
+public class UpdateBoardCommandValidator : AbstractValidator<UpdateBoardCommand>
+{
+    public UpdateBoardCommandValidator()
+    {
+        RuleFor(v => v.BoardId)
+            .NotEmpty().WithMessage("Board ID is required.");
+
+        RuleFor(v => v.Name)
+            .NotEmpty().WithMessage("Board name is required.")
+            .MaximumLength(100).WithMessage("Board name must not exceed 100 characters.");
+
+        RuleFor(v => v.Description)
+            .MaximumLength(500).WithMessage("Description must not exceed 500 characters.");
     }
 }

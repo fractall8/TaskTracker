@@ -5,8 +5,8 @@ public class TaskItem : BaseEntity<Guid>
     public required string Title { get; set; }
     
     public string? Description { get; set; }
-    
-    public int Position { get; set; }
+
+    public int Position { get; set; } = 0;
     
     public DateTimeOffset? DueDate { get; set; }
  

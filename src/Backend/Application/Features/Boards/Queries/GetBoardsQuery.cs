@@ -1,7 +1,10 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Services;
+using Application.Options;
 using Contracts.DTOs;
+using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Options;
 
 namespace Application.Features.Boards.Queries;
 
@@ -48,5 +51,22 @@ public class GetBoardsQueryHandler(
             },
             Items = boardDtos,
         };
+    }
+}
+
+public class GetBoardsQueryValidator : AbstractValidator<GetBoardsQuery>
+{
+    public GetBoardsQueryValidator(IOptions<PaginationOptions> options)
+    {
+        var paginationOptions = options.Value;
+        
+        RuleFor(v => v.PageNumber)
+            .GreaterThanOrEqualTo(1).WithMessage("Page number must be at least 1.");
+
+        RuleFor(v => v.PageSize)
+            .InclusiveBetween(1, paginationOptions.MaxPageSize).WithMessage($"Page size must be between 1 and {paginationOptions.MaxPageSize}.");
+
+        RuleFor(v => v.SearchTerm)
+            .MaximumLength(100).WithMessage("Search term must not exceed 100 characters.");
     }
 }

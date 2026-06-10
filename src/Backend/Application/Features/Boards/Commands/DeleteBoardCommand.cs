@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Services;
 using Domain.Enums;
+using FluentValidation;
 using MediatR;
 
 namespace Application.Features.Boards.Commands;
@@ -43,5 +44,14 @@ public class DeleteBoardCommandHandler(
         boardRepository.Delete(board);
 
         await unitOfWork.SaveChangesAsync(ct);
+    }
+}
+
+public class DeleteBoardCommandValidator : AbstractValidator<DeleteBoardCommand>
+{
+    public DeleteBoardCommandValidator()
+    {
+        RuleFor(v => v.BoardId)
+            .NotEmpty().WithMessage("Board ID is required.");
     }
 }
