@@ -10,6 +10,18 @@ internal sealed class BoardStore(IBoardApiService boardApiService) : IBoardStore
 
     private readonly Dictionary<Guid, BoardRoleDto> _roleCache = [];
 
+    public string? SearchTerm { get; private set; }
+    
+    public async Task SetSearchTermAsync(string? searchTerm, CancellationToken ct = default)
+    {
+        if (SearchTerm == searchTerm) 
+            return;
+
+        SearchTerm = searchTerm;
+        CurrentPage = 1;
+        await LoadInternalAsync(CurrentPage, ct);
+    }
+
     public IReadOnlyList<BoardPreviewDto> Boards { get; private set; } = [];
     
     public PaginationMetadata Pagination { get; private set; } = new();
@@ -20,7 +32,7 @@ internal sealed class BoardStore(IBoardApiService boardApiService) : IBoardStore
     
     public bool IsLoaded { get; private set; }
     
-    public string? ErrorMessage { get; private set; }
+      public string? ErrorMessage { get; private set; }
 
     public event Action? StateChanged;
     
@@ -69,7 +81,7 @@ internal sealed class BoardStore(IBoardApiService boardApiService) : IBoardStore
 
         try
         {
-            var page = await boardApiService.GetMyBoardsAsync(pageNumber, PageSize);
+            var page = await boardApiService.GetMyBoardsAsync(pageNumber, PageSize, SearchTerm);
 
             Boards = page.Items;
             Pagination = page.Metadata;

@@ -9,6 +9,10 @@ public interface IBoardStore
     
     Task ChangePageSizeAsync(int newSize, CancellationToken ct = default);
     
+    string? SearchTerm { get; }
+    
+    Task SetSearchTermAsync(string? searchTerm, CancellationToken ct = default);
+    
     IReadOnlyList<BoardPreviewDto> Boards { get; }
 
     PaginationMetadata Pagination { get; }

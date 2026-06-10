@@ -5,7 +5,7 @@ using MediatR;
 
 namespace Application.Features.Boards.Queries;
 
-public record GetBoardsQuery(int PageNumber, int PageSize) : IRequest<PagedList<BoardPreviewDto>>;
+public record GetBoardsQuery(int PageNumber, int PageSize, string? SearchTerm) : IRequest<PagedList<BoardPreviewDto>>;
 
 public class GetBoardsQueryHandler(
     ICurrentUserAccessor currentUserAccessor,
@@ -21,12 +21,13 @@ public class GetBoardsQueryHandler(
                                 ct) 
                             ?? throw new UnauthorizedAccessException("User is not authenticated");
 
-        var totalCount = await boardRepository.CountUserBoardsAsync(currentUserId, ct);
+        var totalCount = await boardRepository.CountUserBoardsAsync(currentUserId, request.SearchTerm, ct);
         
         var boards = await boardRepository.GetUserBoardsPaginatedAsync(
             currentUserId, 
             request.PageNumber, 
             request.PageSize, 
+            request.SearchTerm,
             ct);
         
         var boardDtos=  boards.Select(board => new BoardPreviewDto(

@@ -15,9 +15,10 @@ public class BoardsController(ISender sender) : ControllerBase
     [HttpGet]
     public async Task<ActionResult<PagedList<BoardPreviewDto>>> GetBoards(CancellationToken ct,
         [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 20)
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? searchTerm = null)
     {
-        var result = await sender.Send(new GetBoardsQuery(pageNumber, pageSize), ct);
+        var result = await sender.Send(new GetBoardsQuery(pageNumber, pageSize, searchTerm), ct);
 
         return Ok(result);
     }

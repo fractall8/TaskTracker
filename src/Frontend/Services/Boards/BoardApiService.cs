@@ -6,9 +6,9 @@ namespace Services.Boards;
 
 public class BoardApiService(IBoardApi boardApi) : IBoardApiService
 {
-    public async Task<PagedList<BoardPreviewDto>> GetMyBoardsAsync(int pageNumber, int pageSize)
+    public async Task<PagedList<BoardPreviewDto>> GetMyBoardsAsync(int pageNumber, int pageSize, string? searchTerm)
     {
-        return await boardApi.GetBoardsAsync(pageNumber, pageSize);
+        return await boardApi.GetBoardsAsync(pageNumber, pageSize, searchTerm);
     }
     
     public async Task<BoardPreviewDto?> CreateBoardAsync(UpdateBoardRequest request)

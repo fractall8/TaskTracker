@@ -29,11 +29,24 @@
 </style>
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-    <div class="d-flex flex-column flex-sm-row justify-space-between align-center mb-6 gap-4">
+    <div class="d-flex flex-column flex-md-row justify-space-between align-center mb-6 gap-4">
         <MudText Typo="Typo.h4">My Boards</MudText>
         
-        <div class="d-flex align-center gap-4">
-            @if (BoardStore.Pagination.TotalCount > 0)
+        <div class="d-flex flex-wrap align-center gap-4">
+            <MudTextField T="string" 
+                          Value="@BoardStore.SearchTerm" 
+                          ValueChanged="OnSearchTermChangedAsync" 
+                          Placeholder="Search boards..." 
+                          Adornment="Adornment.Start" 
+                          AdornmentIcon="@Icons.Material.Filled.Search" 
+                          Variant="Variant.Outlined" 
+                          Margin="Margin.Dense" 
+                          Dense="true" 
+                          Clearable="true" 
+                          DebounceInterval="500" 
+                          Style="width: 250px;" />
+
+            @if (BoardStore.Pagination.TotalCount > 0 || !string.IsNullOrEmpty(BoardStore.SearchTerm))
             {
                 <div class="d-flex align-center gap-2">
                     <MudText Typo="Typo.body2" Color="Color.Secondary">Items per page:</MudText>
@@ -50,7 +63,7 @@
             </MudButton>
         </div>
     </div>
-
+    
     @if (BoardStore.IsLoading && !BoardStore.IsLoaded)
     {
         <div class="d-flex justify-center mt-10">
@@ -215,5 +228,10 @@
     private async Task OnPageSizeChangedAsync(int newSize)
     {
         await BoardStore.ChangePageSizeAsync(newSize);
+    }
+    
+    private async Task OnSearchTermChangedAsync(string text)
+    {
+        await BoardStore.SetSearchTermAsync(text);
     }
 }

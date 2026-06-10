@@ -9,6 +9,7 @@ public interface IBoardApi
     Task<PagedList<BoardPreviewDto>> GetBoardsAsync(
         [Query] int pageNumber, 
         [Query] int pageSize, 
+        [Query] string? searchTerm = null,
         CancellationToken ct = default);
 
     [Post("/api/boards")]
