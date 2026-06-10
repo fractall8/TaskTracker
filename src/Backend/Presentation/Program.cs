@@ -20,6 +20,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddPresentationCors(builder.Configuration);
+builder.Services.AddGlobalErrorHandling();
 
 builder.Host.UseSerilog((context, services, configuration) => configuration
     .Destructure.With<SensitiveDataDestructuringPolicy>() 
@@ -45,6 +46,8 @@ if (fileSettings != null)
 }
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
