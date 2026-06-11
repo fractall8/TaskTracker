@@ -7,4 +7,6 @@ public interface IColumnRepository : IRepository<Column, Guid>
     Task<IEnumerable<string>> GetNameListByBoardIdAsync(Guid boardId, CancellationToken ct = default);
     
     Task DecrementPositionsAsync(Guid boardId, int startingFromPosition, CancellationToken ct);
+
+    Task UpdatePositionsOnMoveAsync(Guid boardId, int oldPosition, int newPosition, CancellationToken ct);
 }

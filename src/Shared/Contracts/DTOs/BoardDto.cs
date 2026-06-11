@@ -9,5 +9,4 @@ public record BoardDto(
     DateTimeOffset CreatedAt,
     BoardRoleDto UserRole,
     IEnumerable<UserWithRoleDto> Members,
-    IEnumerable<ColumnDto> Columns
-);
+    IEnumerable<ColumnDto> Columns);

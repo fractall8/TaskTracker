@@ -1,7 +1,7 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
-using Domain.Enums;
+using Domain.Authorization;
 using FluentValidation;
 using MediatR;
 
@@ -17,8 +17,6 @@ public class UpdateColumnCommandHandler(
     IUnitOfWork unitOfWork)
     : IRequestHandler<UpdateColumnCommand, ColumnDto>
 {
-    private readonly List<BoardRole> _allowedRoles = [BoardRole.Admin, BoardRole.ScrumMaster];
-
     public async Task<ColumnDto> Handle(UpdateColumnCommand request, CancellationToken ct)
     {
         var column = await columnRepository.GetByIdAsync(request.ColumnId, ct);
@@ -27,15 +25,23 @@ public class UpdateColumnCommandHandler(
             throw new KeyNotFoundException($"Column {request.ColumnId} does not exist");
         }
 
-        var currentUserId = await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => (Guid?)u.Id, ct)
-            ?? throw new UnauthorizedAccessException("User is not authenticated");
+        var currentUserId = await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => (Guid?)u.Id, ct);
 
-        var userRole = await boardRepository.GetUserRoleAsync(column.BoardId, currentUserId, ct)
-            ?? throw new UnauthorizedAccessException("You are not a member of this board.");
-
-        if (!_allowedRoles.Contains(userRole))
+        if (currentUserId == null)
         {
-            throw new UnauthorizedAccessException("You don't have permission to update columns in this board.");
+            throw new UnauthorizedAccessException("User is not authenticated");
+        }
+
+        var userRole = await boardRepository.GetUserRoleAsync(column.BoardId, currentUserId.Value, ct);
+
+        if (userRole == null)
+        {
+            throw new UnauthorizedAccessException("You are not a member of this board.");
+        }
+
+        if (!BoardRolePermissions.CanManageColumns(userRole.Value))
+        {
+            throw new UnauthorizedAccessException("You don't have permission to manage columns in this board.");
         }
 
         if (!string.Equals(column.Name, request.Name, StringComparison.OrdinalIgnoreCase))

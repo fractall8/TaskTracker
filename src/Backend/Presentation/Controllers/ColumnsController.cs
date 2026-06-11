@@ -1,4 +1,5 @@
-﻿using Application.Features.Columns.Commands;
+﻿using Application.Features.Boards.Queries;
+using Application.Features.Columns.Commands;
 using Contracts.DTOs;
 using Contracts.Requests;
 using MediatR;
@@ -49,6 +50,29 @@ public class ColumnsController(ISender sender) : ControllerBase
         
         await sender.Send(command, ct);
         
+        return NoContent();
+    }
+    
+    [HttpGet]
+    public async Task<ActionResult<BoardWithColumnsDto>> GetBoardWithColumns(
+        [FromRoute] Guid boardId,
+        CancellationToken ct)
+    {
+        var result = await sender.Send(new GetBoardByIdQuery(boardId), ct);
+        return Ok(result);
+    }
+
+    [HttpPut("{columnId:guid}/move")]
+    public async Task<IActionResult> MoveColumn(
+        [FromRoute] Guid boardId,
+        [FromRoute] Guid columnId,
+        [FromBody] int newPosition,
+        CancellationToken ct)
+    {
+        var command = new MoveColumnCommand(boardId, columnId, newPosition);
+        
+        await sender.Send(command, ct);
+
         return NoContent();
     }
 }

@@ -1,0 +1,24 @@
+﻿using Domain.Enums;
+
+namespace Domain.Authorization;
+
+public static class BoardRolePermissions
+{
+    public static bool CanEditBoard(BoardRole role) =>
+        role is BoardRole.Admin;
+
+    public static bool CanDeleteBoard(BoardRole role) =>
+        role is BoardRole.Admin;
+
+    public static bool CanManageColumns(BoardRole role) =>
+        role is BoardRole.Admin or BoardRole.ScrumMaster;
+
+    public static bool CanManageTasks(BoardRole role) =>
+        role is BoardRole.Admin or BoardRole.ScrumMaster;
+
+    public static bool CanMoveTasks(BoardRole role) =>
+        role is BoardRole.Admin or BoardRole.ScrumMaster or BoardRole.User;
+
+    public static bool CanManageMembers(BoardRole role) =>
+        role is BoardRole.Admin;
+}

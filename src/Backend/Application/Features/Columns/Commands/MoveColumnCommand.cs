@@ -6,17 +6,17 @@ using MediatR;
 
 namespace Application.Features.Columns.Commands;
 
-public record DeleteColumnCommand(Guid BoardId, Guid ColumnId) : IRequest;
+public record MoveColumnCommand(Guid BoardId, Guid ColumnId, int NewPosition) : IRequest;
 
-public class DeleteColumnCommandHandler(
+public class MoveColumnCommandHandler(
     ICurrentUserAccessor currentUserAccessor,
     IUserRepository userRepository,
     IBoardRepository boardRepository,
     IColumnRepository columnRepository,
     IUnitOfWork unitOfWork)
-    : IRequestHandler<DeleteColumnCommand>
+    : IRequestHandler<MoveColumnCommand>
 {
-    public async Task Handle(DeleteColumnCommand request, CancellationToken ct)
+    public async Task Handle(MoveColumnCommand request, CancellationToken ct)
     {
         var board = await boardRepository.GetByIdAsync(request.BoardId, ct);
         if (board is null)
@@ -25,7 +25,7 @@ public class DeleteColumnCommandHandler(
         }
 
         var currentUserId = await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => (Guid?)u.Id, ct);
-        
+
         if (currentUserId == null)
         {
             throw new UnauthorizedAccessException("User is not authenticated");
@@ -42,31 +42,38 @@ public class DeleteColumnCommandHandler(
         {
             throw new UnauthorizedAccessException("You don't have permission to manage columns in this board.");
         }
-        
+
         var column = await columnRepository.GetByIdAsync(request.ColumnId, ct);
         if (column is null || column.BoardId != request.BoardId)
         {
             throw new KeyNotFoundException($"Column {request.ColumnId} does not exist on this board");
         }
 
-        var positionToShift = column.Position;
-        
-        // Will deal with tasks there later
-        columnRepository.Delete(column); 
-        await unitOfWork.SaveChangesAsync(ct);
+        if (column.Position == request.NewPosition)
+        {
+            return;
+        }
 
-        await columnRepository.DecrementPositionsAsync(request.BoardId, positionToShift, ct);
+        var oldPosition = column.Position;
+        await columnRepository.UpdatePositionsOnMoveAsync(request.BoardId, oldPosition, request.NewPosition, ct);
+
+        column.Position = request.NewPosition;
+        columnRepository.Update(column);
+        
+        await unitOfWork.SaveChangesAsync(ct);
     }
 }
 
-public class DeleteColumnCommandValidator : AbstractValidator<DeleteColumnCommand>
+public class MoveColumnCommandValidator : AbstractValidator<MoveColumnCommand>
 {
-    public DeleteColumnCommandValidator()
-    {
+    public MoveColumnCommandValidator() {
         RuleFor(x => x.BoardId)
             .NotEmpty().WithMessage("Board ID is required.");
 
         RuleFor(x => x.ColumnId)
             .NotEmpty().WithMessage("Column ID is required.");
+
+        RuleFor(x => x.NewPosition)
+            .GreaterThanOrEqualTo(0).WithMessage("New position must be greater than or equal to 0.");
     }
 }

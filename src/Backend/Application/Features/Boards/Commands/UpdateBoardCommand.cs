@@ -1,7 +1,7 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
-using Domain.Enums;
+using Domain.Authorization;
 using FluentValidation;
 using MediatR;
 
@@ -15,8 +15,6 @@ public class UpdateBoardCommandHandler(
     IBoardRepository boardRepository,
     IUnitOfWork unitOfWork) : IRequestHandler<UpdateBoardCommand, BoardPreviewDto>
 {
-    private readonly List<BoardRole> _allowedRoles = [BoardRole.Admin, BoardRole.ScrumMaster];
-    
     public async Task<BoardPreviewDto> Handle(UpdateBoardCommand request, CancellationToken ct)
     {
         var currentUserId = await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => (Guid?)u.Id, ct);
@@ -40,7 +38,7 @@ public class UpdateBoardCommandHandler(
             throw new UnauthorizedAccessException("You are not a member of this board.");
         }
         
-        if (!_allowedRoles.Contains(userRole.Value))
+        if (!BoardRolePermissions.CanEditBoard(userRole.Value))
         {
             throw new UnauthorizedAccessException("You don't have permission to edit this board.");
         }

@@ -1,8 +1,8 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
+using Domain.Authorization;
 using Domain.Entities;
-using Domain.Enums;
 using FluentValidation;
 using MediatR;
 
@@ -18,8 +18,6 @@ public class CreateColumnCommandHandler(
     IUnitOfWork unitOfWork)
     : IRequestHandler<CreateColumnCommand, ColumnDto>
 {
-    private readonly List<BoardRole> _allowedRoles = [BoardRole.Admin, BoardRole.ScrumMaster];
-    
     public async Task<ColumnDto> Handle(CreateColumnCommand request, CancellationToken ct)
     {
         var board = await boardRepository.GetByIdAsync(request.BoardId, ct);
@@ -43,9 +41,9 @@ public class CreateColumnCommandHandler(
             throw new UnauthorizedAccessException("You are not a member of this board.");
         }
         
-        if (!_allowedRoles.Contains(userRole.Value))
+        if (!BoardRolePermissions.CanManageColumns(userRole.Value))
         {
-            throw new UnauthorizedAccessException("You don't have permission to create columns in this board.");
+            throw new UnauthorizedAccessException("You don't have permission to manage columns in this board.");
         }
         
         var existingNamesEnumerable = await columnRepository.GetNameListByBoardIdAsync(request.BoardId, ct);
