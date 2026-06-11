@@ -112,9 +112,40 @@ public class BoardDetailsStore(IBoardApiService boardApi, IColumnApiService colu
     {
         if (BoardId == null || Board == null) return;
 
-        await columnsApi.MoveColumnAsync(BoardId.Value, columnId, newPosition, ct);
+        var columnToMove = Board.Columns.FirstOrDefault(c => c.Id == columnId);
+        if (columnToMove == null || columnToMove.Position == newPosition) return;
+
+        var oldPosition = columnToMove.Position;
+
+        // Optimistic Update
+        var updatedColumns = Board.Columns.Select(c =>
+            {
+                if (c.Id == columnId) 
+                    return c with { Position = newPosition };
+                if (oldPosition < newPosition && c.Position > oldPosition && c.Position <= newPosition)
+                    return c with { Position = c.Position - 1 };
         
-        await LoadAsync(BoardId.Value, ct); 
+                if (oldPosition > newPosition && c.Position >= newPosition && c.Position < oldPosition)
+                    return c with { Position = c.Position + 1 };
+        
+                return c;
+            })
+            .OrderBy(c => c.Position)
+            .ToList();
+
+        Board = Board with { Columns = updatedColumns };
+        NotifyStateChanged();
+
+        try
+        {
+            await columnsApi.MoveColumnAsync(BoardId.Value, columnId, newPosition, ct);
+        }
+        catch
+        {
+            // If the API fails, reload the board from the server
+            await LoadAsync(BoardId.Value, ct);
+            throw;
+        }
     }
 
     public void UpdateBoardName(string name)

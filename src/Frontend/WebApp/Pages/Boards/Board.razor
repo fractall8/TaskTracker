@@ -6,6 +6,25 @@
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
+<style>
+    .column-grab {
+        cursor: grab;
+        transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out; 
+    }
+    .column-grab:active {
+        cursor: grabbing;
+    }
+    .column-drag-active {
+        opacity: 0.6;
+        transform: scale(0.98);
+    }
+    .column-drop-target {
+        border: 2px dashed var(--mud-palette-primary) !important;
+        background-color: transparent !important; 
+        opacity: 0.8;
+    }
+</style>
+
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4 pb-8">
     @if (Store.IsLoading)
     {
@@ -22,7 +41,7 @@
         <div class="d-flex align-center mb-6">
             <MudText Typo="Typo.h4" Class="fw-bold">@Store.Board.Name</MudText>
             <MudSpacer />
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateColumnDialog">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" @onclick="OpenCreateColumnDialog">
                 Add Column
             </MudButton>
         </div>
@@ -31,21 +50,27 @@
             
             @foreach (var column in Store.Board.Columns)
             {
-                <MudPaper Elevation="1" Class="pa-4 d-flex flex-column rounded-lg" Width="320px" Style="flex-shrink: 0; background-color: #f4f5f7;">
+                <MudPaper Elevation="1" 
+                          Class="@($"pa-4 d-flex flex-column rounded-lg column-grab {GetDragClass(column)}")" 
+                          Width="320px" 
+                          Style="flex-shrink: 0; background-color: #f4f5f7;"
+                          draggable="true"
+                          @ondragstart="@(() => HandleDragStart(column))"
+                          @ondragenter="@(() => HandleDragEnter(column))"
+                          @ondragover:preventDefault="true"
+                          @ondrop="@(() => HandleDrop(column))"
+                          @ondragend="HandleDragEnd">
                     
                     <div class="d-flex justify-space-between align-center mb-3">
-                        <MudText Typo="Typo.h6" Style="font-weight: 600;">@column.Name</MudText>
+                        <MudText Typo="Typo.h6" Style="font-weight: 600; pointer-events: none;">@column.Name</MudText>
                         
                         <MudMenu Icon="@Icons.Material.Filled.MoreHoriz" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Dense="true">
-                            <MudMenuItem OnClick="@(() => MoveColumn(column, -1))" Disabled="@(column.Position == 0)" Icon="@Icons.Material.Filled.ArrowBack">Move Left</MudMenuItem>
-                            <MudMenuItem OnClick="@(() => MoveColumn(column, 1))" Disabled="@(column.Position == Store.Board.Columns.Count() - 1)" Icon="@Icons.Material.Filled.ArrowForward">Move Right</MudMenuItem>
-                            <MudDivider />
                             <MudMenuItem OnClick="@(() => OpenEditColumnDialog(column))" Icon="@Icons.Material.Filled.Edit">Edit</MudMenuItem>
                             <MudMenuItem OnClick="@(() => DeleteColumn(column))" Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error">Delete</MudMenuItem>
                         </MudMenu>
                     </div>
 
-                    <div class="flex-grow-1" style="min-height: 80px; border: 2px dashed #e0e0e0; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                    <div class="flex-grow-1" style="min-height: 80px; border: 2px dashed #e0e0e0; border-radius: 8px; display: flex; align-items: center; justify-content: center; pointer-events: none;">
                         <MudText Typo="Typo.body2" Color="Color.Surface">No tasks yet</MudText>
                     </div>
 
@@ -68,16 +93,67 @@
 @code {
     [Parameter] public Guid BoardId { get; set; }
 
+    private ColumnDto? _draggedColumn;
+    private ColumnDto? _targetColumn;
+
     protected override async Task OnInitializedAsync()
     {
         Store.StateChanged += StateHasChanged;
-
         await Store.LoadAsync(BoardId);
     }
 
     public void Dispose()
     {
         Store.StateChanged -= StateHasChanged;
+    }
+
+    private void HandleDragStart(ColumnDto column)
+    {
+        _draggedColumn = column;
+    }
+
+    private void HandleDragEnter(ColumnDto column)
+    {
+        if (_draggedColumn != null && _draggedColumn.Id != column.Id)
+        {
+            _targetColumn = column;
+        }
+    }
+
+    private async Task HandleDrop(ColumnDto column)
+    {
+        if (_draggedColumn == null || _targetColumn == null || _draggedColumn.Id == _targetColumn.Id)
+        {
+            HandleDragEnd();
+            return;
+        }
+
+        var columnToMoveId = _draggedColumn.Id;
+        var newPosition = _targetColumn.Position;
+        
+        HandleDragEnd(); 
+
+        try
+        {
+            await Store.ReorderColumnsAsync(columnToMoveId, newPosition);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to move column: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void HandleDragEnd()
+    {
+        _draggedColumn = null;
+        _targetColumn = null;
+    }
+
+    private string GetDragClass(ColumnDto column)
+    {
+        if (_draggedColumn?.Id == column.Id) return "column-drag-active";
+        if (_targetColumn?.Id == column.Id) return "column-drop-target";
+        return string.Empty;
     }
 
     private async Task OpenCreateColumnDialog()
@@ -125,8 +201,8 @@
     private async Task DeleteColumn(ColumnDto column)
     {
         bool? result = await DialogService.ShowMessageBoxAsync(
-            "Delete Column",
-            $"Are you sure you want to delete '{column.Name}'?",
+            "Delete Column", 
+            $"Are you sure you want to delete '{column.Name}'?", 
             yesText: "Delete", cancelText: "Cancel");
 
         if (result == true)
@@ -139,23 +215,6 @@
             catch (Exception ex)
             {
                 Snackbar.Add(ex.Message, Severity.Error);
-            }
-        }
-    }
-
-    private async Task MoveColumn(ColumnDto column, int offset)
-    {
-        var newPosition = column.Position + offset;
-
-        if (newPosition >= 0 && newPosition < Store.Board!.Columns.Count())
-        {
-            try
-            {
-                await Store.ReorderColumnsAsync(column.Id, newPosition);
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add($"Failed to move column: {ex.Message}", Severity.Error);
             }
         }
     }
