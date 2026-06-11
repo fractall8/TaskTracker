@@ -2,9 +2,9 @@
 
 public abstract class BaseEntity<TId> : IAuditableEntity
 {
-    public TId Id { get; set; }
+    public TId Id { get; set; } = default!;
     
-    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.Now;
     
     public Guid? CreatedById { get; set; }
 

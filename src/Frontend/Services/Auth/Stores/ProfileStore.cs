@@ -11,7 +11,7 @@ internal sealed class ProfileStore(IAuthApiService authApiService) : IProfileSto
 
     private Task? _inFlightLoad;
 
-    public UserWithRolesDto? Profile { get; private set; }
+    public UserWithRoleDto? Profile { get; private set; }
     public bool IsLoading { get; private set; }
     public bool IsLoaded { get; private set; }
     public bool RequiresLogin { get; private set; }

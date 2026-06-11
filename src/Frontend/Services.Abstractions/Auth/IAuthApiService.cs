@@ -5,7 +5,7 @@ namespace Services.Abstractions.Auth;
 
 public interface IAuthApiService
 {
-    Task<UserWithRolesDto> LoginAsync(CancellationToken ct = default);
+    Task<UserWithRoleDto> LoginAsync(CancellationToken ct = default);
     
-    Task<UserWithRolesDto?> GetCurrentUserAsync(CancellationToken ct = default);
+    Task<UserWithRoleDto?> GetCurrentUserAsync(CancellationToken ct = default);
 }

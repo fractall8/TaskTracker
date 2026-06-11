@@ -2,13 +2,13 @@
 
 public class Column : BaseEntity<Guid>
 {
-    public string Name { get; set; }
+    public required string Name { get; set; }
     
     public int Position { get; set; }
     
-    public Guid BoardId { get; set; }
+    public required Guid BoardId { get; init; }
     
-    public Board Board { get; set; }
+    public Board? Board { get; set; }
     
     public ICollection<TaskItem> Tasks { get; set; } = [];
 }

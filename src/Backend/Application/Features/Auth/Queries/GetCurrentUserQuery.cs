@@ -5,14 +5,14 @@ using MediatR;
 
 namespace Application.Features.Auth.Queries;
 
-public record GetCurrentUserQuery : IRequest<UserWithRolesDto?>;
+public record GetCurrentUserQuery : IRequest<UserDto?>;
 
 public class GetCurrentUserQueryHandler(
     ICurrentUserAccessor currentUser,
     IUserRepository userRepository)
-    : IRequestHandler<GetCurrentUserQuery, UserWithRolesDto?>
+    : IRequestHandler<GetCurrentUserQuery, UserDto?>
 {
-    public async Task<UserWithRolesDto?> Handle(GetCurrentUserQuery request, CancellationToken ct)
+    public async Task<UserDto?> Handle(GetCurrentUserQuery request, CancellationToken ct)
     {
         var userDto = await userRepository.GetUserByAzureAdIdAsync(
             currentUser.AzureAdObjectId,
@@ -24,13 +24,10 @@ public class GetCurrentUserQueryHandler(
             return null;
         }
 
-        var rolesFromToken = currentUser.AppRoles ?? [];
-
-        var userWithRoles = new UserWithRolesDto(
+        var userWithRoles = new UserDto(
             userDto.Id,
             userDto.Email,
-            userDto.DisplayName,
-            rolesFromToken
+            userDto.DisplayName
         );
 
         return userWithRoles;

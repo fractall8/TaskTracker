@@ -4,7 +4,7 @@ namespace Services.Abstractions.Auth;
 
 public interface IProfileStore
 {
-    UserWithRolesDto? Profile { get; }
+    UserWithRoleDto? Profile { get; }
     bool IsLoading { get; }
     bool IsLoaded { get; }
 

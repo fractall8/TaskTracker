@@ -6,6 +6,7 @@ namespace Persistence.Contexts;
 public class TaskTrackerDbContext(DbContextOptions options) : DbContext(options)
 {
     public DbSet<Board> Boards { get; set; }
+    public DbSet<BoardMember> BoardMembers { get; set; }
     public DbSet<Column> Columns { get; set; }
     public DbSet<TaskItem> Tasks { get; set; }
     public DbSet<User> Users { get; set; }

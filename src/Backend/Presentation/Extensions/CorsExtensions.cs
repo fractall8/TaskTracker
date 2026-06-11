@@ -7,7 +7,7 @@ public static class CorsExtensions
 {
     public static IServiceCollection AddPresentationCors(this IServiceCollection services, IConfiguration configuration)
     {
-        var frontendOptions = configuration.GetSection("Frontend").Get<FrontendOptions>();
+        var frontendOptions = configuration.GetSection(FrontendOptions.SectionName).Get<FrontendOptions>();
         var origins = frontendOptions?.AllowedOrigins;
 
         services.AddCors(options =>

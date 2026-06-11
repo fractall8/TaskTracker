@@ -8,13 +8,13 @@ namespace Persistence.Repositories;
 public class Repository<TEntity, TId> : IRepository<TEntity, TId> where TEntity : BaseEntity<TId>
 {
     // might be used in derived classes 
-    protected readonly TaskTrackerDbContext _context;
+    protected readonly TaskTrackerDbContext _dbContext;
     protected readonly DbSet<TEntity> _dbSet;
 
     public Repository(TaskTrackerDbContext dbContext)
     {
-        _context = dbContext;
-        _dbSet = _context.Set<TEntity>();
+        _dbContext = dbContext;
+        _dbSet = _dbContext.Set<TEntity>();
     }
     
     public async Task<TEntity?> GetByIdAsync(TId id, CancellationToken cancellationToken = default)

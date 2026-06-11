@@ -17,6 +17,16 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
             .HasForeignKey(t => t.ColumnId)
             .OnDelete(DeleteBehavior.Cascade);
         
+        builder.HasOne(t => t.Assignee)
+            .WithMany()
+            .HasForeignKey(t => t.AssigneeId)
+            .OnDelete(DeleteBehavior.SetNull); 
+
+        builder.HasOne(t => t.Reporter)
+            .WithMany()
+            .HasForeignKey(t => t.ReporterId)
+            .OnDelete(DeleteBehavior.Restrict);
+        
         builder.HasQueryFilter(e => !e.IsDeleted);
         
         builder.ToTable(t => t.HasCheckConstraint("CK_TaskItems_Position", "\"Position\" >= 0"));
