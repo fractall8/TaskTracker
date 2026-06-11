@@ -114,7 +114,10 @@
                             <MudTooltip Text="Delete Board">
                                 <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteBoard(board))" />
                             </MudTooltip>
-                            <MudButton Variant="Variant.Text" Color="Color.Primary" Class="ml-2">Open</MudButton>
+                            
+                            <MudButton Href="@($"/boards/{board.Id}")" Variant="Variant.Text" Color="Color.Primary" Class="ml-2">
+                                Open
+                            </MudButton>
                         </MudCardActions>
                     </MudCard>
                 </MudItem>

@@ -27,6 +27,14 @@ public class BoardsController(ISender sender) : ControllerBase
 
         return Ok(result);
     }
+    
+    [HttpGet("{id:guid}")] 
+    public async Task<ActionResult<BoardWithColumnsDto>> GetById([FromRoute] Guid id)
+    {
+        var query = new GetBoardByIdQuery(id);
+        var result = await sender.Send(query);
+        return Ok(result);
+    }
 
     [HttpPost]
     public async Task<ActionResult<BoardDto>> CreateBoard(

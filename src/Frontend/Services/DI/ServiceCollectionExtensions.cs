@@ -3,11 +3,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Refit;
 using Services.Abstractions.Auth;
 using Services.Abstractions.Boards;
+using Services.Abstractions.Columns;
 using Services.Api;
 using Services.Auth;
 using Services.Auth.Stores;
 using Services.Boards;
 using Services.Boards.Stores;
+using Services.Columns;
 using Services.Configuration;
 
 namespace Services.DI;
@@ -28,12 +30,19 @@ public static class ServiceCollectionExtensions
         services.AddRefitClient<IBoardApi>()
             .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
             .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
+        
+        services.AddRefitClient<IColumnsApi>()
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
+            .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
 
         services.AddScoped<IAuthApiService, AuthApiService>();
         services.AddScoped<IProfileStore, ProfileStore>();
         
         services.AddScoped<IBoardApiService, BoardApiService>();
         services.AddScoped<IBoardStore, BoardStore>();
+        
+        services.AddScoped<IColumnApiService, ColumnApiService>();
+        services.AddScoped<IBoardDetailsStore, BoardDetailsStore>();
         
         return services;
     }

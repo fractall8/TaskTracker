@@ -47,6 +47,18 @@
     depends_on:
       - postgres-db
       - azurite
+    develop:
+      watch:
+        - action: rebuild
+          path: ./src/Backend/Presentation
+          ignore:
+            - bin/
+            - obj/
+        - action: rebuild
+          path: ./src/Shared/Contracts
+          ignore:
+            - bin/
+            - obj/
     
   frontend:
     image: tasktracker-frontend
@@ -62,6 +74,18 @@
       - API_CLIENT_SCOPES=api://${AZURE_CLIENT_ID}/access_as_user
     depends_on:
       - api
+    develop:
+      watch:
+        - action: rebuild
+          path: ./src/Frontend/WebApp
+          ignore:
+            - bin/
+            - obj/
+        - action: rebuild
+          path: ./src/Shared/Contracts
+          ignore:
+            - bin/
+            - obj/
       
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite

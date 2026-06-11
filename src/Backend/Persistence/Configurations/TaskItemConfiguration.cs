@@ -28,6 +28,9 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
             .HasForeignKey(t => t.ReporterId)
             .OnDelete(DeleteBehavior.Restrict);
         
+        builder.Property(t => t.DueDate)
+            .IsRequired(false);
+        
         builder.HasQueryFilter(e => !e.IsDeleted);
         
         builder.ToTable(t => t.HasCheckConstraint("CK_TaskItems_Position", "\"Position\" >= 0"));
