@@ -2,6 +2,7 @@
 using Application.Interfaces.Services;
 using Contracts.DTOs;
 using Domain.Authorization;
+using Domain.Constants;
 using FluentValidation;
 using MediatR;
 
@@ -76,6 +77,6 @@ public class UpdateColumnCommandValidator : AbstractValidator<UpdateColumnComman
 
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("Column name is required.")
-            .MaximumLength(50).WithMessage("Column name must not exceed 50 characters.");
+            .MaximumLength(ColumnConstants.MaxNameLength).WithMessage("Column name must not exceed 50 characters.");
     }
 }

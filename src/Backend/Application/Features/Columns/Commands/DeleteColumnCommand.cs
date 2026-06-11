@@ -52,6 +52,7 @@ public class DeleteColumnCommandHandler(
         var positionToShift = column.Position;
         
         // Will deal with tasks there later
+        // TODO: deal with tasks in next pr
         columnRepository.Delete(column); 
         await unitOfWork.SaveChangesAsync(ct);
 

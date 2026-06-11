@@ -67,6 +67,6 @@ public class GetBoardsQueryValidator : AbstractValidator<GetBoardsQuery>
             .InclusiveBetween(1, paginationOptions.MaxPageSize).WithMessage($"Page size must be between 1 and {paginationOptions.MaxPageSize}.");
 
         RuleFor(v => v.SearchTerm)
-            .MaximumLength(100).WithMessage("Search term must not exceed 100 characters.");
+            .MaximumLength(paginationOptions.MaxSearchTermLength).WithMessage("Search term must not exceed 100 characters.");
     }
 }
