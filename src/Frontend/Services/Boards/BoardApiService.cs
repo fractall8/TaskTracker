@@ -1,4 +1,5 @@
 ﻿using Contracts.DTOs;
+using Contracts.Requests;
 using Services.Abstractions.Boards;
 using Services.Api;
 

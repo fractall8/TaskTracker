@@ -1,4 +1,5 @@
 ﻿using Contracts.DTOs;
+using Contracts.Requests;
 using Refit;
 
 namespace Services.Api;
