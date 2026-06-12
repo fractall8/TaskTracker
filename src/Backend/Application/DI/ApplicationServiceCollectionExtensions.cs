@@ -1,5 +1,7 @@
 ﻿using System.Reflection;
 using Application.Behaviors;
+using Application.Interfaces.Services;
+using Application.Services;
 using Application.Settings;
 using FluentValidation;
 using MediatR;
@@ -25,6 +27,8 @@ public static class ApplicationServiceCollectionExtensions
         });
         
         services.AddValidatorsFromAssembly(executingAssembly);
+        
+        services.AddScoped<IBoardAccessService, BoardAccessService>();
         
         return services;
     }

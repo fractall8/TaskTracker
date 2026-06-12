@@ -1,6 +1,5 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Services;
-using Domain.Authorization;
 using FluentValidation;
 using MediatR;
 
@@ -9,32 +8,13 @@ namespace Application.Features.Boards.Commands;
 public record DeleteBoardCommand(Guid BoardId) : IRequest;
 
 public class DeleteBoardCommandHandler(
-    ICurrentUserAccessor currentUserAccessor,
-    IUserRepository userRepository,
+    IBoardAccessService boardAccessService,
     IBoardRepository boardRepository,
     IUnitOfWork unitOfWork) : IRequestHandler<DeleteBoardCommand>
 {
     public async Task Handle(DeleteBoardCommand request, CancellationToken ct)
     {
-        var currentUserId =
-            await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => (Guid?)u.Id, ct);
-
-        if (currentUserId == null)
-        {
-            throw new UnauthorizedAccessException("User is not authenticated");
-        }
-
-        var userRole = await boardRepository.GetUserRoleAsync(request.BoardId, currentUserId.Value, ct);
-
-        if (userRole == null)
-        {
-            throw new UnauthorizedAccessException("You are not a member of this board.");
-        }
-        
-        if (BoardRolePermissions.CanDeleteBoard(userRole.Value))
-        {
-            throw new UnauthorizedAccessException("You don't have permission to edit this board.");
-        }
+        await boardAccessService.EnsureCanDeleteBoardAsync(request.BoardId, ct);
 
         var board = await boardRepository.GetByIdAsync(request.BoardId, ct)
                     ?? throw new KeyNotFoundException($"Board with ID {request.BoardId} not found.");

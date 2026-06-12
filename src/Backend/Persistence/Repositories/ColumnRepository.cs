@@ -10,13 +10,13 @@ public class ColumnRepository(TaskTrackerDbContext dbContext)
 {
     public async Task<IEnumerable<string>> GetNameListByBoardIdAsync(Guid boardId, CancellationToken ct = default)
     {
-        return await _dbContext.Columns.Where(c => c.BoardId == boardId && !c.IsDeleted).Select(c => c.Name)
+        return await DbContext.Columns.Where(c => c.BoardId == boardId && !c.IsDeleted).Select(c => c.Name)
             .ToListAsync(ct);
     }
 
     public async Task DecrementPositionsAsync(Guid boardId, int startingFromPosition, CancellationToken ct)
     {
-        await _dbContext.Columns
+        await DbContext.Columns
             .Where(c => c.BoardId == boardId && c.Position > startingFromPosition)
             .ExecuteUpdateAsync(s => s.SetProperty(c => c.Position, c => c.Position - 1), ct);
     }
@@ -26,13 +26,13 @@ public class ColumnRepository(TaskTrackerDbContext dbContext)
     {
         if (oldPosition < newPosition)
         {
-            await _dbContext.Columns
+            await DbContext.Columns
                 .Where(c => c.BoardId == boardId && c.Position > oldPosition && c.Position <= newPosition)
                 .ExecuteUpdateAsync(s => s.SetProperty(c => c.Position, c => c.Position - 1), ct);
         }
         else if (oldPosition > newPosition)
         {
-            await _dbContext.Columns
+            await DbContext.Columns
                 .Where(c => c.BoardId == boardId && c.Position >= newPosition && c.Position < oldPosition)
                 .ExecuteUpdateAsync(s => s.SetProperty(c => c.Position, c => c.Position + 1), ct);
         }

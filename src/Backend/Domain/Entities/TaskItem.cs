@@ -10,7 +10,7 @@ public class TaskItem : BaseEntity<Guid>
     
     public DateTimeOffset? DueDate { get; set; }
  
-    public required Guid ColumnId { get; init; }
+    public required Guid ColumnId { get; set; }
     
     public Guid? AssigneeId { get; set; }
     

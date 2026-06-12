@@ -1,49 +1,37 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
-using Domain.Authorization;
 using Domain.Constants;
 using FluentValidation;
 using MediatR;
 
 namespace Application.Features.Columns.Commands;
 
-public record UpdateColumnCommand(Guid ColumnId, string Name) : IRequest<ColumnDto>;
+public record UpdateColumnCommand(Guid BoardId, Guid ColumnId, string Name) : IRequest<ColumnDto>;
 
 public class UpdateColumnCommandHandler(
-    ICurrentUserAccessor currentUserAccessor,
-    IUserRepository userRepository,
-    IBoardRepository boardRepository,
+    IBoardAccessService boardAccessService,
     IColumnRepository columnRepository,
     IUnitOfWork unitOfWork)
     : IRequestHandler<UpdateColumnCommand, ColumnDto>
 {
     public async Task<ColumnDto> Handle(UpdateColumnCommand request, CancellationToken ct)
     {
+        await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, ct);
+
         var column = await columnRepository.GetByIdAsync(request.ColumnId, ct);
-        if (column is null)
+        
+        if (column == null)
         {
             throw new KeyNotFoundException($"Column {request.ColumnId} does not exist");
         }
 
-        var currentUserId = await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => (Guid?)u.Id, ct);
-
-        if (currentUserId == null)
+        if (column.BoardId != request.BoardId)
         {
-            throw new UnauthorizedAccessException("User is not authenticated");
+            throw new KeyNotFoundException("Column not found on this board.");
         }
-
-        var userRole = await boardRepository.GetUserRoleAsync(column.BoardId, currentUserId.Value, ct);
-
-        if (userRole == null)
-        {
-            throw new UnauthorizedAccessException("You are not a member of this board.");
-        }
-
-        if (!BoardRolePermissions.CanManageColumns(userRole.Value))
-        {
-            throw new UnauthorizedAccessException("You don't have permission to manage columns in this board.");
-        }
+        
+        await boardAccessService.EnsureCanManageTasksAsync(request.ColumnId, ct);
 
         if (!string.Equals(column.Name, request.Name, StringComparison.OrdinalIgnoreCase))
         {
@@ -72,6 +60,9 @@ public class UpdateColumnCommandValidator : AbstractValidator<UpdateColumnComman
 {
     public UpdateColumnCommandValidator()
     {
+        RuleFor(x => x.BoardId)
+            .NotEmpty().WithMessage("BoardId is required.");
+        
         RuleFor(x => x.ColumnId)
             .NotEmpty().WithMessage("Column ID is required.");
 
