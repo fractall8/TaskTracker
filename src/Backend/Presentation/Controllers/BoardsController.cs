@@ -2,6 +2,7 @@
 using Application.Features.Boards.Queries;
 using Application.Options;
 using Contracts.DTOs;
+using Contracts.Requests;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -24,6 +25,14 @@ public class BoardsController(ISender sender) : ControllerBase
         
         var result = await sender.Send(new GetBoardsQuery(pageNumber, resolvedPageSize, searchTerm), ct);
 
+        return Ok(result);
+    }
+    
+    [HttpGet("{id:guid}")] 
+    public async Task<ActionResult<BoardWithColumnsDto>> GetById([FromRoute] Guid id)
+    {
+        var query = new GetBoardByIdQuery(id);
+        var result = await sender.Send(query);
         return Ok(result);
     }
 

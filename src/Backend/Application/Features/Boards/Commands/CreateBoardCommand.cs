@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
+using Domain.Constants;
 using Domain.Entities;
 using Domain.Enums;
 using FluentValidation;
@@ -68,9 +69,9 @@ public class CreateBoardCommandValidator : AbstractValidator<CreateBoardCommand>
     {
         RuleFor(v => v.Name)
             .NotEmpty().WithMessage("Board name is required.")
-            .MaximumLength(100).WithMessage("Board name must not exceed 100 characters.");
+            .MaximumLength(BoardConstants.MaxNameLength).WithMessage("Board name must not exceed 100 characters.");
 
         RuleFor(v => v.Description)
-            .MaximumLength(500).WithMessage("Description must not exceed 500 characters.");
+            .MaximumLength(BoardConstants.MaxDescriptionLength).WithMessage("Description must not exceed 500 characters.");
     }
 }

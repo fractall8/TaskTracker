@@ -1,6 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Services;
-using Domain.Enums;
+using Domain.Authorization;
 using FluentValidation;
 using MediatR;
 
@@ -14,8 +14,6 @@ public class DeleteBoardCommandHandler(
     IBoardRepository boardRepository,
     IUnitOfWork unitOfWork) : IRequestHandler<DeleteBoardCommand>
 {
-    private readonly List<BoardRole> _allowedRoles = [BoardRole.Admin];
-    
     public async Task Handle(DeleteBoardCommand request, CancellationToken ct)
     {
         var currentUserId =
@@ -33,7 +31,7 @@ public class DeleteBoardCommandHandler(
             throw new UnauthorizedAccessException("You are not a member of this board.");
         }
         
-        if (!_allowedRoles.Contains(userRole.Value))
+        if (BoardRolePermissions.CanDeleteBoard(userRole.Value))
         {
             throw new UnauthorizedAccessException("You don't have permission to edit this board.");
         }

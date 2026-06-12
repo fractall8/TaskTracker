@@ -1,0 +1,87 @@
+﻿@using System.ComponentModel.DataAnnotations
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@(string.IsNullOrEmpty(InitialName) ? Icons.Material.Filled.Add : Icons.Material.Filled.Edit)" Class="mr-2 mb-n1"/>
+            @(string.IsNullOrEmpty(InitialName) ? "New Column" : "Edit Column")
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form" ValidationDelay="0">
+            <MudTextField @bind-Value="_model.Name" 
+                          For="@(() => _model.Name)" 
+                          Label="Column Name" 
+                          Required="true" 
+                          RequiredError="Name is required" 
+                          MaxLength="50" 
+                          AutoFocus="true"
+                          OnKeyDown="HandleKeyDown"
+                          Class="mb-3" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    // Повернули правильний інтерфейс
+    [CascadingParameter] 
+    public IMudDialogInstance? MudDialog { get; set; }
+
+    [Parameter] 
+    public string? InitialName { get; set; } 
+
+    private MudForm? _form;
+    private ColumnFormModel _model = new();
+    
+    protected override void OnInitialized()
+    {
+        if (!string.IsNullOrWhiteSpace(InitialName))
+        {
+            _model.Name = InitialName;
+        }
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _form != null)
+        {
+            // Give the UI a tiny fraction of a second to finish focusing and binding
+            await Task.Delay(50); 
+            await _form.ResetValidationAsync();
+        }
+    }
+
+    private void Cancel() => MudDialog?.Cancel();
+
+    private async Task Submit()
+    {
+        if (_form is not null)
+        {
+            await _form.ValidateAsync();
+            
+            if (_form.IsValid)
+            {
+                MudDialog?.Close(DialogResult.Ok(_model.Name.Trim()));
+            }
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await Submit();
+        }
+    }
+
+    public class ColumnFormModel
+    {
+        [Required]
+        [MaxLength(50)]
+        public string Name { get; set; } = string.Empty;
+    }
+}

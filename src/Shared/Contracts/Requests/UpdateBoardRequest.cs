@@ -1,4 +1,4 @@
-﻿namespace Contracts.DTOs;
+﻿namespace Contracts.Requests;
 
 public record UpdateBoardRequest(
     string Name, 

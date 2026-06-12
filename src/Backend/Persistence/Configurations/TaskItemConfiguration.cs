@@ -1,4 +1,5 @@
-﻿using Domain.Entities;
+﻿using Domain.Constants;
+using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,7 +11,7 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
     {
         builder.ToTable("Tasks");
         builder.HasKey(e => e.Id);
-        builder.Property(e => e.Title).IsRequired().HasMaxLength(200);
+        builder.Property(e => e.Title).IsRequired().HasMaxLength(TaskItemConstants.MaxTitleLength);
         
         builder.HasOne(t => t.Column)
             .WithMany(c => c.Tasks)
@@ -26,6 +27,9 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
             .WithMany()
             .HasForeignKey(t => t.ReporterId)
             .OnDelete(DeleteBehavior.Restrict);
+        
+        builder.Property(t => t.DueDate)
+            .IsRequired(false);
         
         builder.HasQueryFilter(e => !e.IsDeleted);
         

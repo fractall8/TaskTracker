@@ -1,4 +1,5 @@
-﻿using Domain.Entities;
+﻿using Domain.Constants;
+using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,7 +11,7 @@ public class ColumnConfiguration : IEntityTypeConfiguration<Column>
     {
         builder.ToTable("Columns");
         builder.HasKey(e => e.Id);
-        builder.Property(e => e.Name).IsRequired().HasMaxLength(50);
+        builder.Property(e => e.Name).IsRequired().HasMaxLength(ColumnConstants.MaxNameLength);
         
         builder.HasOne(c => c.Board)
             .WithMany(b => b.Columns)

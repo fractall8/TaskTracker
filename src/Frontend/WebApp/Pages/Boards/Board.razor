@@ -1,0 +1,221 @@
+﻿@page "/boards/{BoardId:guid}"
+@implements IDisposable
+@using Contracts.DTOs
+@using WebApp.Shared.Dialogs
+@inject IBoardDetailsStore Store
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<style>
+    .column-grab {
+        cursor: grab;
+        transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out; 
+    }
+    .column-grab:active {
+        cursor: grabbing;
+    }
+    .column-drag-active {
+        opacity: 0.6;
+        transform: scale(0.98);
+    }
+    .column-drop-target {
+        border: 2px dashed var(--mud-palette-primary) !important;
+        background-color: transparent !important; 
+        opacity: 0.8;
+    }
+</style>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4 pb-8">
+    @if (Store.IsLoading)
+    {
+        <div class="d-flex justify-center align-center" style="height: 50vh;">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(Store.ErrorMessage))
+    {
+        <MudAlert Severity="Severity.Error" Class="mt-4">@Store.ErrorMessage</MudAlert>
+    }
+    else if (Store.Board != null)
+    {
+        <div class="d-flex align-center mb-6">
+            <MudText Typo="Typo.h4" Class="fw-bold">@Store.Board.Name</MudText>
+            <MudSpacer />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" @onclick="OpenCreateColumnDialog">
+                Add Column
+            </MudButton>
+        </div>
+
+        <div class="d-flex flex-row gap-4 overflow-x-auto pb-4" style="min-height: 70vh; align-items: flex-start; flex-wrap: nowrap;">
+            
+            @foreach (var column in Store.Board.Columns)
+            {
+                <MudPaper Elevation="1" 
+                          Class="@($"pa-4 d-flex flex-column rounded-lg column-grab {GetDragClass(column)}")" 
+                          Width="320px" 
+                          Style="flex-shrink: 0; background-color: #f4f5f7;"
+                          draggable="true"
+                          @ondragstart="@(() => HandleDragStart(column))"
+                          @ondragenter="@(() => HandleDragEnter(column))"
+                          @ondragover:preventDefault="true"
+                          @ondrop="@(() => HandleDrop(column))"
+                          @ondragend="HandleDragEnd">
+                    
+                    <div class="d-flex justify-space-between align-center mb-3">
+                        <MudText Typo="Typo.h6" Style="font-weight: 600; pointer-events: none;">@column.Name</MudText>
+                        
+                        <MudMenu Icon="@Icons.Material.Filled.MoreHoriz" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Dense="true">
+                            <MudMenuItem OnClick="@(() => OpenEditColumnDialog(column))" Icon="@Icons.Material.Filled.Edit">Edit</MudMenuItem>
+                            <MudMenuItem OnClick="@(() => DeleteColumn(column))" Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error">Delete</MudMenuItem>
+                        </MudMenu>
+                    </div>
+
+                    <div class="flex-grow-1" style="min-height: 80px; border: 2px dashed #e0e0e0; border-radius: 8px; display: flex; align-items: center; justify-content: center; pointer-events: none;">
+                        <MudText Typo="Typo.body2" Color="Color.Surface">No tasks yet</MudText>
+                    </div>
+
+                    <MudButton StartIcon="@Icons.Material.Filled.Add" FullWidth="true" Class="mt-3 text-start" Style="justify-content: flex-start; color: #5e6c84;">
+                        Add a card
+                    </MudButton>
+                </MudPaper>
+            }
+
+            @if (!Store.Board.Columns.Any())
+            {
+                <MudPaper Elevation="0" Class="pa-4 d-flex justify-center align-center rounded-lg" Width="320px" Style="flex-shrink: 0; border: 2px dashed #ccc; background: transparent; cursor: pointer;" @onclick="OpenCreateColumnDialog">
+                    <MudText Typo="Typo.body1" Color="Color.Primary">+ Create your first column</MudText>
+                </MudPaper>
+            }
+        </div>
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public Guid BoardId { get; set; }
+
+    private ColumnDto? _draggedColumn;
+    private ColumnDto? _targetColumn;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Store.StateChanged += StateHasChanged;
+        await Store.LoadAsync(BoardId);
+    }
+
+    public void Dispose()
+    {
+        Store.StateChanged -= StateHasChanged;
+    }
+
+    private void HandleDragStart(ColumnDto column)
+    {
+        _draggedColumn = column;
+    }
+
+    private void HandleDragEnter(ColumnDto column)
+    {
+        if (_draggedColumn != null && _draggedColumn.Id != column.Id)
+        {
+            _targetColumn = column;
+        }
+    }
+
+    private async Task HandleDrop(ColumnDto column)
+    {
+        if (_draggedColumn == null || _targetColumn == null || _draggedColumn.Id == _targetColumn.Id)
+        {
+            HandleDragEnd();
+            return;
+        }
+
+        var columnToMoveId = _draggedColumn.Id;
+        var newPosition = _targetColumn.Position;
+        
+        HandleDragEnd(); 
+
+        try
+        {
+            await Store.ReorderColumnsAsync(columnToMoveId, newPosition);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to move column: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void HandleDragEnd()
+    {
+        _draggedColumn = null;
+        _targetColumn = null;
+    }
+
+    private string GetDragClass(ColumnDto column)
+    {
+        if (_draggedColumn?.Id == column.Id) return "column-drag-active";
+        if (_targetColumn?.Id == column.Id) return "column-drop-target";
+        return string.Empty;
+    }
+
+    private async Task OpenCreateColumnDialog()
+    {
+        var parameters = new DialogParameters { ["InitialName"] = string.Empty };
+        var dialog = await DialogService.ShowAsync<ColumnDialog>("New Column", parameters);
+        var result = await dialog.Result;
+
+        if (!result!.Canceled)
+        {
+            try
+            {
+                var columnName = result.Data?.ToString() ?? string.Empty;
+                await Store.CreateColumnAsync(columnName);
+                Snackbar.Add("Column created successfully", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenEditColumnDialog(ColumnDto column)
+    {
+        var parameters = new DialogParameters { ["InitialName"] = column.Name };
+        var dialog = await DialogService.ShowAsync<ColumnDialog>("Edit Column", parameters);
+        var result = await dialog.Result;
+
+        if (!result!.Canceled)
+        {
+            try
+            {
+                var newName = result.Data?.ToString() ?? string.Empty;
+                await Store.UpdateColumnNameAsync(column.Id, newName);
+                Snackbar.Add("Column updated successfully", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteColumn(ColumnDto column)
+    {
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            "Delete Column", 
+            $"Are you sure you want to delete '{column.Name}'?", 
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            try
+            {
+                await Store.DeleteColumnAsync(column.Id);
+                Snackbar.Add("Column deleted", Severity.Info);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+    }
+}

@@ -9,3 +9,10 @@ html, body {
 #blazor-error-ui {
     display: none;
 }
+
+/* Dummy variables to stop IDE warnings. 
+   MudBlazor will override these at runtime anyway. */
+:root {
+    --mud-palette-primary: #594AE2;
+    --mud-palette-action-default: rgba(0,0,0, 0.54);
+}

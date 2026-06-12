@@ -1,14 +1,17 @@
 ﻿using Contracts.DTOs;
+using Contracts.Requests;
 
 namespace Services.Abstractions.Boards;
 
 public interface IBoardApiService
 {
-    Task<PagedList<BoardPreviewDto>> GetMyBoardsAsync(int pageNumber, int pageSize, string? searchTerm = null);
+    Task<PagedList<BoardPreviewDto>> GetMyBoardsAsync(int pageNumber, int pageSize, string? searchTerm = null, CancellationToken ct = default);
     
-    Task<BoardPreviewDto?> CreateBoardAsync(UpdateBoardRequest request);
+    Task<BoardWithColumnsDto> GetBoardByIdAsync(Guid boardId, CancellationToken ct = default);
     
-    Task<BoardPreviewDto?> UpdateBoardAsync(Guid id, UpdateBoardRequest request);
+    Task<BoardPreviewDto?> CreateBoardAsync(UpdateBoardRequest request, CancellationToken ct = default);
     
-    Task DeleteBoardAsync(Guid id);
+    Task<BoardPreviewDto?> UpdateBoardAsync(Guid id, UpdateBoardRequest request, CancellationToken ct = default);
+    
+    Task DeleteBoardAsync(Guid id,  CancellationToken ct = default);
 }
