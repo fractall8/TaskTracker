@@ -12,8 +12,9 @@
             <MudTextField @bind-Value="_model.Name" 
                           For="@(() => _model.Name)" 
                           Label="Column Name" 
+                          Required="true" 
+                          RequiredError="Name is required" 
                           MaxLength="50" 
-                          Immediate="true"
                           AutoFocus="true"
                           OnKeyDown="HandleKeyDown"
                           Class="mb-3" />
@@ -26,6 +27,7 @@
 </MudDialog>
 
 @code {
+    // Повернули правильний інтерфейс
     [CascadingParameter] 
     public IMudDialogInstance? MudDialog { get; set; }
 
@@ -48,7 +50,7 @@
         if (firstRender && _form != null)
         {
             // Give the UI a tiny fraction of a second to finish focusing and binding
-            await Task.Delay(10); 
+            await Task.Delay(50); 
             await _form.ResetValidationAsync();
         }
     }
@@ -78,8 +80,8 @@
 
     public class ColumnFormModel
     {
-        [Required(ErrorMessage = "Name is required")]
-        [MaxLength(50, ErrorMessage = "Name must not exceed 50 characters")]
+        [Required]
+        [MaxLength(50)]
         public string Name { get; set; } = string.Empty;
     }
 }
