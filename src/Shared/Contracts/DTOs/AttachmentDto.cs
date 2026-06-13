@@ -6,4 +6,4 @@ public record AttachmentDto(
     string FileUrl,
     long SizeInBytes,
     DateTimeOffset CreatedAt,
-    Guid UploadedById);
+    Guid? CreatedById);

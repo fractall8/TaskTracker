@@ -58,7 +58,7 @@ public class CreateTaskCommandHandler(
         
         return new TaskDto(
             task.Id, task.Title, task.Description, task.Position, task.DueDate,
-            task.ColumnId, task.AssigneeId, task.ReporterId, new(), new());
+            task.ColumnId, task.AssigneeId, task.ReporterId, new());
     }
 }
 

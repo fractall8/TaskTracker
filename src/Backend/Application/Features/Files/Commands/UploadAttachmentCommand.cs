@@ -9,6 +9,20 @@ namespace Application.Features.Files.Commands;
 
 public record UploadAttachmentCommand(Stream FileStream, string FileName, string ContentType) : IRequest<string>;
 
+public class UploadAttachmentCommandHandler(IFileService fileService) 
+    : IRequestHandler<UploadAttachmentCommand, string>
+{
+    public async Task<string> Handle(UploadAttachmentCommand request, CancellationToken cancellationToken)
+    {
+        return await fileService.UploadFileAsync(
+            request.FileStream,
+            request.FileName,
+            request.ContentType,
+            BlobContainerNames.Attachments,
+            cancellationToken);
+    }
+}
+
 public class UploadAttachmentCommandValidator : AbstractValidator<UploadAttachmentCommand>
 {
     public UploadAttachmentCommandValidator(IOptions<FileSettings> options)
@@ -23,20 +37,5 @@ public class UploadAttachmentCommandValidator : AbstractValidator<UploadAttachme
         RuleFor(x => x.FileStream.Length)
             .LessThanOrEqualTo(maxFileSizeBytes) 
             .WithMessage($"File size must not exceed {settings.MaxSizeMb} MB.");
-    }
-}
-
-
-public class UploadAttachmentCommandHandler(IFileService fileService) 
-    : IRequestHandler<UploadAttachmentCommand, string>
-{
-    public async Task<string> Handle(UploadAttachmentCommand request, CancellationToken cancellationToken)
-    {
-        return await fileService.UploadFileAsync(
-            request.FileStream,
-            request.FileName,
-            request.ContentType,
-            BlobContainerNames.Attachments,
-            cancellationToken);
     }
 }

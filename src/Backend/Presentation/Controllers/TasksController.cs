@@ -1,5 +1,6 @@
 ﻿using Application.Features.Files.Commands;
 using Application.Features.Tasks.Commands;
+using Application.Features.Tasks.Queries;
 using Contracts.DTOs;
 using Contracts.Requests;
 using MediatR;
@@ -13,6 +14,27 @@ namespace Presentation.Controllers;
 [Authorize]
 public class TasksController(ISender sender) : ControllerBase
 {
+    [HttpGet]
+    public async Task<ActionResult<List<TaskDto>>> GetAllForBoard(
+        [FromRoute] Guid boardId, 
+        CancellationToken ct)
+    {
+        var query = new GetTasksByBoardIdQuery(boardId);
+        var result = await sender.Send(query, ct);
+        return Ok(result);
+    }
+
+    [HttpGet("{taskId:guid}")]
+    public async Task<ActionResult<TaskDto>> GetById(
+        [FromRoute] Guid boardId, 
+        [FromRoute] Guid taskId, 
+        CancellationToken ct)
+    {
+        var query = new GetTaskByIdQuery(boardId, taskId);
+        var result = await sender.Send(query, ct);
+        return Ok(result);
+    }
+    
     [HttpPost("columns/{columnId:guid}")]
     public async Task<ActionResult<TaskDto>> Create(
         [FromRoute] Guid boardId,

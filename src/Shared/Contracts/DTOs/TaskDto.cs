@@ -9,5 +9,4 @@ public record TaskDto(
     Guid ColumnId,
     Guid? AssigneeId,
     Guid ReporterId,
-    List<AttachmentDto> Attachments,
-    List<CommentDto> Comments);
+    List<AttachmentDto> Attachments);
