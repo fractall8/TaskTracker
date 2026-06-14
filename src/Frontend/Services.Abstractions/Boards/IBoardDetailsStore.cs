@@ -1,4 +1,5 @@
 ﻿using Contracts.DTOs;
+using Contracts.Requests;
 
 namespace Services.Abstractions.Boards;
 
@@ -7,6 +8,8 @@ public interface IBoardDetailsStore
   Guid? BoardId { get; }
 
   BoardWithColumnsDto? Board { get; }
+  
+  List<TaskDto> Tasks { get; }
 
   bool IsLoading { get; }
 
@@ -27,4 +30,8 @@ public interface IBoardDetailsStore
   Task ReorderColumnsAsync(Guid columnId, int newPosition, CancellationToken ct = default);
 
   void UpdateBoardName(string name);
+
+  Task CreateTaskAsync(Guid columnId, CreateTaskRequest request, CancellationToken ct = default);
+
+  Task MoveTaskAsync(Guid taskId, Guid targetColumnId, int newPosition, CancellationToken ct = default);
 }

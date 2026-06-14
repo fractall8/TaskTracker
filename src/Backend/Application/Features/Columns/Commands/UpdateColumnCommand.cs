@@ -30,8 +30,6 @@ public class UpdateColumnCommandHandler(
         {
             throw new KeyNotFoundException("Column not found on this board.");
         }
-        
-        await boardAccessService.EnsureCanManageTasksAsync(request.ColumnId, ct);
 
         if (!string.Equals(column.Name, request.Name, StringComparison.OrdinalIgnoreCase))
         {

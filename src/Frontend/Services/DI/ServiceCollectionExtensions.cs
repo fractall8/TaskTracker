@@ -4,6 +4,7 @@ using Refit;
 using Services.Abstractions.Auth;
 using Services.Abstractions.Boards;
 using Services.Abstractions.Columns;
+using Services.Abstractions.Tasks;
 using Services.Api;
 using Services.Auth;
 using Services.Auth.Stores;
@@ -11,6 +12,7 @@ using Services.Boards;
 using Services.Boards.Stores;
 using Services.Columns;
 using Services.Configuration;
+using Services.Tasks;
 
 namespace Services.DI;
 
@@ -34,6 +36,10 @@ public static class ServiceCollectionExtensions
         services.AddRefitClient<IColumnsApi>()
             .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
             .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
+        
+        services.AddRefitClient<ITasksApi>()
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
+            .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
 
         services.AddScoped<IAuthApiService, AuthApiService>();
         services.AddScoped<IProfileStore, ProfileStore>();
@@ -42,6 +48,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBoardStore, BoardStore>();
         
         services.AddScoped<IColumnApiService, ColumnApiService>();
+        services.AddScoped<ITaskApiService, TasksApiService>();
         services.AddScoped<IBoardDetailsStore, BoardDetailsStore>();
         
         return services;
