@@ -17,29 +17,16 @@
         <MudMenu Icon="@Icons.Material.Filled.MoreHoriz" AnchorOrigin="Origin.BottomRight"
                  TransformOrigin="Origin.TopRight" Dense="true">
             <MudMenuItem OnClick="HandleEditColumn" Icon="@Icons.Material.Filled.Edit">Edit</MudMenuItem>
-            <MudMenuItem OnClick="HandleDeleteColumn" Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error">
-                Delete
-            </MudMenuItem>
+            <MudMenuItem OnClick="HandleDeleteColumn" Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error">Delete</MudMenuItem>
         </MudMenu>
     </div>
 
-    <div class="d-flex flex-column gap-2 flex-grow-1 overflow-y-auto"
-         style="min-height: 10px; padding-bottom: 2px;"
-         @ondragenter="HandleEmptyColumnDragEnter"
-         @ondragover:preventDefault="true"
-         @ondrop="HandleTaskDrop"
-         @ondrop:stopPropagation="true">
+    <MudDropZone T="TaskDto" 
+                 Identifier="@Column.Id.ToString()" 
+                 AllowReorder="true"
+                 Class="d-flex flex-column flex-grow-1 overflow-y-auto"
+                 Style="min-height: 60px; padding-bottom: 2px; padding-top: 4px;" />
 
-        @foreach (var task in Tasks.OrderBy(t => t.Position))
-        {
-            <TaskCard Task="task"
-                      IsDragged="DraggedTaskId == task.Id"
-                      IsDropTarget="TargetTaskId == task.Id"
-                      OnDragStart="OnTaskDragStart"
-                      OnDragEnter="OnTaskDragEnter"/>
-        }
-    </div>
-    
     <MudButton StartIcon="@Icons.Material.Filled.Add"
                FullWidth="true"
                Class="mt-2 text-start"
@@ -51,23 +38,16 @@
 
 @code {
     [Parameter, EditorRequired] public ColumnDto Column { get; set; } = null!;
-    [Parameter, EditorRequired] public IEnumerable<TaskDto> Tasks { get; set; } = Array.Empty<TaskDto>();
-
+    
     [Parameter] public bool IsDragged { get; set; }
     [Parameter] public bool IsDropTarget { get; set; }
     [Parameter] public EventCallback<ColumnDto> OnColumnDragStart { get; set; }
     [Parameter] public EventCallback<ColumnDto> OnColumnDragEnter { get; set; }
     [Parameter] public EventCallback<ColumnDto> OnColumnDrop { get; set; }
     [Parameter] public EventCallback OnColumnDragEnd { get; set; }
+    
     [Parameter] public EventCallback<ColumnDto> OnEditColumn { get; set; }
     [Parameter] public EventCallback<ColumnDto> OnDeleteColumn { get; set; }
-
-    [Parameter] public Guid? DraggedTaskId { get; set; }
-    [Parameter] public Guid? TargetTaskId { get; set; }
-    [Parameter] public EventCallback<TaskDto> OnTaskDragStart { get; set; }
-    [Parameter] public EventCallback<TaskDto> OnTaskDragEnter { get; set; }
-    [Parameter] public EventCallback<Guid> OnEmptyColumnDragEnter { get; set; }
-    [Parameter] public EventCallback<Guid> OnTaskDrop { get; set; }
     [Parameter] public EventCallback<Guid> OnCreateTask { get; set; }
 
     private async Task HandleColumnDragStart() => await OnColumnDragStart.InvokeAsync(Column);
@@ -76,7 +56,5 @@
     private async Task HandleColumnDragEnd() => await OnColumnDragEnd.InvokeAsync();
     private async Task HandleEditColumn() => await OnEditColumn.InvokeAsync(Column);
     private async Task HandleDeleteColumn() => await OnDeleteColumn.InvokeAsync(Column);
-    private async Task HandleEmptyColumnDragEnter() => await OnEmptyColumnDragEnter.InvokeAsync(Column.Id);
-    private async Task HandleTaskDrop() => await OnTaskDrop.InvokeAsync(Column.Id);
     private async Task HandleCreateTask() => await OnCreateTask.InvokeAsync(Column.Id);
 }

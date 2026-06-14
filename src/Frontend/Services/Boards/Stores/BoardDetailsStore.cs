@@ -3,7 +3,6 @@ using Contracts.Requests;
 using Services.Abstractions.Boards;
 using Services.Abstractions.Columns;
 using Services.Abstractions.Tasks;
-using Services.Api;
 
 namespace Services.Boards.Stores;
 
@@ -168,6 +167,29 @@ public class BoardDetailsStore(IBoardApiService boardsApi, IColumnApiService col
         }
     }
 
+    public async Task UpdateTaskAsync(Guid taskId, UpdateTaskRequest request, CancellationToken ct = default)
+    {
+        if (BoardId == null) return;
+
+        var task = Tasks.FirstOrDefault(t => t.Id == taskId);
+        if (task == null) return;
+
+        var updatedTask = await tasksApi.UpdateTaskAsync(BoardId.Value, taskId, request, ct);
+
+        Tasks = Tasks.Select(t => t.Id == taskId ? updatedTask : t).ToList();
+        NotifyStateChanged();
+    }
+
+    public async Task DeleteTaskAsync(Guid taskId, CancellationToken ct = default)
+    {
+        if (BoardId == null) return;
+
+        await tasksApi.DeleteTaskAsync(BoardId.Value, taskId, ct);
+
+        Tasks = Tasks.Where(t => t.Id != taskId).ToList();
+        NotifyStateChanged();
+    }
+    
     public async Task CreateTaskAsync(Guid columnId, CreateTaskRequest request, CancellationToken ct = default)
     {
         if (BoardId == null) return;

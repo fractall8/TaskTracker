@@ -27,25 +27,6 @@
         background-color: transparent !important;
         opacity: 0.8;
     }
-
-    .task-grab {
-        cursor: grab;
-        transition: transform 0.1s;
-    }
-
-    .task-grab:active {
-        cursor: grabbing;
-    }
-
-    .task-drag-active {
-        opacity: 0.5;
-        transform: scale(0.95);
-    }
-
-    .task-drop-target {
-        border-top: 3px solid var(--mud-palette-primary);
-        margin-top: 4px;
-    }
 </style>
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4 pb-8">
@@ -61,49 +42,67 @@
     }
     else if (Store.Board != null)
     {
-        <div class="d-flex align-center mb-6">
-            <MudText Typo="Typo.h4" Class="fw-bold">@Store.Board.Name</MudText>
+        <div class="d-flex align-center mb-4 gap-4">
+            <MudText Typo="Typo.h5" Class="fw-bold text-truncate" Style="max-width: 500px; color: #172b4d;">
+                @Store.Board.Name
+            </MudText>
+
             <MudSpacer/>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
-                       @onclick="OpenCreateColumnDialog">
-                Add Column
-            </MudButton>
+
+            <MudTextField @bind-Value="_searchQuery"
+                          Placeholder="Search tasks..."
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          IconSize="Size.Small"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Clearable="true"
+                          Immediate="true"
+                          Style="max-width: 250px; background-color: white;"/>
         </div>
 
-        <div class="d-flex flex-row gap-4 overflow-x-auto pb-4"
-             style="min-height: 70vh; align-items: flex-start; flex-wrap: nowrap;">
+        <MudDropContainer T="TaskDto"
+                          Items="GetFilteredTasks()"
+                          ItemsSelector="@((item, dropzone) => item.ColumnId.ToString() == dropzone)"
+                          ItemDropped="TaskUpdated"
+                          Class="w-100">
 
-            @foreach (var column in Store.Board.Columns)
-            {
-                <BoardColumn Column="column"
-                             Tasks="Store.Tasks.Where(t => t.ColumnId == column.Id)"
-                             IsDragged="_draggedColumn?.Id == column.Id"
-                             IsDropTarget="_targetColumn?.Id == column.Id"
-                             OnColumnDragStart="HandleDragStart"
-                             OnColumnDragEnter="HandleDragEnter"
-                             OnColumnDrop="HandleDrop"
-                             OnColumnDragEnd="HandleDragEnd"
-                             OnEditColumn="OpenEditColumnDialog"
-                             OnDeleteColumn="DeleteColumn"
+            <ChildContent>
+                <div class="d-flex flex-row gap-4 overflow-x-auto pb-4"
+                     style="min-height: 70vh; align-items: flex-start; flex-wrap: nowrap;">
 
-                             DraggedTaskId="_draggedTask?.Id"
-                             TargetTaskId="_targetTask?.Id"
-                             OnTaskDragStart="HandleTaskDragStart"
-                             OnTaskDragEnter="HandleTaskDragEnter"
-                             OnEmptyColumnDragEnter="HandleEmptyColumnDragEnter"
-                             OnTaskDrop="HandleTaskDrop"
-                             OnCreateTask="OpenCreateTaskDialog"/>
-            }
+                    @foreach (var column in Store.Board.Columns)
+                    {
+                        <BoardColumn Column="column"
+                                     IsDragged="_draggedColumn?.Id == column.Id"
+                                     IsDropTarget="_targetColumn?.Id == column.Id"
+                                     OnColumnDragStart="HandleDragStart"
+                                     OnColumnDragEnter="HandleDragEnter"
+                                     OnColumnDrop="HandleDrop"
+                                     OnColumnDragEnd="HandleDragEnd"
+                                     OnEditColumn="OpenEditColumnDialog"
+                                     OnDeleteColumn="DeleteColumn"
+                                     OnCreateTask="OpenCreateTaskDialog"/>
+                    }
 
-            @if (!Store.Board.Columns.Any())
-            {
-                <MudPaper Elevation="0" Class="pa-4 d-flex justify-center align-center rounded-lg" Width="320px"
-                          Style="flex-shrink: 0; border: 2px dashed #ccc; background: transparent; cursor: pointer;"
-                          @onclick="OpenCreateColumnDialog">
-                    <MudText Typo="Typo.body1" Color="Color.Primary">+ Create your first column</MudText>
-                </MudPaper>
-            }
-        </div>
+                    <MudButton Variant="Variant.Outlined"
+                               StartIcon="@Icons.Material.Filled.Add"
+                               OnClick="OpenCreateColumnDialog"
+                               Class="rounded-lg px-4"
+                               Style="min-width: 320px; flex-shrink: 0; height: 50px; border: 2px dashed #cbd5e1; background-color: rgba(244, 245, 247, 0.5); color: #475569; justify-content: flex-start; text-transform: none; font-weight: 500;">
+                        @(Store.Board.Columns.Any() ? "Add another column" : "Add a column")
+                    </MudButton>
+
+                </div>
+            </ChildContent>
+
+            <ItemRenderer>
+                <TaskCard Task="context"
+                          OnEditClick="OpenEditTaskDialog"
+                          OnDeleteClick="ConfirmDeleteTask"/>
+            </ItemRenderer>
+
+        </MudDropContainer>
     }
 </MudContainer>
 
@@ -112,8 +111,7 @@
 
     private ColumnDto? _draggedColumn;
     private ColumnDto? _targetColumn;
-    private TaskDto? _draggedTask;
-    private TaskDto? _targetTask;
+    private string _searchQuery = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -123,6 +121,34 @@
 
     public void Dispose() => Store.StateChanged -= StateHasChanged;
 
+    private IEnumerable<TaskDto> GetFilteredTasks()
+    {
+        var tasks = Store.Tasks.OrderBy(t => t.Position).AsEnumerable();
+
+        if (string.IsNullOrWhiteSpace(_searchQuery))
+            return tasks;
+
+        return tasks.Where(t =>
+            t.Title.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+            (t.Description != null && t.Description.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private async Task TaskUpdated(MudItemDropInfo<TaskDto> dropItem)
+    {
+        var task = dropItem.Item;
+        var targetColumnId = Guid.Parse(dropItem.DropzoneIdentifier);
+        var newPosition = dropItem.IndexInZone;
+
+        try
+        {
+            await Store.MoveTaskAsync(task.Id, targetColumnId, newPosition);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to move task: {ex.Message}", Severity.Error);
+        }
+    }
+    
     private void HandleDragStart(ColumnDto column) => _draggedColumn = column;
 
     private void HandleDragEnter(ColumnDto column)
@@ -141,7 +167,6 @@
         var columnToMoveId = _draggedColumn.Id;
         var newPosition = _targetColumn.Position;
         HandleDragEnd();
-
         try
         {
             await Store.ReorderColumnsAsync(columnToMoveId, newPosition);
@@ -158,36 +183,6 @@
         _targetColumn = null;
     }
 
-    private void HandleTaskDragStart(TaskDto task) => _draggedTask = task;
-
-    private void HandleTaskDragEnter(TaskDto targetTask)
-    {
-        if (_draggedTask != null) _targetTask = targetTask;
-    }
-
-    private void HandleEmptyColumnDragEnter(Guid columnId)
-    {
-        if (_draggedTask != null) _targetTask = null;
-    }
-
-    private async Task HandleTaskDrop(Guid targetColumnId)
-    {
-        if (_draggedTask == null) return;
-        var taskToMove = _draggedTask;
-        var newPosition = _targetTask?.Position ?? Store.Tasks.Count(t => t.ColumnId == targetColumnId);
-
-        _draggedTask = null;
-        _targetTask = null;
-
-        try
-        {
-            await Store.MoveTaskAsync(taskToMove.Id, targetColumnId, newPosition);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add(ex.Message, Severity.Error);
-        }
-    }
 
     private async Task OpenCreateColumnDialog()
     {
@@ -201,7 +196,9 @@
             try
             {
                 var columnName = result.Data?.ToString() ?? string.Empty;
+
                 await Store.CreateColumnAsync(columnName);
+
                 Snackbar.Add("Column created successfully", Severity.Success);
             }
             catch (Exception ex)
@@ -211,10 +208,10 @@
         }
     }
 
+
     private async Task OpenEditColumnDialog(ColumnDto column)
     {
         var parameters = new DialogParameters { ["InitialName"] = column.Name };
-
         var dialog = await DialogService.ShowAsync<ColumnDialog>("Edit Column", parameters);
         var result = await dialog.Result;
 
@@ -223,7 +220,9 @@
             try
             {
                 var newName = result.Data?.ToString() ?? string.Empty;
+
                 await Store.UpdateColumnNameAsync(column.Id, newName);
+
                 Snackbar.Add("Column updated successfully", Severity.Success);
             }
             catch (Exception ex)
@@ -232,6 +231,7 @@
             }
         }
     }
+
 
     private async Task DeleteColumn(ColumnDto column)
     {
@@ -245,6 +245,7 @@
             try
             {
                 await Store.DeleteColumnAsync(column.Id);
+
                 Snackbar.Add("Column deleted", Severity.Info);
             }
             catch (Exception ex)
@@ -254,17 +255,22 @@
         }
     }
 
+
     private async Task OpenCreateTaskDialog(Guid columnId)
     {
         var options = new DialogOptions
         {
             CloseOnEscapeKey = true,
+
             MaxWidth = MaxWidth.Small,
+
             FullWidth = true,
+
             CloseButton = true
         };
 
         var dialog = await DialogService.ShowAsync<TaskDialog>("Create Task", options);
+
         var result = await dialog.Result;
 
         if (!result!.Canceled)
@@ -272,10 +278,70 @@
             try
             {
                 var request = (CreateTaskRequest)result.Data!;
+
                 await Store.CreateTaskAsync(columnId, request);
+
                 Snackbar.Add("Task created successfully", Severity.Success);
             }
             catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+    }
+
+
+    private async Task ConfirmDeleteTask(TaskDto task)
+    {
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            "Delete Task",
+            $"Are you sure you want to delete '{task.Title}'?",
+            yesText: "Delete", cancelText: "Cancel");
+
+
+        if (result == true)
+        {
+            try
+            {
+                await Store.DeleteTaskAsync(task.Id);
+
+                Snackbar.Add("Task deleted", Severity.Info);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+    }
+
+
+    private async Task OpenEditTaskDialog(TaskDto task)
+    {
+        var parameters = new DialogParameters { ["Task"] = task };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+
+
+        var dialog = await DialogService.ShowAsync<EditTaskDialog>("Edit Task", parameters, options);
+
+        var result = await dialog.Result;
+
+
+        if (!result!.Canceled)
+        {
+            try
+            {
+                if (result.Data is UpdateTaskRequest request)
+
+                {
+                    await Store.UpdateTaskAsync(task.Id, request);
+
+                    Snackbar.Add("Task updated", Severity.Success);
+                }
+            }
+
+            catch (Exception ex)
+
             {
                 Snackbar.Add(ex.Message, Severity.Error);
             }

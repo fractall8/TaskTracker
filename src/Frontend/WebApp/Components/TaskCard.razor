@@ -1,34 +1,36 @@
 ﻿@using Contracts.DTOs
 
-<div draggable="true"
-     class="@($"task-grab {(IsDragged ? "task-drag-active" : "")} {(IsDropTarget ? "task-drop-target" : "")}")"
-     @ondragstart="HandleDragStart"
-     @ondragstart:stopPropagation="true"
-     @ondragenter="HandleDragEnter"
-     @ondragenter:stopPropagation="true"
-     @ondragover:preventDefault="true">
+<MudPaper Elevation="0" Class="pa-2 rounded"
+          Style="border: 1px solid #e0e0e0; background-color: white; margin-bottom: 8px; cursor: grab;">
+    
+    <div class="d-flex justify-space-between align-start">
+        <div style="flex-grow: 1; padding: 4px;">
+            <MudText Typo="Typo.body2" Style="font-weight: 500;">@Task.Title</MudText>
 
-    <MudPaper Elevation="0" Class="pa-3 rounded"
-              Style="pointer-events: none; border: 1px solid #e0e0e0; background-color: white;">
-        <MudText Typo="Typo.body2" Style="font-weight: 500;">@Task.Title</MudText>
+            @if (!string.IsNullOrWhiteSpace(Task.Description))
+            {
+                <MudText Typo="Typo.caption" Class="mt-1"
+                         Style="color: #5e6c84; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap;">
+                    @Task.Description
+                </MudText>
+            }
+        </div>
 
-        @if (!string.IsNullOrWhiteSpace(Task.Description))
-        {
-            <MudText Typo="Typo.caption" Class="mt-1"
-                     Style="color: #5e6c84; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap;">
-                @Task.Description
-            </MudText>
-        }
-    </MudPaper>
-</div>
+        <div class="d-flex gap-1">
+            <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small"
+                           Style="cursor: pointer; opacity: 0.6; padding: 4px;" OnClick="HandleEditClick"/>
+            <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error"
+                           Style="cursor: pointer; opacity: 0.6; padding: 4px;" OnClick="HandleDeleteClick"/>
+        </div>
+    </div>
+</MudPaper>
 
 @code {
     [Parameter, EditorRequired] public TaskDto Task { get; set; } = null!;
-    [Parameter] public bool IsDragged { get; set; }
-    [Parameter] public bool IsDropTarget { get; set; }
-    [Parameter] public EventCallback<TaskDto> OnDragStart { get; set; }
-    [Parameter] public EventCallback<TaskDto> OnDragEnter { get; set; }
+    
+    [Parameter] public EventCallback<TaskDto> OnEditClick { get; set; }
+    [Parameter] public EventCallback<TaskDto> OnDeleteClick { get; set; }
 
-    private async Task HandleDragStart() => await OnDragStart.InvokeAsync(Task);
-    private async Task HandleDragEnter() => await OnDragEnter.InvokeAsync(Task);
+    private async Task HandleEditClick() => await OnEditClick.InvokeAsync(Task);
+    private async Task HandleDeleteClick() => await OnDeleteClick.InvokeAsync(Task);
 }

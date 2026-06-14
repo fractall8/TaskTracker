@@ -21,6 +21,18 @@ public class TasksApiService(ITasksApi tasksApi) : ITaskApiService
         return response.Content;
     }
 
+    public async Task<TaskDto> UpdateTaskAsync(Guid boardId, Guid taskId, UpdateTaskRequest request, CancellationToken ct = default)
+    {
+        var response = await tasksApi.UpdateAsync(boardId, taskId, request, ct);
+        
+        if (!response.IsSuccessStatusCode || response.Content == null)
+        {
+            throw new Exception($"Failed to update task: {response.Error?.Message}");
+        }
+        
+        return response.Content;
+    }
+
     public async Task DeleteTaskAsync(Guid boardId, Guid taskId, CancellationToken ct = default)
     {
         var response = await tasksApi.DeleteAsync(boardId, taskId, ct);

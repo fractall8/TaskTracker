@@ -31,6 +31,10 @@ public interface IBoardDetailsStore
 
   void UpdateBoardName(string name);
 
+  Task UpdateTaskAsync(Guid taskId, UpdateTaskRequest request, CancellationToken ct = default);
+
+  Task DeleteTaskAsync(Guid taskId, CancellationToken ct = default);
+
   Task CreateTaskAsync(Guid columnId, CreateTaskRequest request, CancellationToken ct = default);
 
   Task MoveTaskAsync(Guid taskId, Guid targetColumnId, int newPosition, CancellationToken ct = default);
