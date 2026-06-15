@@ -23,4 +23,6 @@ public class TaskItem : BaseEntity<Guid>
     public User? Reporter { get; set; }
     
     public ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
+    
+    public ICollection<Comment> Comments { get; set; } = new List<Comment>();
 }

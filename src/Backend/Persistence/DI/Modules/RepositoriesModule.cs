@@ -13,6 +13,7 @@ internal static class RepositoriesModule
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IColumnRepository, ColumnRepository>();
         services.AddScoped<ITaskRepository, TaskRepository>();
+        services.AddScoped<ICommentRepository, CommentRepository>();
         services.AddScoped(typeof(IRepository<,>), typeof(Repository<,>));
 
         return services;
