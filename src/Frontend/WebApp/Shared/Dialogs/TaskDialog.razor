@@ -7,11 +7,8 @@
             <MudTextField @bind-Value="_model.Title"
                           For="@(() => _model.Title)"
                           Label="Task Title"
-                          Required="true"
-                          RequiredError="Title is required"
                           MaxLength="100"
-                          Class="mb-3"
-                          AutoFocus="true"/>
+                          Class="mb-3" />
 
             <MudTextField @bind-Value="_model.Description"
                           For="@(() => _model.Description)"
@@ -56,9 +53,11 @@
 
     public class TaskFormModel
     {
-        [Required] [MaxLength(100)] public string Title { get; set; } = string.Empty;
+        [Required(ErrorMessage = "Title is required")] 
+        [MaxLength(100)] 
+        public string Title { get; set; } = string.Empty;
 
-        [MaxLength(500)] public string? Description { get; set; }
+        [MaxLength(500)] 
+        public string? Description { get; set; }
     }
-
 }

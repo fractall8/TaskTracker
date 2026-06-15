@@ -1,4 +1,5 @@
-﻿using Domain.Entities;
+﻿using Domain.Constants;
+using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -14,7 +15,7 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
 
         builder.Property(c => c.Text)
             .IsRequired()
-            .HasMaxLength(2000);
+            .HasMaxLength(CommentConstants.MaxTextLength);
 
         builder.HasOne(c => c.Task)
             .WithMany(t => t.Comments)

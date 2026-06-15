@@ -59,7 +59,7 @@ public class UploadAttachmentCommandHandler(
             ContentType = request.ContentType
         };
 
-        await attachmentRepository.AddAsync(attachment);
+        await attachmentRepository.AddAsync(attachment, ct);
         await unitOfWork.SaveChangesAsync(ct);
 
         return new AttachmentDto(

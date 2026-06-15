@@ -128,11 +128,17 @@
     
     protected override async Task OnInitializedAsync()
     {
-        Store.StateChanged += StateHasChanged;
+        Store.StateChanged += HandleStoreStateChanged;
         await Store.LoadAsync(BoardId);
     }
 
     public void Dispose() => Store.StateChanged -= StateHasChanged;
+    
+    private void HandleStoreStateChanged()
+    {
+        StateHasChanged();
+        _dropContainer?.Refresh();
+    }
 
     private IEnumerable<TaskDto> GetFilteredTasks()
     {

@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
+using Domain.Constants;
 using Domain.Entities;
 using FluentValidation;
 using MediatR;
@@ -37,7 +38,7 @@ public class CreateCommentCommandHandler(
             CreatedById = currentUserId,
         };
 
-        await commentRepository.AddAsync(comment);
+        await commentRepository.AddAsync(comment, ct);
         await unitOfWork.SaveChangesAsync(ct);
 
         return new CommentDto(comment.Id, comment.Text, comment.TaskId, comment.CreatedAt, comment.CreatedById, null);
@@ -48,6 +49,12 @@ public class CreateCommentCommandValidator : AbstractValidator<CreateCommentComm
 {
     public CreateCommentCommandValidator()
     {
-        RuleFor(x => x.Text).NotEmpty().MaximumLength(2000);
+        RuleFor(x => x.BoardId)
+            .NotEmpty().WithMessage("Board ID is required.");
+
+        RuleFor(x => x.TaskId)
+            .NotEmpty().WithMessage("Task ID is required.");
+        
+        RuleFor(x => x.Text).NotEmpty().MaximumLength(CommentConstants.MaxTextLength);
     }
 }

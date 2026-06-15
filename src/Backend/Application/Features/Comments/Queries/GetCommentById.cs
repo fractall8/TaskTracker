@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
+using FluentValidation;
 using MediatR;
 
 namespace Application.Features.Comments.Queries;
@@ -26,5 +27,17 @@ public class GetCommentsByTaskIdQueryHandler(
         return comments.Select(c => new CommentDto(
             c.Id, c.Text, c.TaskId, c.CreatedAt, c.CreatedById, c.UpdatedAt
         )).ToList();
+    }
+}
+
+public class GetCommentsByTaskIdQueryValidator : AbstractValidator<GetCommentsByTaskIdQuery>
+{
+    public GetCommentsByTaskIdQueryValidator()
+    {
+        RuleFor(x => x.BoardId)
+            .NotEmpty().WithMessage("Board ID is required.");
+
+        RuleFor(x => x.TaskId)
+            .NotEmpty().WithMessage("Task ID is required.");
     }
 }

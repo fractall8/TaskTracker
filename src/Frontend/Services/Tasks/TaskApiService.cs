@@ -3,89 +3,69 @@ using Contracts.Requests;
 using Refit;
 using Services.Abstractions.Tasks;
 using Services.Api;
+using Services.Extensions;
 
 namespace Services.Tasks;
 
-public class TasksApiService(ITasksApi tasksApi) : ITaskApiService
+public class TaskApiService(ITasksApi tasksApi) : ITaskApiService
 {
     public async Task<List<TaskDto>> GetTasksForBoardAsync(Guid boardId, CancellationToken ct = default)
     {
         var response = await tasksApi.GetAllForBoardAsync(boardId, ct);
-        if (!response.IsSuccessStatusCode || response.Content == null) throw new Exception("Failed to load tasks");
-        return response.Content;
+        return await response.HandleResponseAsync();
     }
 
     public async Task<TaskDto> GetTaskByIdAsync(Guid boardId, Guid taskId, CancellationToken ct = default)
     {
         var response = await tasksApi.GetByIdAsync(boardId, taskId, ct);
-        
-        if (!response.IsSuccessStatusCode || response.Content == null)
-            throw new Exception($"Failed to load task: {response.Error?.Message}");
-        
-        return response.Content;
-    }
-
-    public async Task<AttachmentDto> UploadAttachmentAsync(Guid boardId, Guid taskId, StreamPart filePart, CancellationToken ct = default)
-    {
-        var response = await tasksApi.UploadAttachmentAsync(boardId, taskId, filePart, ct);
-        
-        if (!response.IsSuccessStatusCode || response.Content == null)
-            throw new Exception($"Failed to upload attachment: {response.Error?.Message}");
-        
-        return response.Content;
+        return await response.HandleResponseAsync();
     }
 
     public async Task<TaskDto> CreateTaskAsync(Guid boardId, Guid columnId, CreateTaskRequest request, CancellationToken ct = default)
     {
         var response = await tasksApi.CreateAsync(boardId, columnId, request, ct);
-        if (!response.IsSuccessStatusCode || response.Content == null) throw new Exception("Failed to create task");
-        return response.Content;
+        return await response.HandleResponseAsync();
     }
 
     public async Task<TaskDto> UpdateTaskAsync(Guid boardId, Guid taskId, UpdateTaskRequest request, CancellationToken ct = default)
     {
         var response = await tasksApi.UpdateAsync(boardId, taskId, request, ct);
-        
-        if (!response.IsSuccessStatusCode || response.Content == null)
-        {
-            throw new Exception($"Failed to update task: {response.Error?.Message}");
-        }
-        
-        return response.Content;
+        return await response.HandleResponseAsync();
     }
 
     public async Task DeleteTaskAsync(Guid boardId, Guid taskId, CancellationToken ct = default)
     {
         var response = await tasksApi.DeleteAsync(boardId, taskId, ct);
-        if (!response.IsSuccessStatusCode) throw new Exception("Failed to delete task");
+        await response.HandleResponseAsync();
     }
 
     public async Task MoveTaskAsync(Guid boardId, Guid taskId, MoveTaskRequest request, CancellationToken ct = default)
     {
         var response = await tasksApi.MoveAsync(boardId, taskId, request, ct);
-        if (!response.IsSuccessStatusCode) throw new Exception("Failed to move task");
+        await response.HandleResponseAsync();
     }
-    
+
+    public async Task<AttachmentDto> UploadAttachmentAsync(Guid boardId, Guid taskId, StreamPart filePart, CancellationToken ct = default)
+    {
+        var response = await tasksApi.UploadAttachmentAsync(boardId, taskId, filePart, ct);
+        return await response.HandleResponseAsync();
+    }
+
     public async Task<List<CommentDto>> GetCommentsAsync(Guid boardId, Guid taskId, CancellationToken ct = default)
     {
         var response = await tasksApi.GetCommentsAsync(boardId, taskId, ct);
-        if (!response.IsSuccessStatusCode || response.Content == null)
-            throw new Exception($"Failed to load comments: {response.Error?.Message}");
-        return response.Content;
+        return await response.HandleResponseAsync();
     }
 
     public async Task<CommentDto> CreateCommentAsync(Guid boardId, Guid taskId, CreateCommentRequest request, CancellationToken ct = default)
     {
         var response = await tasksApi.CreateCommentAsync(boardId, taskId, request, ct);
-        if (!response.IsSuccessStatusCode || response.Content == null)
-            throw new Exception($"Failed to add comment: {response.Error?.Message}");
-        return response.Content;
+        return await response.HandleResponseAsync();
     }
 
     public async Task DeleteCommentAsync(Guid boardId, Guid taskId, Guid commentId, CancellationToken ct = default)
     {
         var response = await tasksApi.DeleteCommentAsync(boardId, taskId, commentId, ct);
-        if (!response.IsSuccessStatusCode)
-            throw new Exception($"Failed to delete comment: {response.Error?.Message}");
+        await response.HandleResponseAsync();
     }
 }

@@ -48,7 +48,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBoardStore, BoardStore>();
         
         services.AddScoped<IColumnApiService, ColumnApiService>();
-        services.AddScoped<ITaskApiService, TasksApiService>();
+        services.AddScoped<ITaskApiService, TaskApiService>();
         services.AddScoped<IBoardDetailsStore, BoardDetailsStore>();
         
         return services;

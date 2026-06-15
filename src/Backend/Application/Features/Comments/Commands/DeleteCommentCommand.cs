@@ -1,5 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Services;
+using FluentValidation;
 using MediatR;
 
 namespace Application.Features.Comments.Commands;
@@ -34,5 +35,20 @@ public class DeleteCommentCommandHandler(
 
         commentRepository.Delete(comment);
         await unitOfWork.SaveChangesAsync(ct);
+    }
+}
+
+public class DeleteCommentCommandValidator : AbstractValidator<DeleteCommentCommand>
+{
+    public DeleteCommentCommandValidator()
+    {
+        RuleFor(x => x.BoardId)
+            .NotEmpty().WithMessage("Board ID is required.");
+
+        RuleFor(x => x.TaskId)
+            .NotEmpty().WithMessage("Task ID is required.");
+
+        RuleFor(x => x.CommentId)
+            .NotEmpty().WithMessage("Comment ID is required.");
     }
 }

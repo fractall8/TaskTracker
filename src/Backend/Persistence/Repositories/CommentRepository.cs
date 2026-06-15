@@ -10,7 +10,7 @@ public class CommentRepository(TaskTrackerDbContext dbContext)
 {
     public async Task<List<Comment>> GetByTaskIdAsync(Guid taskId, CancellationToken ct = default)
     {
-        return await dbContext.Set<Comment>()
+        return await DbContext.Set<Comment>()
             .Where(c => c.TaskId == taskId)
             .OrderByDescending(c => c.CreatedAt)
             .ToListAsync(ct);
