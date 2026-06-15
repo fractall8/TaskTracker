@@ -98,21 +98,30 @@ public class TasksController(ISender sender) : ControllerBase
 
     [HttpPost("{taskId:guid}/attachments")]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> UploadAttachment([FromRoute] Guid boardId, [FromRoute] Guid taskId,
-        IFormFile? file, CancellationToken cancellationToken)
+    public async Task<ActionResult<AttachmentDto>> UploadAttachment(
+        [FromRoute] Guid boardId, 
+        [FromRoute] Guid taskId,
+        IFormFile? file, 
+        CancellationToken ct)
     {
         if (file == null || file.Length == 0)
         {
             return BadRequest("File is empty or was not provided.");
         }
 
-        // For now taskId is not provided to command because we need to create new table for it
-        // This will be done when we have basic crud for tasks
         await using var stream = file.OpenReadStream();
 
-        var command = new UploadAttachmentCommand(stream, file.FileName, file.ContentType);
-        var fileUrl = await sender.Send(command, cancellationToken);
+        var command = new UploadAttachmentCommand(
+            BoardId: boardId,
+            TaskId: taskId,
+            FileStream: stream,
+            FileName: file.FileName,
+            ContentType: file.ContentType,
+            SizeInBytes: file.Length
+        );
+    
+        var attachmentDto = await sender.Send(command, ct);
 
-        return Ok(new { Url = fileUrl });
+        return Ok(attachmentDto);
     }
 }

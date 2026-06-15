@@ -4,7 +4,11 @@
           Style="border: 1px solid #e0e0e0; background-color: white; margin-bottom: 8px; cursor: grab;">
     
     <div class="d-flex justify-space-between align-start">
-        <div style="flex-grow: 1; padding: 4px;">
+        
+        <div style="flex-grow: 1; padding: 4px; cursor: pointer;" 
+             class="task-content-hover" 
+             @onclick="HandleDetailsClick">
+            
             <MudText Typo="Typo.body2" Style="font-weight: 500;">@Task.Title</MudText>
 
             @if (!string.IsNullOrWhiteSpace(Task.Description))
@@ -25,12 +29,22 @@
     </div>
 </MudPaper>
 
+<style>
+    .task-content-hover:hover {
+        opacity: 0.8;
+    }
+</style>
+
 @code {
     [Parameter, EditorRequired] public TaskDto Task { get; set; } = null!;
     
     [Parameter] public EventCallback<TaskDto> OnEditClick { get; set; }
     [Parameter] public EventCallback<TaskDto> OnDeleteClick { get; set; }
+    
+    [Parameter] public EventCallback<TaskDto> OnDetailsClick { get; set; } 
 
     private async Task HandleEditClick() => await OnEditClick.InvokeAsync(Task);
     private async Task HandleDeleteClick() => await OnDeleteClick.InvokeAsync(Task);
+    
+    private async Task HandleDetailsClick() => await OnDetailsClick.InvokeAsync(Task); 
 }

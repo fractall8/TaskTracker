@@ -99,7 +99,8 @@
             <ItemRenderer>
                 <TaskCard Task="context"
                           OnEditClick="OpenEditTaskDialog"
-                          OnDeleteClick="ConfirmDeleteTask"/>
+                          OnDeleteClick="ConfirmDeleteTask"
+                          OnDetailsClick="NavigateToTaskDetails"/>
             </ItemRenderer>
 
         </MudDropContainer>
@@ -108,7 +109,8 @@
 
 @code {
     [Parameter] public Guid BoardId { get; set; }
-
+    [Inject] private NavigationManager Navigation { get; set; } = null!;
+    
     private ColumnDto? _draggedColumn;
     private ColumnDto? _targetColumn;
     private string _searchQuery = string.Empty;
@@ -346,5 +348,10 @@
                 Snackbar.Add(ex.Message, Severity.Error);
             }
         }
+    }
+    
+    private void NavigateToTaskDetails(TaskDto task)
+    {
+        Navigation.NavigateTo($"/boards/{BoardId}/tasks/{task.Id}");
     }
 }

@@ -1,11 +1,16 @@
 ﻿using Contracts.DTOs;
 using Contracts.Requests;
+using Refit;
 
 namespace Services.Abstractions.Tasks;
 
 public interface ITaskApiService
 {
     Task<List<TaskDto>> GetTasksForBoardAsync(Guid boardId, CancellationToken ct = default);
+    
+    Task<TaskDto> GetTaskByIdAsync(Guid boardId, Guid taskId, CancellationToken ct = default);
+    
+    Task<AttachmentDto> UploadAttachmentAsync(Guid boardId, Guid taskId, StreamPart filePart, CancellationToken ct = default);
     
     Task<TaskDto> CreateTaskAsync(Guid boardId, Guid columnId, CreateTaskRequest request, CancellationToken ct = default);
     

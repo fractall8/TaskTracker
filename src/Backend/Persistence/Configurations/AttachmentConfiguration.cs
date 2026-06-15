@@ -9,6 +9,7 @@ public class AttachmentConfiguration : IEntityTypeConfiguration<Attachment>
 {
     public void Configure(EntityTypeBuilder<Attachment> builder)
     {
+        builder.ToTable("Attachments");
         builder.HasKey(a => a.Id);
 
         builder.Property(a => a.FileName)
