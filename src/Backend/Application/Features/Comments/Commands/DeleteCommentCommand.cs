@@ -9,6 +9,7 @@ public record DeleteCommentCommand(Guid BoardId, Guid TaskId, Guid CommentId) : 
 public class DeleteCommentCommandHandler(
     IBoardAccessService boardAccessService,
     ICommentRepository commentRepository, 
+    ITaskRepository taskRepository,
     IUserRepository userRepository,
     ICurrentUserAccessor currentUserAccessor,
     IUnitOfWork unitOfWork) 
@@ -17,6 +18,10 @@ public class DeleteCommentCommandHandler(
     public async Task Handle(DeleteCommentCommand request, CancellationToken ct)
     {
         await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, ct);
+
+        var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, ct);
+        if (task == null || task.Column?.BoardId != request.BoardId)
+            throw new KeyNotFoundException("Task not found on this board.");
 
         var comment = await commentRepository.GetByIdAsync(request.CommentId, ct);
         if (comment == null || comment.TaskId != request.TaskId)

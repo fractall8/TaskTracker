@@ -49,7 +49,9 @@
 
             <MudSpacer/>
 
-            <MudTextField @bind-Value="_searchQuery"
+            <MudTextField T="string"
+                          Value="@_searchQuery"
+                          ValueChanged="OnSearchChanged"
                           Placeholder="Search tasks..."
                           Adornment="Adornment.Start"
                           AdornmentIcon="@Icons.Material.Filled.Search"
@@ -61,7 +63,8 @@
                           Style="max-width: 250px; background-color: white;"/>
         </div>
 
-        <MudDropContainer T="TaskDto"
+        <MudDropContainer @ref="_dropContainer"
+                          T="TaskDto"
                           Items="GetFilteredTasks()"
                           ItemsSelector="@((item, dropzone) => item.ColumnId.ToString() == dropzone)"
                           ItemDropped="TaskUpdated"
@@ -115,6 +118,14 @@
     private ColumnDto? _targetColumn;
     private string _searchQuery = string.Empty;
 
+    private MudDropContainer<TaskDto>? _dropContainer;
+    
+    private void OnSearchChanged(string newValue)
+    {
+        _searchQuery = newValue;
+        _dropContainer?.Refresh();
+    }
+    
     protected override async Task OnInitializedAsync()
     {
         Store.StateChanged += StateHasChanged;

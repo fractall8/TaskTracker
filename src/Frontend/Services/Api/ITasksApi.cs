@@ -34,4 +34,13 @@ public interface ITasksApi
     [Post("/api/boards/{boardId}/tasks/{taskId}/move")]
     Task<IApiResponse> MoveAsync(Guid boardId, Guid taskId, [Body] MoveTaskRequest request,
         CancellationToken ct = default);
+    
+    [Get("/api/boards/{boardId}/tasks/{taskId}/comments")]
+    Task<IApiResponse<List<CommentDto>>> GetCommentsAsync(Guid boardId, Guid taskId, CancellationToken ct = default);
+
+    [Post("/api/boards/{boardId}/tasks/{taskId}/comments")]
+    Task<IApiResponse<CommentDto>> CreateCommentAsync(Guid boardId, Guid taskId, [Body] CreateCommentRequest request, CancellationToken ct = default);
+
+    [Delete("/api/boards/{boardId}/tasks/{taskId}/comments/{commentId}")]
+    Task<IApiResponse> DeleteCommentAsync(Guid boardId, Guid taskId, Guid commentId, CancellationToken ct = default);
 }

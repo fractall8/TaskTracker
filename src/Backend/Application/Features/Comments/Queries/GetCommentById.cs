@@ -17,7 +17,7 @@ public class GetCommentsByTaskIdQueryHandler(
     {
         await boardAccessService.EnsureCanViewBoardAsync(request.BoardId, ct);
 
-        var task = await taskRepository.GetByIdAsync(request.TaskId, ct);
+        var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, ct);
         if (task == null || task.Column?.BoardId != request.BoardId)
             throw new KeyNotFoundException("Task not found on this board.");
 

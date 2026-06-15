@@ -19,4 +19,11 @@ public interface ITaskApiService
     Task DeleteTaskAsync(Guid boardId, Guid taskId, CancellationToken ct = default);
     
     Task MoveTaskAsync(Guid boardId, Guid taskId, MoveTaskRequest request, CancellationToken ct = default);
+
+    Task<List<CommentDto>> GetCommentsAsync(Guid boardId, Guid taskId, CancellationToken ct = default);
+
+    Task<CommentDto> CreateCommentAsync(Guid boardId, Guid taskId, CreateCommentRequest request,
+        CancellationToken ct = default);
+
+    Task DeleteCommentAsync(Guid boardId, Guid taskId, Guid commentId, CancellationToken ct = default);
 }

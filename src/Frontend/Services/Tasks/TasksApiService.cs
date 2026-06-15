@@ -65,4 +65,27 @@ public class TasksApiService(ITasksApi tasksApi) : ITaskApiService
         var response = await tasksApi.MoveAsync(boardId, taskId, request, ct);
         if (!response.IsSuccessStatusCode) throw new Exception("Failed to move task");
     }
+    
+    public async Task<List<CommentDto>> GetCommentsAsync(Guid boardId, Guid taskId, CancellationToken ct = default)
+    {
+        var response = await tasksApi.GetCommentsAsync(boardId, taskId, ct);
+        if (!response.IsSuccessStatusCode || response.Content == null)
+            throw new Exception($"Failed to load comments: {response.Error?.Message}");
+        return response.Content;
+    }
+
+    public async Task<CommentDto> CreateCommentAsync(Guid boardId, Guid taskId, CreateCommentRequest request, CancellationToken ct = default)
+    {
+        var response = await tasksApi.CreateCommentAsync(boardId, taskId, request, ct);
+        if (!response.IsSuccessStatusCode || response.Content == null)
+            throw new Exception($"Failed to add comment: {response.Error?.Message}");
+        return response.Content;
+    }
+
+    public async Task DeleteCommentAsync(Guid boardId, Guid taskId, Guid commentId, CancellationToken ct = default)
+    {
+        var response = await tasksApi.DeleteCommentAsync(boardId, taskId, commentId, ct);
+        if (!response.IsSuccessStatusCode)
+            throw new Exception($"Failed to delete comment: {response.Error?.Message}");
+    }
 }
