@@ -11,6 +11,7 @@ public class DeleteColumnCommandHandler(
     IBoardAccessService boardAccessService,
     IBoardRepository boardRepository,
     IColumnRepository columnRepository,
+    ITaskRepository taskRepository,
     IUnitOfWork unitOfWork)
     : IRequestHandler<DeleteColumnCommand>
 {
@@ -34,10 +35,10 @@ public class DeleteColumnCommandHandler(
         
         var positionToShift = column.Position;
         
-        // Will deal with tasks there later
-        // TODO: deal with tasks in next pr
         columnRepository.Delete(column); 
         await unitOfWork.SaveChangesAsync(ct);
+
+        await taskRepository.SoftDeleteTasksAndRelationsByColumnIdAsync(column.Id, ct);
 
         await columnRepository.DecrementPositionsAsync(request.BoardId, positionToShift, ct);
     }

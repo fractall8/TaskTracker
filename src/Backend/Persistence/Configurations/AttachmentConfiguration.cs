@@ -22,5 +22,12 @@ public class AttachmentConfiguration : IEntityTypeConfiguration<Attachment>
             
         builder.Property(a => a.ContentType)
             .HasMaxLength(AttachmentConstants.MaxContentTypeLength);
+        
+        builder.HasOne(a => a.Task)
+            .WithMany(t => t.Attachments)
+            .HasForeignKey(a => a.TaskId)
+            .OnDelete(DeleteBehavior.Cascade);
+            
+        builder.HasIndex(a => a.TaskId);
     }
 }

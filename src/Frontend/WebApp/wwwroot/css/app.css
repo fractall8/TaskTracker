@@ -15,4 +15,6 @@ html, body {
 :root {
     --mud-palette-primary: #594AE2;
     --mud-palette-action-default: rgba(0,0,0, 0.54);
+    --mud-palette-error: #f44336;
+    --mud-palette-error-hover: #972922;
 }

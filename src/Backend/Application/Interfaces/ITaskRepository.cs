@@ -17,4 +17,8 @@ public interface ITaskRepository : IRepository<TaskItem, Guid>
     Task IncrementPositionsAsync(Guid columnId, int startingFromPosition, CancellationToken ct = default);
 
     Task UpdatePositionsOnMoveAsync(Guid columnId, int oldPosition, int newPosition, CancellationToken ct = default);
+    
+    Task<IEnumerable<Attachment>> GetAttachmentsByColumnIdAsync(Guid columnId, CancellationToken ct = default);
+    
+    Task SoftDeleteTasksAndRelationsByColumnIdAsync(Guid columnId, CancellationToken ct = default);
 }

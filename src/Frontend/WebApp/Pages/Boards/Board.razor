@@ -109,6 +109,24 @@
         </MudDropContainer>
     }
 </MudContainer>
+ <MudMessageBox @ref="_deleteColumnBox" Title="Delete Column?">
+    <MessageContent>
+        @if (_columnToDelete != null)
+        {
+            <MudText>Are you sure you want to delete '<b>@_columnToDelete.Name</b>'?</MudText>
+            <br />
+            <div style="color: var(--mud-palette-error); font-weight: bold; background-color: var(--mud-palette-error-hover); padding: 12px; border-radius: 8px; border-left: 4px solid var(--mud-palette-error);">
+                ⚠️ WARNING: This action cannot be undone. All tasks, comments, and attachments inside this column will be DELETED.
+            </div>
+        }
+    </MessageContent>
+    <YesButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error">Delete</MudButton>
+    </YesButton>
+    <CancelButton>
+        <MudButton Variant="Variant.Text" Color="Color.Default">Cancel</MudButton>
+    </CancelButton>
+</MudMessageBox>
 
 @code {
     [Parameter] public Guid BoardId { get; set; }
@@ -117,6 +135,9 @@
     private ColumnDto? _draggedColumn;
     private ColumnDto? _targetColumn;
     private string _searchQuery = string.Empty;
+    
+    private MudMessageBox? _deleteColumnBox;
+    private ColumnDto? _columnToDelete;
 
     private MudDropContainer<TaskDto>? _dropContainer;
     
@@ -251,30 +272,29 @@
         }
     }
 
-
     private async Task DeleteColumn(ColumnDto column)
     {
-        bool? result = await DialogService.ShowMessageBoxAsync(
-            "Delete Column",
-            $"Are you sure you want to delete '{column.Name}'?",
-            yesText: "Delete", cancelText: "Cancel");
+        _columnToDelete = column;
+        StateHasChanged();
+
+        bool? result = await _deleteColumnBox!.ShowAsync();
 
         if (result == true)
         {
             try
             {
                 await Store.DeleteColumnAsync(column.Id);
-
-                Snackbar.Add("Column deleted", Severity.Info);
+                Snackbar.Add("Column and all its content deleted", Severity.Info);
             }
             catch (Exception ex)
             {
                 Snackbar.Add(ex.Message, Severity.Error);
             }
         }
+
+        _columnToDelete = null;
     }
-
-
+    
     private async Task OpenCreateTaskDialog(Guid columnId)
     {
         var options = new DialogOptions

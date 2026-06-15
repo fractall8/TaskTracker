@@ -23,14 +23,14 @@ public class TaskRepository(TaskTrackerDbContext dbContext) : Repository<TaskIte
             .OrderBy(t => t.Position)
             .ToListAsync(ct);
     }
-    
+
     public async Task<TaskItem?> GetTaskWithColumnAsync(Guid taskId, CancellationToken ct)
     {
         return await DbContext.Tasks
             .Include(t => t.Column)
             .FirstOrDefaultAsync(t => t.Id == taskId, ct);
     }
-    
+
     public async Task<int> GetMaxPositionAsync(Guid columnId, CancellationToken ct = default)
     {
         return await DbContext.Tasks
@@ -54,7 +54,8 @@ public class TaskRepository(TaskTrackerDbContext dbContext) : Repository<TaskIte
                 .SetProperty(t => t.Position, t => t.Position + 1), ct);
     }
 
-    public async Task UpdatePositionsOnMoveAsync(Guid columnId, int oldPosition, int newPosition, CancellationToken ct = default)
+    public async Task UpdatePositionsOnMoveAsync(Guid columnId, int oldPosition, int newPosition,
+        CancellationToken ct = default)
     {
         if (oldPosition < newPosition)
         {
@@ -70,5 +71,40 @@ public class TaskRepository(TaskTrackerDbContext dbContext) : Repository<TaskIte
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(t => t.Position, t => t.Position + 1), ct);
         }
+    }
+
+    public async Task<IEnumerable<Attachment>> GetAttachmentsByColumnIdAsync(Guid columnId,
+        CancellationToken ct = default)
+    {
+        return await DbContext.Tasks
+            .Where(t => t.ColumnId == columnId)
+            .SelectMany(t => t.Attachments)
+            .ToListAsync(ct);
+    }
+
+    public async Task SoftDeleteTasksAndRelationsByColumnIdAsync(Guid columnId, CancellationToken ct = default)
+    {
+        var deletedAt = DateTime.UtcNow; 
+
+        await DbContext.Set<Attachment>()
+            .IgnoreQueryFilters()
+            .Where(a => a.Task!.ColumnId == columnId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(a => a.IsDeleted, true)
+                .SetProperty(a => a.DeletedAt, deletedAt), ct);
+
+        await DbContext.Set<Comment>()
+            .IgnoreQueryFilters()
+            .Where(c => c.Task!.ColumnId == columnId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(c => c.IsDeleted, true)
+                .SetProperty(c => c.DeletedAt, deletedAt), ct);
+
+        await DbContext.Set<TaskItem>()
+            .IgnoreQueryFilters()
+            .Where(t => t.ColumnId == columnId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(t => t.IsDeleted, true)
+                .SetProperty(t => t.DeletedAt, deletedAt), ct);
     }
 }
