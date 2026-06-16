@@ -10,7 +10,7 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
 {
     public async Task<Board?> GetBoardWithHierarchyAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Boards
+        return await DbContext.Boards
             .Include(b => b.Columns)
             .ThenInclude(c => c.Tasks)
             .FirstOrDefaultAsync(b => b.Id.Equals(id), cancellationToken);
@@ -18,7 +18,7 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
 
     public async Task<IEnumerable<Board>> GetUserBoardsAsync(Guid userId, CancellationToken ct = default)
     {
-        return await _dbContext.Boards
+        return await DbContext.Boards
             .AsNoTracking()
             .Include(b => b.Members.Where(m => m.UserId == userId))
             .Where(b => b.Members.Any(m => m.UserId == userId))
@@ -28,7 +28,7 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
 
     public async Task<int> CountUserBoardsAsync(Guid userId, string? searchTerm = null, CancellationToken ct = default)
     {
-        var query = _dbContext.Boards.Where(b => b.Members.Any(m => m.UserId == userId));
+        var query = DbContext.Boards.Where(b => b.Members.Any(m => m.UserId == userId));
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
@@ -42,7 +42,7 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
     public async Task<List<Board>> GetUserBoardsPaginatedAsync(Guid userId, int pageNumber, int pageSize,
         string? searchTerm = null, CancellationToken ct = default)
     {
-        var query = _dbContext.Boards
+        var query = DbContext.Boards
             .AsNoTracking()
             .Include(b => b.Members.Where(m => m.UserId == userId))
             .Where(b => b.Members.Any(m => m.UserId == userId));
@@ -62,7 +62,7 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
 
     public async Task<BoardRole?> GetUserRoleAsync(Guid boardId, Guid userId, CancellationToken ct = default)
     {
-        return await _dbContext.Set<BoardMember>()
+        return await DbContext.Set<BoardMember>()
             .Where(m => m.BoardId == boardId && m.UserId == userId)
             .Select(m => (BoardRole?)m.Role)
             .FirstOrDefaultAsync(ct);

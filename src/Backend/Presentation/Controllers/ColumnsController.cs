@@ -33,7 +33,7 @@ public class ColumnsController(ISender sender) : ControllerBase
         [FromBody] UpdateColumnRequest request,
         CancellationToken ct)
     {
-        var command = new UpdateColumnCommand(columnId, request.Name);
+        var command = new UpdateColumnCommand(boardId, columnId, request.Name);
         
         var result = await sender.Send(command, ct);
         

@@ -12,7 +12,7 @@ public class UserRepository(TaskTrackerDbContext context) : Repository<User, Gui
         Guid azureAdObjectId, 
         Expression<Func<User, TProjection>> selector, 
         CancellationToken ct = default) =>
-        await _dbSet
+        await DbSet
             .Where(u => u.AzureAdObjectId == azureAdObjectId)
             .Select(selector)
             .FirstOrDefaultAsync(ct);

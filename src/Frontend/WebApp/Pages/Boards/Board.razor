@@ -1,6 +1,7 @@
 ﻿@page "/boards/{BoardId:guid}"
 @implements IDisposable
 @using Contracts.DTOs
+@using Contracts.Requests
 @using WebApp.Shared.Dialogs
 @inject IBoardDetailsStore Store
 @inject IDialogService DialogService
@@ -9,18 +10,21 @@
 <style>
     .column-grab {
         cursor: grab;
-        transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out; 
+        transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out;
     }
+
     .column-grab:active {
         cursor: grabbing;
     }
+
     .column-drag-active {
         opacity: 0.6;
         transform: scale(0.98);
     }
+
     .column-drop-target {
         border: 2px dashed var(--mud-palette-primary) !important;
-        background-color: transparent !important; 
+        background-color: transparent !important;
         opacity: 0.8;
     }
 </style>
@@ -29,7 +33,7 @@
     @if (Store.IsLoading)
     {
         <div class="d-flex justify-center align-center" style="height: 50vh;">
-            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large"/>
         </div>
     }
     else if (!string.IsNullOrEmpty(Store.ErrorMessage))
@@ -38,86 +42,158 @@
     }
     else if (Store.Board != null)
     {
-        <div class="d-flex align-center mb-6">
-            <MudText Typo="Typo.h4" Class="fw-bold">@Store.Board.Name</MudText>
-            <MudSpacer />
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" @onclick="OpenCreateColumnDialog">
-                Add Column
-            </MudButton>
+        <div class="d-flex align-center mb-4 gap-4">
+            <MudText Typo="Typo.h5" Class="fw-bold text-truncate" Style="max-width: 500px; color: #172b4d;">
+                @Store.Board.Name
+            </MudText>
+
+            <MudSpacer/>
+
+            <MudTextField T="string"
+                          Value="@_searchQuery"
+                          ValueChanged="OnSearchChanged"
+                          Placeholder="Search tasks..."
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          IconSize="Size.Small"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Clearable="true"
+                          Immediate="true"
+                          Style="max-width: 250px; background-color: white;"/>
         </div>
 
-        <div class="d-flex flex-row gap-4 overflow-x-auto pb-4" style="min-height: 70vh; align-items: flex-start; flex-wrap: nowrap;">
-            
-            @foreach (var column in Store.Board.Columns)
-            {
-                <MudPaper Elevation="1" 
-                          Class="@($"pa-4 d-flex flex-column rounded-lg column-grab {GetDragClass(column)}")" 
-                          Width="320px" 
-                          Style="flex-shrink: 0; background-color: #f4f5f7;"
-                          draggable="true"
-                          @ondragstart="@(() => HandleDragStart(column))"
-                          @ondragenter="@(() => HandleDragEnter(column))"
-                          @ondragover:preventDefault="true"
-                          @ondrop="@(() => HandleDrop(column))"
-                          @ondragend="HandleDragEnd">
-                    
-                    <div class="d-flex justify-space-between align-center mb-3">
-                        <MudText Typo="Typo.h6" Style="font-weight: 600; pointer-events: none;">@column.Name</MudText>
-                        
-                        <MudMenu Icon="@Icons.Material.Filled.MoreHoriz" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Dense="true">
-                            <MudMenuItem OnClick="@(() => OpenEditColumnDialog(column))" Icon="@Icons.Material.Filled.Edit">Edit</MudMenuItem>
-                            <MudMenuItem OnClick="@(() => DeleteColumn(column))" Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error">Delete</MudMenuItem>
-                        </MudMenu>
-                    </div>
+        <MudDropContainer @ref="_dropContainer"
+                          T="TaskDto"
+                          Items="GetFilteredTasks()"
+                          ItemsSelector="@((item, dropzone) => item.ColumnId.ToString() == dropzone)"
+                          ItemDropped="TaskUpdated"
+                          Class="w-100">
 
-                    <div class="flex-grow-1" style="min-height: 80px; border: 2px dashed #e0e0e0; border-radius: 8px; display: flex; align-items: center; justify-content: center; pointer-events: none;">
-                        <MudText Typo="Typo.body2" Color="Color.Surface">No tasks yet</MudText>
-                    </div>
+            <ChildContent>
+                <div class="d-flex flex-row gap-4 overflow-x-auto pb-4"
+                     style="min-height: 70vh; align-items: flex-start; flex-wrap: nowrap;">
 
-                    <MudButton StartIcon="@Icons.Material.Filled.Add" FullWidth="true" Class="mt-3 text-start" Style="justify-content: flex-start; color: #5e6c84;">
-                        Add a card
+                    @foreach (var column in Store.Board.Columns)
+                    {
+                        <BoardColumn Column="column"
+                                     IsDragged="_draggedColumn?.Id == column.Id"
+                                     IsDropTarget="_targetColumn?.Id == column.Id"
+                                     OnColumnDragStart="HandleDragStart"
+                                     OnColumnDragEnter="HandleDragEnter"
+                                     OnColumnDrop="HandleDrop"
+                                     OnColumnDragEnd="HandleDragEnd"
+                                     OnEditColumn="OpenEditColumnDialog"
+                                     OnDeleteColumn="DeleteColumn"
+                                     OnCreateTask="OpenCreateTaskDialog"/>
+                    }
+
+                    <MudButton Variant="Variant.Outlined"
+                               StartIcon="@Icons.Material.Filled.Add"
+                               OnClick="OpenCreateColumnDialog"
+                               Class="rounded-lg px-4"
+                               Style="min-width: 320px; flex-shrink: 0; height: 50px; border: 2px dashed #cbd5e1; background-color: rgba(244, 245, 247, 0.5); color: #475569; justify-content: flex-start; text-transform: none; font-weight: 500;">
+                        @(Store.Board.Columns.Any() ? "Add another column" : "Add a column")
                     </MudButton>
-                </MudPaper>
-            }
 
-            @if (!Store.Board.Columns.Any())
-            {
-                <MudPaper Elevation="0" Class="pa-4 d-flex justify-center align-center rounded-lg" Width="320px" Style="flex-shrink: 0; border: 2px dashed #ccc; background: transparent; cursor: pointer;" @onclick="OpenCreateColumnDialog">
-                    <MudText Typo="Typo.body1" Color="Color.Primary">+ Create your first column</MudText>
-                </MudPaper>
-            }
-        </div>
+                </div>
+            </ChildContent>
+
+            <ItemRenderer>
+                <TaskCard Task="context"
+                          OnEditClick="OpenEditTaskDialog"
+                          OnDeleteClick="ConfirmDeleteTask"
+                          OnDetailsClick="NavigateToTaskDetails"/>
+            </ItemRenderer>
+
+        </MudDropContainer>
     }
 </MudContainer>
+ <MudMessageBox @ref="_deleteColumnBox" Title="Delete Column?">
+    <MessageContent>
+        @if (_columnToDelete != null)
+        {
+            <MudText>Are you sure you want to delete '<b>@_columnToDelete.Name</b>'?</MudText>
+            <br />
+            <div style="color: var(--mud-palette-error); font-weight: bold; background-color: var(--mud-palette-error-hover); padding: 12px; border-radius: 8px; border-left: 4px solid var(--mud-palette-error);">
+                ⚠️ WARNING: This action cannot be undone. All tasks, comments, and attachments inside this column will be DELETED.
+            </div>
+        }
+    </MessageContent>
+    <YesButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error">Delete</MudButton>
+    </YesButton>
+    <CancelButton>
+        <MudButton Variant="Variant.Text" Color="Color.Default">Cancel</MudButton>
+    </CancelButton>
+</MudMessageBox>
 
 @code {
     [Parameter] public Guid BoardId { get; set; }
-
+    [Inject] private NavigationManager Navigation { get; set; } = null!;
+    
     private ColumnDto? _draggedColumn;
     private ColumnDto? _targetColumn;
+    private string _searchQuery = string.Empty;
+    
+    private MudMessageBox? _deleteColumnBox;
+    private ColumnDto? _columnToDelete;
 
+    private MudDropContainer<TaskDto>? _dropContainer;
+    
+    private void OnSearchChanged(string newValue)
+    {
+        _searchQuery = newValue;
+        _dropContainer?.Refresh();
+    }
+    
     protected override async Task OnInitializedAsync()
     {
-        Store.StateChanged += StateHasChanged;
+        Store.StateChanged += HandleStoreStateChanged;
         await Store.LoadAsync(BoardId);
     }
 
-    public void Dispose()
+    public void Dispose() => Store.StateChanged -= StateHasChanged;
+    
+    private void HandleStoreStateChanged()
     {
-        Store.StateChanged -= StateHasChanged;
+        StateHasChanged();
+        _dropContainer?.Refresh();
     }
 
-    private void HandleDragStart(ColumnDto column)
+    private IEnumerable<TaskDto> GetFilteredTasks()
     {
-        _draggedColumn = column;
+        var tasks = Store.Tasks.OrderBy(t => t.Position).AsEnumerable();
+
+        if (string.IsNullOrWhiteSpace(_searchQuery))
+            return tasks;
+
+        return tasks.Where(t =>
+            t.Title.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+            (t.Description != null && t.Description.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase)));
     }
+
+    private async Task TaskUpdated(MudItemDropInfo<TaskDto> dropItem)
+    {
+        var task = dropItem.Item;
+        var targetColumnId = Guid.Parse(dropItem.DropzoneIdentifier);
+        var newPosition = dropItem.IndexInZone;
+
+        try
+        {
+            await Store.MoveTaskAsync(task.Id, targetColumnId, newPosition);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to move task: {ex.Message}", Severity.Error);
+        }
+    }
+    
+    private void HandleDragStart(ColumnDto column) => _draggedColumn = column;
 
     private void HandleDragEnter(ColumnDto column)
     {
-        if (_draggedColumn != null && _draggedColumn.Id != column.Id)
-        {
-            _targetColumn = column;
-        }
+        if (_draggedColumn != null && _draggedColumn.Id != column.Id) _targetColumn = column;
     }
 
     private async Task HandleDrop(ColumnDto column)
@@ -130,16 +206,14 @@
 
         var columnToMoveId = _draggedColumn.Id;
         var newPosition = _targetColumn.Position;
-        
-        HandleDragEnd(); 
-
+        HandleDragEnd();
         try
         {
             await Store.ReorderColumnsAsync(columnToMoveId, newPosition);
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to move column: {ex.Message}", Severity.Error);
+            Snackbar.Add(ex.Message, Severity.Error);
         }
     }
 
@@ -149,16 +223,11 @@
         _targetColumn = null;
     }
 
-    private string GetDragClass(ColumnDto column)
-    {
-        if (_draggedColumn?.Id == column.Id) return "column-drag-active";
-        if (_targetColumn?.Id == column.Id) return "column-drop-target";
-        return string.Empty;
-    }
 
     private async Task OpenCreateColumnDialog()
     {
         var parameters = new DialogParameters { ["InitialName"] = string.Empty };
+
         var dialog = await DialogService.ShowAsync<ColumnDialog>("New Column", parameters);
         var result = await dialog.Result;
 
@@ -167,7 +236,9 @@
             try
             {
                 var columnName = result.Data?.ToString() ?? string.Empty;
+
                 await Store.CreateColumnAsync(columnName);
+
                 Snackbar.Add("Column created successfully", Severity.Success);
             }
             catch (Exception ex)
@@ -176,6 +247,7 @@
             }
         }
     }
+
 
     private async Task OpenEditColumnDialog(ColumnDto column)
     {
@@ -188,7 +260,9 @@
             try
             {
                 var newName = result.Data?.ToString() ?? string.Empty;
+
                 await Store.UpdateColumnNameAsync(column.Id, newName);
+
                 Snackbar.Add("Column updated successfully", Severity.Success);
             }
             catch (Exception ex)
@@ -200,22 +274,121 @@
 
     private async Task DeleteColumn(ColumnDto column)
     {
-        bool? result = await DialogService.ShowMessageBoxAsync(
-            "Delete Column", 
-            $"Are you sure you want to delete '{column.Name}'?", 
-            yesText: "Delete", cancelText: "Cancel");
+        _columnToDelete = column;
+        StateHasChanged();
+
+        bool? result = await _deleteColumnBox!.ShowAsync();
 
         if (result == true)
         {
             try
             {
                 await Store.DeleteColumnAsync(column.Id);
-                Snackbar.Add("Column deleted", Severity.Info);
+                Snackbar.Add("Column and all its content deleted", Severity.Info);
             }
             catch (Exception ex)
             {
                 Snackbar.Add(ex.Message, Severity.Error);
             }
         }
+
+        _columnToDelete = null;
+    }
+    
+    private async Task OpenCreateTaskDialog(Guid columnId)
+    {
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+
+            MaxWidth = MaxWidth.Small,
+
+            FullWidth = true,
+
+            CloseButton = true
+        };
+
+        var dialog = await DialogService.ShowAsync<TaskDialog>("Create Task", options);
+
+        var result = await dialog.Result;
+
+        if (!result!.Canceled)
+        {
+            try
+            {
+                var request = (CreateTaskRequest)result.Data!;
+
+                await Store.CreateTaskAsync(columnId, request);
+
+                Snackbar.Add("Task created successfully", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+    }
+
+
+    private async Task ConfirmDeleteTask(TaskDto task)
+    {
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            "Delete Task",
+            $"Are you sure you want to delete '{task.Title}'?",
+            yesText: "Delete", cancelText: "Cancel");
+
+
+        if (result == true)
+        {
+            try
+            {
+                await Store.DeleteTaskAsync(task.Id);
+
+                Snackbar.Add("Task deleted", Severity.Info);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+    }
+
+
+    private async Task OpenEditTaskDialog(TaskDto task)
+    {
+        var parameters = new DialogParameters { ["Task"] = task };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+
+
+        var dialog = await DialogService.ShowAsync<EditTaskDialog>("Edit Task", parameters, options);
+
+        var result = await dialog.Result;
+
+
+        if (!result!.Canceled)
+        {
+            try
+            {
+                if (result.Data is UpdateTaskRequest request)
+
+                {
+                    await Store.UpdateTaskAsync(task.Id, request);
+
+                    Snackbar.Add("Task updated", Severity.Success);
+                }
+            }
+
+            catch (Exception ex)
+
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+    }
+    
+    private void NavigateToTaskDetails(TaskDto task)
+    {
+        Navigation.NavigateTo($"/boards/{BoardId}/tasks/{task.Id}");
     }
 }

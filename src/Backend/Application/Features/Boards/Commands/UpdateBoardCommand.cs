@@ -1,7 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
-using Domain.Authorization;
 using Domain.Constants;
 using FluentValidation;
 using MediatR;
@@ -11,37 +10,19 @@ namespace Application.Features.Boards.Commands;
 public record UpdateBoardCommand(Guid BoardId, string Name, string? Description) : IRequest<BoardPreviewDto>;
 
 public class UpdateBoardCommandHandler(
-    ICurrentUserAccessor currentUserAccessor,
-    IUserRepository userRepository,
+    IBoardAccessService boardAccessService,
     IBoardRepository boardRepository,
     IUnitOfWork unitOfWork) : IRequestHandler<UpdateBoardCommand, BoardPreviewDto>
 {
     public async Task<BoardPreviewDto> Handle(UpdateBoardCommand request, CancellationToken ct)
     {
-        var currentUserId = await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => (Guid?)u.Id, ct);
-
-        if (currentUserId == null)
-        {
-            throw new UnauthorizedAccessException("User is not authenticated");
-        }
+        var boardAccessContext = await boardAccessService.EnsureCanEditBoardAsync(request.BoardId, ct);
         
         var board = await boardRepository.GetByIdAsync(request.BoardId, ct);
 
         if (board == null)
         {
             throw new KeyNotFoundException($"Board with ID {request.BoardId} not found.");
-        }
-
-        var userRole = await boardRepository.GetUserRoleAsync(request.BoardId, currentUserId.Value, ct);
-        
-        if (userRole == null)
-        {
-            throw new UnauthorizedAccessException("You are not a member of this board.");
-        }
-        
-        if (!BoardRolePermissions.CanEditBoard(userRole.Value))
-        {
-            throw new UnauthorizedAccessException("You don't have permission to edit this board.");
         }
         
         board.Name = request.Name;
@@ -54,7 +35,7 @@ public class UpdateBoardCommandHandler(
             Name: board.Name,
             Description: board.Description,
             CreatedAt: board.CreatedAt,
-            Role: (Contracts.Enums.BoardRoleDto)userRole.Value
+            Role: (Contracts.Enums.BoardRoleDto)boardAccessContext.Role
         );
     }
 }
@@ -68,9 +49,9 @@ public class UpdateBoardCommandValidator : AbstractValidator<UpdateBoardCommand>
 
         RuleFor(v => v.Name)
             .NotEmpty().WithMessage("Board name is required.")
-            .MaximumLength(BoardConstants.MaxNameLength).WithMessage("Board name must not exceed 100 characters.");
+            .MaximumLength(BoardConstants.MaxNameLength).WithMessage($"Board name must not exceed {BoardConstants.MaxNameLength} characters.");
 
         RuleFor(v => v.Description)
-            .MaximumLength(BoardConstants.MaxDescriptionLength).WithMessage("Description must not exceed 500 characters.");
+            .MaximumLength(BoardConstants.MaxDescriptionLength).WithMessage($"Description must not exceed {BoardConstants.MaxDescriptionLength} characters.");
     }
 }

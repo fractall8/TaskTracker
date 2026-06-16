@@ -7,7 +7,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Features\Columns\Queries\" />
       <Folder Include="Features\Files\" />
     </ItemGroup>
 

@@ -6,32 +6,22 @@ using MediatR;
 
 namespace Application.Features.Boards.Queries;
 
-public record GetBoardByIdQuery(Guid Id) : IRequest<BoardWithColumnsDto>;
+public record GetBoardByIdQuery(Guid BoardId) : IRequest<BoardWithColumnsDto>;
 
 public class GetBoardByIdQueryHandler(
-    ICurrentUserAccessor currentUserAccessor,
-    IUserRepository userRepository,
+    IBoardAccessService boardAccessService,
     IBoardRepository boardRepository)
     : IRequestHandler<GetBoardByIdQuery, BoardWithColumnsDto>
 {
     public async Task<BoardWithColumnsDto> Handle(GetBoardByIdQuery request, CancellationToken ct)
     {
-        var board = await boardRepository.GetBoardWithHierarchyAsync(request.Id, ct);
+        await boardAccessService.EnsureCanViewBoardAsync(request.BoardId, ct);
+        
+        var board = await boardRepository.GetBoardWithHierarchyAsync(request.BoardId, ct);
+        
         if (board is null)
         {
-            throw new KeyNotFoundException($"Board {request.Id} does not exist");
-        }
-
-        var currentUserId = await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => (Guid?)u.Id, ct);
-        if (currentUserId == null)
-        {
-            throw new UnauthorizedAccessException("User is not authenticated");
-        }
-
-        var userRole = await boardRepository.GetUserRoleAsync(request.Id, currentUserId.Value, ct);
-        if (userRole == null)
-        {
-            throw new UnauthorizedAccessException("You are not a member of this board.");
+            throw new KeyNotFoundException($"Board {request.BoardId} does not exist");
         }
 
         var columnDtos = board.Columns
@@ -52,7 +42,7 @@ public class GetBoardByIdQueryValidator : AbstractValidator<GetBoardByIdQuery>
 {
     public GetBoardByIdQueryValidator()
     {
-        RuleFor(x => x.Id)
+        RuleFor(x => x.BoardId)
             .NotEmpty().WithMessage("Board ID is required.");
     }
 }

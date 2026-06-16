@@ -69,9 +69,9 @@ public class CreateBoardCommandValidator : AbstractValidator<CreateBoardCommand>
     {
         RuleFor(v => v.Name)
             .NotEmpty().WithMessage("Board name is required.")
-            .MaximumLength(BoardConstants.MaxNameLength).WithMessage("Board name must not exceed 100 characters.");
+            .MaximumLength(BoardConstants.MaxNameLength).WithMessage($"Board name must not exceed {BoardConstants.MaxNameLength} characters.");
 
         RuleFor(v => v.Description)
-            .MaximumLength(BoardConstants.MaxDescriptionLength).WithMessage("Description must not exceed 500 characters.");
+            .MaximumLength(BoardConstants.MaxDescriptionLength).WithMessage($"Description must not exceed {BoardConstants.MaxDescriptionLength} characters.");
     }
 }

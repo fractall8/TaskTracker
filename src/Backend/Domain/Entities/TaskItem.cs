@@ -10,7 +10,7 @@ public class TaskItem : BaseEntity<Guid>
     
     public DateTimeOffset? DueDate { get; set; }
  
-    public required Guid ColumnId { get; init; }
+    public required Guid ColumnId { get; set; }
     
     public Guid? AssigneeId { get; set; }
     
@@ -21,4 +21,8 @@ public class TaskItem : BaseEntity<Guid>
     public User? Assignee { get; set; }
     
     public User? Reporter { get; set; }
+    
+    public ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
+    
+    public ICollection<Comment> Comments { get; set; } = new List<Comment>();
 }

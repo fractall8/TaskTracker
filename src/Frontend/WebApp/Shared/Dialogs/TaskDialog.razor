@@ -1,0 +1,63 @@
+﻿@using System.ComponentModel.DataAnnotations
+@using Contracts.Requests
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" ValidationDelay="0">
+            <MudTextField @bind-Value="_model.Title"
+                          For="@(() => _model.Title)"
+                          Label="Task Title"
+                          MaxLength="100"
+                          Class="mb-3" />
+
+            <MudTextField @bind-Value="_model.Description"
+                          For="@(() => _model.Description)"
+                          Label="Description (Optional)"
+                          Lines="3"
+                          MaxLength="500"/>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Create</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] public IMudDialogInstance? MudDialog { get; set; }
+
+    private MudForm? _form;
+    private TaskFormModel _model = new();
+
+    private void Cancel() => MudDialog?.Cancel();
+
+    private async Task Submit()
+    {
+        if (_form is not null)
+        {
+            await _form.ValidateAsync();
+
+            if (_form.IsValid)
+            {
+                var request = new CreateTaskRequest(
+                    Title: _model.Title,
+                    Description: string.IsNullOrWhiteSpace(_model.Description) ? null : _model.Description,
+                    DueDate: null,
+                    AssigneeId: null
+                );
+
+                MudDialog?.Close(DialogResult.Ok(request));
+            }
+        }
+    }
+
+    public class TaskFormModel
+    {
+        [Required(ErrorMessage = "Title is required")] 
+        [MaxLength(100)] 
+        public string Title { get; set; } = string.Empty;
+
+        [MaxLength(500)] 
+        public string? Description { get; set; }
+    }
+}

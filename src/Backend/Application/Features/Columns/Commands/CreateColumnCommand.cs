@@ -1,7 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
-using Domain.Authorization;
 using Domain.Constants;
 using Domain.Entities;
 using FluentValidation;
@@ -12,8 +11,7 @@ namespace Application.Features.Columns.Commands;
 public record CreateColumnCommand(Guid BoardId, string Name) : IRequest<ColumnDto>;
 
 public class CreateColumnCommandHandler(
-    ICurrentUserAccessor currentUserAccessor,
-    IUserRepository userRepository,
+    IBoardAccessService boardAccessService,
     IBoardRepository boardRepository,
     IColumnRepository columnRepository,
     IUnitOfWork unitOfWork)
@@ -21,30 +19,13 @@ public class CreateColumnCommandHandler(
 {
     public async Task<ColumnDto> Handle(CreateColumnCommand request, CancellationToken ct)
     {
+        await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, ct);
+        
         var board = await boardRepository.GetByIdAsync(request.BoardId, ct);
 
         if (board is null)
         {
             throw new KeyNotFoundException($"Board {request.BoardId} does not exist");
-        }
-
-        var currentUserId = await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => (Guid?)u.Id, ct);
-        
-        if (currentUserId == null)
-        {
-            throw new UnauthorizedAccessException("User is not authenticated");
-        }
-        
-        var userRole = await boardRepository.GetUserRoleAsync(request.BoardId, currentUserId.Value, ct);
-
-        if (userRole == null)
-        {
-            throw new UnauthorizedAccessException("You are not a member of this board.");
-        }
-        
-        if (!BoardRolePermissions.CanManageColumns(userRole.Value))
-        {
-            throw new UnauthorizedAccessException("You don't have permission to manage columns in this board.");
         }
         
         var existingNamesEnumerable = await columnRepository.GetNameListByBoardIdAsync(request.BoardId, ct);
