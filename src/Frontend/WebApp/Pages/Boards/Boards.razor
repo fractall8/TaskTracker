@@ -174,7 +174,7 @@
                 
                 await BoardStore.RefreshAsync();
             }
-            catch (ApiException ex)
+            catch (Exception ex)
             {
                 Snackbar.Add($"Failed to create board: {ex.Message}", Severity.Error);
             }
@@ -197,7 +197,7 @@
                 
                 await BoardStore.RefreshAsync();
             }
-            catch (ApiException ex)
+            catch (Exception ex)
             {
                 Snackbar.Add($"Failed to update board: {ex.Message}", Severity.Error);
             }
@@ -222,7 +222,7 @@
                 
                 await BoardStore.RefreshAsync();
             }
-            catch (ApiException ex)
+            catch (Exception ex)
             {
                 Snackbar.Add($"Failed to delete board: {ex.Message}", Severity.Error);
             }

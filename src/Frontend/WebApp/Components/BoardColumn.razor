@@ -77,9 +77,16 @@
     private async Task OpenEditColumnDialog()
     {
         var parameters = new DialogParameters { ["InitialName"] = Column.Name };
-        var dialog = await DialogService.ShowAsync<ColumnDialog>("Edit Column", parameters);
-        var result = await dialog.Result;
+        var options = new DialogOptions 
+        { 
+            CloseOnEscapeKey = true, 
+            MaxWidth = MaxWidth.Small, 
+            FullWidth = true 
+        };
 
+        var dialog = await DialogService.ShowAsync<ColumnDialog>("Edit Column", parameters, options);
+        var result = await dialog.Result;
+        
         if (!result!.Canceled)
         {
             try

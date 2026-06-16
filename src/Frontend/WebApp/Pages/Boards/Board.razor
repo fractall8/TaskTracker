@@ -198,7 +198,14 @@
     {
         var parameters = new DialogParameters { ["InitialName"] = string.Empty };
 
-        var dialog = await DialogService.ShowAsync<ColumnDialog>("New Column", parameters);
+        var options = new DialogOptions 
+        { 
+            CloseOnEscapeKey = true, 
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true 
+        };
+        
+        var dialog = await DialogService.ShowAsync<ColumnDialog>("New Column", parameters, options);
         var result = await dialog.Result;
 
         if (!result!.Canceled)

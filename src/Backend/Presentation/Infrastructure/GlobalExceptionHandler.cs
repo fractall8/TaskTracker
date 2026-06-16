@@ -22,7 +22,7 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
                 (StatusCodes.Status404NotFound, "Not Found", exception.Message),
             
             UnauthorizedAccessException => 
-                (StatusCodes.Status401Unauthorized, "Unauthorized", exception.Message),
+                (StatusCodes.Status403Forbidden, "Forbidden", exception.Message),
             
             InvalidOperationException => 
                 (StatusCodes.Status409Conflict, "Conflict", exception.Message),
