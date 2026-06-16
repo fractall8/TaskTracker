@@ -1,6 +1,7 @@
 ﻿@inherits LayoutComponentBase
 @implements IDisposable
 @inject IProfileStore ProfileStore
+@inject ICurrentUserService CurrentUserService
 @inject AuthenticationStateProvider AuthStateProvider
 
 <MudThemeProvider Theme="@_myCustomTheme"/>
@@ -44,7 +45,9 @@
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         if (authState.User.Identity?.IsAuthenticated == true)
-            await ProfileStore.EnsureLoadedAsync();
+        {
+            await CurrentUserService.InitializeAsync();
+        }
     }
 
     public void Dispose() => ProfileStore.StateChanged -= OnStoreStateChanged;

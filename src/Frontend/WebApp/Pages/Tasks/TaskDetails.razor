@@ -1,7 +1,6 @@
 ﻿@page "/boards/{BoardId:guid}/tasks/{TaskId:guid}"
 @using Contracts.DTOs
 @using Contracts.Requests
-@using Refit
 @using Services.Abstractions.Tasks
 @using WebApp.Shared.Dialogs
 @inject ITaskApiService TaskApi
@@ -44,158 +43,20 @@
                     <MudText Typo="Typo.h6" Class="mb-2" Style="font-weight: 600;">Description</MudText>
                     @if (!string.IsNullOrWhiteSpace(_task.Description))
                     {
-                        <MudText Typo="Typo.body1"
-                                 Style="white-space: pre-wrap; color: #172b4d;">@_task.Description</MudText>
+                        <MudText Typo="Typo.body1" Style="white-space: pre-wrap; color: #172b4d;">@_task.Description</MudText>
                     }
                     else
                     {
-                        <MudText Typo="Typo.body2" Style="color: #5e6c84; font-style: italic;">No description
-                            provided.
-                        </MudText>
+                        <MudText Typo="Typo.body2" Style="color: #5e6c84; font-style: italic;">No description provided.</MudText>
                     }
                 </MudPaper>
 
-                <MudText Typo="Typo.h6" Class="mb-3" Style="font-weight: 600;">Attachments</MudText>
-
-                <div class="d-flex flex-column gap-2 mb-4" style="max-width: 400px;">
-
-                    <div class="@(_selectedFile == null ? "" : "d-none")">
-                        <MudFileUpload T="IBrowserFile" @bind-Files="_selectedFile"
-                                       Accept=".pdf,.doc,.docx,.png,.jpg,.jpeg">
-                            <ActivatorContent>
-                                <MudButton Variant="Variant.Outlined"
-                                           StartIcon="@Icons.Material.Filled.AttachFile"
-                                           Color="Color.Primary">
-                                    Select File
-                                </MudButton>
-                            </ActivatorContent>
-                        </MudFileUpload>
-                    </div>
-
-                    @if (_selectedFile != null)
-                    {
-                        <MudPaper Elevation="0" Class="pa-3 d-flex align-center justify-space-between rounded-lg"
-                                  Style="border: 1px solid #e0e0e0; background-color: #f8fafc;">
-                            <div class="d-flex align-center gap-2"
-                                 style="overflow: hidden; flex-grow: 1; padding-right: 8px;">
-                                <MudIcon Icon="@Icons.Material.Filled.InsertDriveFile" Color="Color.Default"
-                                         Size="Size.Small"/>
-                                <MudText Typo="Typo.body2" Class="text-truncate"
-                                         Style="font-weight: 500; color: #172b4d;">
-                                    @_selectedFile.Name
-                                </MudText>
-                                <MudText Typo="Typo.caption" Style="color: #5e6c84; flex-shrink: 0;">
-                                    (@(Math.Round(_selectedFile.Size / 1024.0, 1)) KB)
-                                </MudText>
-                            </div>
-
-                            <div class="d-flex align-center gap-2" style="flex-shrink: 0;">
-                                <MudButton Variant="Variant.Filled"
-                                           Color="Color.Primary"
-                                           Size="Size.Small"
-                                           OnClick="SubmitUploadAsync"
-                                           Disabled="_isUploading">
-                                    @(_isUploading ? "Uploading..." : "Upload")
-                                </MudButton>
-
-                                <MudIconButton Icon="@Icons.Material.Filled.Close"
-                                               Size="Size.Small"
-                                               Color="Color.Error"
-                                               OnClick="ClearSelectedFile"
-                                               Disabled="_isUploading"/>
-                            </div>
-                        </MudPaper>
-                    }
-                </div>
-
-                @if (_task.Attachments != null && _task.Attachments.Any())
-                {
-                    <MudGrid Spacing="2">
-                        @foreach (var attachment in _task.Attachments.OrderByDescending(a => a.CreatedAt))
-                        {
-                            <MudItem xs="12" sm="6" md="4">
-                                <MudPaper Elevation="0" Class="pa-3 d-flex align-center gap-3"
-                                          Style="border: 1px solid #e0e0e0;">
-                                    <MudIcon Icon="@Icons.Material.Filled.InsertDriveFile" Color="Color.Default"
-                                             Size="Size.Large"/>
-                                    <div class="d-flex flex-column" style="overflow: hidden;">
-                                        <MudLink Href="@attachment.FileUrl" Target="_blank" Typo="Typo.body2"
-                                                 Class="text-truncate" Style="font-weight: 500;">
-                                            @attachment.FileName
-                                        </MudLink>
-                                        <MudText Typo="Typo.caption" Style="color: #5e6c84;">
-                                            @(Math.Round(attachment.SizeInBytes / 1024.0, 1)) KB
-                                        </MudText>
-                                    </div>
-                                </MudPaper>
-                            </MudItem>
-                        }
-                    </MudGrid>
-                }
-                else
-                {
-                    <MudText Typo="Typo.body2" Style="color: #5e6c84;">No attachments yet.</MudText>
-                }
+                <TaskAttachments BoardId="BoardId" TaskId="TaskId" Attachments="_task.Attachments" />
 
                 <MudDivider Class="my-8" />
-
-                <MudText Typo="Typo.h6" Class="mb-4" Style="font-weight: 600;">Activity & Comments</MudText>
-
-                <div class="d-flex gap-3 mb-6">
-                    <MudAvatar Color="Color.Primary" Size="Size.Medium">U</MudAvatar>
-                    <MudPaper Elevation="0" Class="pa-0 flex-grow-1" Style="border: 1px solid #e0e0e0; overflow: hidden; border-radius: 8px;">
-                        <MudTextField @bind-Value="_newCommentText" 
-                                      Placeholder="Write a comment..." 
-                                      Lines="3" 
-                                      DisableUnderLine="true"
-                                      Class="pa-3 mx-0"
-                                      Immediate="true" />
-                        
-                        <div class="d-flex justify-end pa-2" style="background-color: #f8fafc; border-top: 1px solid #e0e0e0;">
-                            <MudButton Variant="Variant.Filled" 
-                                       Color="Color.Primary" 
-                                       Size="Size.Small"
-                                       OnClick="SubmitCommentAsync"
-                                       Disabled="@(string.IsNullOrWhiteSpace(_newCommentText) || _isSubmittingComment)">
-                                Save
-                            </MudButton>
-                        </div>
-                    </MudPaper>
-                </div>
-
-                @if (_comments != null)
-                {
-                    <div class="d-flex flex-column gap-4">
-                        @foreach (var comment in _comments.OrderByDescending(c => c.CreatedAt))
-                        {
-                            <div class="d-flex gap-3">
-                                <MudAvatar Color="Color.Secondary" Size="Size.Medium">U</MudAvatar>
-                                <div class="flex-grow-1">
-                                    <div class="d-flex align-center gap-2 mb-1">
-                                        <MudText Typo="Typo.subtitle2" Style="font-weight: 600; color: #172b4d;">
-                                            User @comment.CreatedById?.ToString().Substring(0, 5)...
-                                        </MudText>
-                                        <MudText Typo="Typo.caption" Style="color: #5e6c84;">
-                                            @comment.CreatedAt.ToString("MMM dd, HH:mm")
-                                        </MudText>
-                                        
-                                        <MudSpacer />
-                                        
-                                        <MudIconButton Icon="@Icons.Material.Outlined.Delete" 
-                                                       Size="Size.Small" 
-                                                       Color="Color.Error" 
-                                                       Style="opacity: 0.5;"
-                                                       OnClick="@(() => ConfirmDeleteComment(comment))" />
-                                    </div>
-                                    
-                                    <MudText Typo="Typo.body2" Style="color: #172b4d; white-space: pre-wrap;">
-                                        @comment.Text
-                                    </MudText>
-                                </div>
-                            </div>
-                        }
-                    </div>
-                }
+                
+                <TaskComments BoardId="BoardId" TaskId="TaskId" />
+                
             </MudItem>
 
             <MudItem xs="12" md="4">
@@ -232,18 +93,10 @@
 
     private TaskDto? _task;
     private bool _isLoading = true;
-    
-    private bool _isUploading = false;
-    private IBrowserFile? _selectedFile;
-
-    private List<CommentDto>? _comments;
-    private string _newCommentText = string.Empty;
-    private bool _isSubmittingComment = false;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadTaskAsync();
-        await LoadCommentsAsync();
     }
 
     private async Task LoadTaskAsync()
@@ -263,19 +116,6 @@
         }
     }
 
-    private async Task LoadCommentsAsync()
-    {
-        try
-        {
-            _comments = await TaskApi.GetCommentsAsync(BoardId, TaskId);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Failed to load comments: {ex.Message}", Severity.Error);
-            _comments = new List<CommentDto>(); 
-        }
-    }
-
     private async Task OpenEditTaskDialog()
     {
         var parameters = new DialogParameters { ["Task"] = _task };
@@ -284,113 +124,16 @@
         var dialog = await DialogService.ShowAsync<EditTaskDialog>("Edit Task", parameters, options);
         var result = await dialog.Result;
 
-        if (!result!.Canceled)
+        if (!result!.Canceled && result.Data is UpdateTaskRequest request)
         {
             try
             {
-                if (result.Data is UpdateTaskRequest request)
-                {
-                    var updatedTask = await TaskApi.UpdateTaskAsync(BoardId, TaskId, request);
-                    
-                    var currentAttachments = _task?.Attachments;
-                    
-                    _task = updatedTask with { Attachments = currentAttachments ?? new List<AttachmentDto>() };
-                    
-                    Snackbar.Add("Task updated", Severity.Success);
-                }
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add(ex.Message, Severity.Error);
-            }
-        }
-    }
-
-    private void ClearSelectedFile()
-    {
-        _selectedFile = null;
-    }
-
-    private async Task SubmitUploadAsync()
-    {
-        if (_selectedFile == null) return;
-
-        const long maxAllowedSize = 10 * 1024 * 1024;
-
-        if (_selectedFile.Size > maxAllowedSize)
-        {
-            Snackbar.Add("File is too large (max 10MB).", Severity.Warning);
-            return;
-        }
-
-        try
-        {
-            _isUploading = true;
-            StateHasChanged();
-
-            using var stream = _selectedFile.OpenReadStream(maxAllowedSize);
-            var streamPart = new StreamPart(stream, _selectedFile.Name, _selectedFile.ContentType);
-
-            var newAttachment = await TaskApi.UploadAttachmentAsync(BoardId, TaskId, streamPart);
-
-            _task?.Attachments?.Add(newAttachment);
-
-            Snackbar.Add("File uploaded successfully", Severity.Success);
-
-            _selectedFile = null;
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Upload failed: {ex.Message}", Severity.Error);
-        }
-        finally
-        {
-            _isUploading = false;
-            StateHasChanged();
-        }
-    }
-
-    private async Task SubmitCommentAsync()
-    {
-        if (string.IsNullOrWhiteSpace(_newCommentText)) return;
-
-        try
-        {
-            _isSubmittingComment = true;
-            StateHasChanged();
-            
-            var request = new CreateCommentRequest(_newCommentText);
-            var newComment = await TaskApi.CreateCommentAsync(BoardId, TaskId, request);
-            
-            _comments?.Add(newComment);
-            _newCommentText = string.Empty; 
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Failed to post comment: {ex.Message}", Severity.Error);
-        }
-        finally
-        {
-            _isSubmittingComment = false;
-            StateHasChanged();
-        }
-    }
-
-    private async Task ConfirmDeleteComment(CommentDto comment)
-    {
-        bool? result = await DialogService.ShowMessageBoxAsync(
-            "Delete Comment", 
-            "Are you sure you want to delete this comment?", 
-            yesText: "Delete", cancelText: "Cancel");
-
-        if (result == true)
-        {
-            try
-            {
-                await TaskApi.DeleteCommentAsync(BoardId, TaskId, comment.Id);
+                var updatedTask = await TaskApi.UpdateTaskAsync(BoardId, TaskId, request);
+                var currentAttachments = _task?.Attachments;
                 
-                _comments?.Remove(comment);
-                Snackbar.Add("Comment deleted", Severity.Info);
+                _task = updatedTask with { Attachments = currentAttachments ?? new List<AttachmentDto>() };
+                
+                Snackbar.Add("Task updated", Severity.Success);
             }
             catch (Exception ex)
             {

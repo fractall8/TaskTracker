@@ -16,4 +16,16 @@ public class UserRepository(TaskTrackerDbContext context) : Repository<User, Gui
             .Where(u => u.AzureAdObjectId == azureAdObjectId)
             .Select(selector)
             .FirstOrDefaultAsync(ct);
+    
+    public async Task<List<User>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken ct = default)
+    {
+        if (ids == null || !ids.Any())
+        {
+            return new List<User>();
+        }
+
+        return await DbContext.Set<User>()
+            .Where(u => ids.Contains(u.Id))
+            .ToListAsync(ct);
+    }
 }

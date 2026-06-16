@@ -1,7 +1,6 @@
 ﻿@page "/boards/{BoardId:guid}"
 @implements IDisposable
 @using Contracts.DTOs
-@using Contracts.Requests
 @using WebApp.Shared.Dialogs
 @inject IBoardDetailsStore Store
 @inject IDialogService DialogService
@@ -82,10 +81,7 @@
                                      OnColumnDragStart="HandleDragStart"
                                      OnColumnDragEnter="HandleDragEnter"
                                      OnColumnDrop="HandleDrop"
-                                     OnColumnDragEnd="HandleDragEnd"
-                                     OnEditColumn="OpenEditColumnDialog"
-                                     OnDeleteColumn="DeleteColumn"
-                                     OnCreateTask="OpenCreateTaskDialog"/>
+                                     OnColumnDragEnd="HandleDragEnd" />
                     }
 
                     <MudButton Variant="Variant.Outlined"
@@ -100,44 +96,19 @@
             </ChildContent>
 
             <ItemRenderer>
-                <TaskCard Task="context"
-                          OnEditClick="OpenEditTaskDialog"
-                          OnDeleteClick="ConfirmDeleteTask"
-                          OnDetailsClick="NavigateToTaskDetails"/>
+                <TaskCard Task="context" />
             </ItemRenderer>
 
         </MudDropContainer>
     }
 </MudContainer>
- <MudMessageBox @ref="_deleteColumnBox" Title="Delete Column?">
-    <MessageContent>
-        @if (_columnToDelete != null)
-        {
-            <MudText>Are you sure you want to delete '<b>@_columnToDelete.Name</b>'?</MudText>
-            <br />
-            <div style="color: var(--mud-palette-error); font-weight: bold; background-color: var(--mud-palette-error-hover); padding: 12px; border-radius: 8px; border-left: 4px solid var(--mud-palette-error);">
-                ⚠️ WARNING: This action cannot be undone. All tasks, comments, and attachments inside this column will be DELETED.
-            </div>
-        }
-    </MessageContent>
-    <YesButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Error">Delete</MudButton>
-    </YesButton>
-    <CancelButton>
-        <MudButton Variant="Variant.Text" Color="Color.Default">Cancel</MudButton>
-    </CancelButton>
-</MudMessageBox>
 
 @code {
     [Parameter] public Guid BoardId { get; set; }
-    [Inject] private NavigationManager Navigation { get; set; } = null!;
     
     private ColumnDto? _draggedColumn;
     private ColumnDto? _targetColumn;
     private string _searchQuery = string.Empty;
-    
-    private MudMessageBox? _deleteColumnBox;
-    private ColumnDto? _columnToDelete;
 
     private MudDropContainer<TaskDto>? _dropContainer;
     
@@ -153,7 +124,7 @@
         await Store.LoadAsync(BoardId);
     }
 
-    public void Dispose() => Store.StateChanged -= StateHasChanged;
+    public void Dispose() => Store.StateChanged -= HandleStoreStateChanged;
     
     private void HandleStoreStateChanged()
     {
@@ -223,7 +194,6 @@
         _targetColumn = null;
     }
 
-
     private async Task OpenCreateColumnDialog()
     {
         var parameters = new DialogParameters { ["InitialName"] = string.Empty };
@@ -246,149 +216,5 @@
                 Snackbar.Add(ex.Message, Severity.Error);
             }
         }
-    }
-
-
-    private async Task OpenEditColumnDialog(ColumnDto column)
-    {
-        var parameters = new DialogParameters { ["InitialName"] = column.Name };
-        var dialog = await DialogService.ShowAsync<ColumnDialog>("Edit Column", parameters);
-        var result = await dialog.Result;
-
-        if (!result!.Canceled)
-        {
-            try
-            {
-                var newName = result.Data?.ToString() ?? string.Empty;
-
-                await Store.UpdateColumnNameAsync(column.Id, newName);
-
-                Snackbar.Add("Column updated successfully", Severity.Success);
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add(ex.Message, Severity.Error);
-            }
-        }
-    }
-
-    private async Task DeleteColumn(ColumnDto column)
-    {
-        _columnToDelete = column;
-        StateHasChanged();
-
-        bool? result = await _deleteColumnBox!.ShowAsync();
-
-        if (result == true)
-        {
-            try
-            {
-                await Store.DeleteColumnAsync(column.Id);
-                Snackbar.Add("Column and all its content deleted", Severity.Info);
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add(ex.Message, Severity.Error);
-            }
-        }
-
-        _columnToDelete = null;
-    }
-    
-    private async Task OpenCreateTaskDialog(Guid columnId)
-    {
-        var options = new DialogOptions
-        {
-            CloseOnEscapeKey = true,
-
-            MaxWidth = MaxWidth.Small,
-
-            FullWidth = true,
-
-            CloseButton = true
-        };
-
-        var dialog = await DialogService.ShowAsync<TaskDialog>("Create Task", options);
-
-        var result = await dialog.Result;
-
-        if (!result!.Canceled)
-        {
-            try
-            {
-                var request = (CreateTaskRequest)result.Data!;
-
-                await Store.CreateTaskAsync(columnId, request);
-
-                Snackbar.Add("Task created successfully", Severity.Success);
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add(ex.Message, Severity.Error);
-            }
-        }
-    }
-
-
-    private async Task ConfirmDeleteTask(TaskDto task)
-    {
-        bool? result = await DialogService.ShowMessageBoxAsync(
-            "Delete Task",
-            $"Are you sure you want to delete '{task.Title}'?",
-            yesText: "Delete", cancelText: "Cancel");
-
-
-        if (result == true)
-        {
-            try
-            {
-                await Store.DeleteTaskAsync(task.Id);
-
-                Snackbar.Add("Task deleted", Severity.Info);
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add(ex.Message, Severity.Error);
-            }
-        }
-    }
-
-
-    private async Task OpenEditTaskDialog(TaskDto task)
-    {
-        var parameters = new DialogParameters { ["Task"] = task };
-
-        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
-
-
-        var dialog = await DialogService.ShowAsync<EditTaskDialog>("Edit Task", parameters, options);
-
-        var result = await dialog.Result;
-
-
-        if (!result!.Canceled)
-        {
-            try
-            {
-                if (result.Data is UpdateTaskRequest request)
-
-                {
-                    await Store.UpdateTaskAsync(task.Id, request);
-
-                    Snackbar.Add("Task updated", Severity.Success);
-                }
-            }
-
-            catch (Exception ex)
-
-            {
-                Snackbar.Add(ex.Message, Severity.Error);
-            }
-        }
-    }
-    
-    private void NavigateToTaskDetails(TaskDto task)
-    {
-        Navigation.NavigateTo($"/boards/{BoardId}/tasks/{task.Id}");
     }
 }

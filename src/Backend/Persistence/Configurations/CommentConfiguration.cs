@@ -23,5 +23,7 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
             .OnDelete(DeleteBehavior.Cascade);
             
         builder.HasIndex(c => c.TaskId);
+        
+        builder.HasQueryFilter(c => !c.IsDeleted);
     }
 }

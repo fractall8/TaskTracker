@@ -40,6 +40,14 @@ public interface ITasksApi
 
     [Post("/api/boards/{boardId}/tasks/{taskId}/comments")]
     Task<IApiResponse<CommentDto>> CreateCommentAsync(Guid boardId, Guid taskId, [Body] CreateCommentRequest request, CancellationToken ct = default);
+    
+    [Put("/api/boards/{boardId}/tasks/{taskId}/comments/{commentId}")]
+    Task<ApiResponse<CommentDto>> UpdateCommentAsync(
+        Guid boardId, 
+        Guid taskId, 
+        Guid commentId, 
+        [Body] UpdateCommentRequest request, 
+        CancellationToken ct = default);
 
     [Delete("/api/boards/{boardId}/tasks/{taskId}/comments/{commentId}")]
     Task<IApiResponse> DeleteCommentAsync(Guid boardId, Guid taskId, Guid commentId, CancellationToken ct = default);

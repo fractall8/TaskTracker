@@ -1,4 +1,10 @@
 ﻿@using Contracts.DTOs
+@using Contracts.Requests
+@using WebApp.Shared.Dialogs
+@inject IBoardDetailsStore Store
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
 
 <MudPaper Elevation="0" Class="pa-2 rounded"
           Style="border: 1px solid #e0e0e0; background-color: white; margin-bottom: 8px; cursor: grab;">
@@ -7,7 +13,7 @@
         
         <div style="flex-grow: 1; padding: 4px; cursor: pointer;" 
              class="task-content-hover" 
-             @onclick="HandleDetailsClick">
+             @onclick="NavigateToTaskDetails">
             
             <MudText Typo="Typo.body2" Style="font-weight: 500;">@Task.Title</MudText>
 
@@ -22,9 +28,9 @@
 
         <div class="d-flex gap-1">
             <MudIconButton Icon="@Icons.Material.Outlined.Edit" Size="Size.Small"
-                           Style="cursor: pointer; opacity: 0.6; padding: 4px;" OnClick="HandleEditClick"/>
+                           Style="cursor: pointer; opacity: 0.6; padding: 4px;" OnClick="OpenEditTaskDialog"/>
             <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error"
-                           Style="cursor: pointer; opacity: 0.6; padding: 4px;" OnClick="HandleDeleteClick"/>
+                           Style="cursor: pointer; opacity: 0.6; padding: 4px;" OnClick="ConfirmDeleteTask"/>
         </div>
     </div>
 </MudPaper>
@@ -37,14 +43,58 @@
 
 @code {
     [Parameter, EditorRequired] public TaskDto Task { get; set; } = null!;
-    
-    [Parameter] public EventCallback<TaskDto> OnEditClick { get; set; }
-    [Parameter] public EventCallback<TaskDto> OnDeleteClick { get; set; }
-    
-    [Parameter] public EventCallback<TaskDto> OnDetailsClick { get; set; } 
 
-    private async Task HandleEditClick() => await OnEditClick.InvokeAsync(Task);
-    private async Task HandleDeleteClick() => await OnDeleteClick.InvokeAsync(Task);
-    
-    private async Task HandleDetailsClick() => await OnDetailsClick.InvokeAsync(Task); 
+    private async Task ConfirmDeleteTask()
+    {
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            "Delete Task",
+            $"Are you sure you want to delete '{Task.Title}'?",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            try
+            {
+                await Store.DeleteTaskAsync(Task.Id);
+                Snackbar.Add("Task deleted", Severity.Info);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenEditTaskDialog()
+    {
+        var parameters = new DialogParameters { ["Task"] = Task };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+
+        var dialog = await DialogService.ShowAsync<EditTaskDialog>("Edit Task", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result!.Canceled)
+        {
+            try
+            {
+                if (result.Data is UpdateTaskRequest request)
+                {
+                    await Store.UpdateTaskAsync(Task.Id, request);
+                    Snackbar.Add("Task updated", Severity.Success);
+                }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+    }
+
+    private void NavigateToTaskDetails()
+    {
+        if (Store.BoardId.HasValue)
+        {
+            Navigation.NavigateTo($"/boards/{Store.BoardId.Value}/tasks/{Task.Id}");
+        }
+    }
 }

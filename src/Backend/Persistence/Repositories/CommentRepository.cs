@@ -15,4 +15,12 @@ public class CommentRepository(TaskTrackerDbContext dbContext)
             .OrderByDescending(c => c.CreatedAt)
             .ToListAsync(ct);
     }
+
+    public async Task<Comment?> GetCommentWithDetailsAsync(Guid id, CancellationToken ct = default)
+    {
+        return await DbContext.Set<Comment>()
+            .Include(c => c.Task)
+            .ThenInclude(t => t.Column)
+            .FirstOrDefaultAsync(c => c.Id == id, ct);
+    }
 }

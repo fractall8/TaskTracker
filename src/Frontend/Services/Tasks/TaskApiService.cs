@@ -63,6 +63,13 @@ public class TaskApiService(ITasksApi tasksApi) : ITaskApiService
         return await response.HandleResponseAsync();
     }
 
+    public async Task<CommentDto> UpdateCommentAsync(Guid boardId, Guid taskId, Guid commentId, UpdateCommentRequest request,
+        CancellationToken ct = default)
+    {
+        var response = await tasksApi.UpdateCommentAsync(boardId, taskId, commentId, request, ct);
+        return await response.HandleResponseAsync();
+    }
+
     public async Task DeleteCommentAsync(Guid boardId, Guid taskId, Guid commentId, CancellationToken ct = default)
     {
         var response = await tasksApi.DeleteCommentAsync(boardId, taskId, commentId, ct);
