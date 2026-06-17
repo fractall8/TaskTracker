@@ -18,16 +18,16 @@
     }
 
     .task-scroll-area::-webkit-scrollbar-thumb {
-        background: rgba(9, 30, 66, 0.13);
+        background: var(--mud-palette-lines-default);
         border-radius: 8px;
     }
 
     .task-scroll-area::-webkit-scrollbar-thumb:hover {
-        background: rgba(9, 30, 66, 0.25);
+        background: var(--mud-palette-text-secondary);
     }
 </style>
 
-<MudContainer MaxWidth="MaxWidth.False" Class="pt-4 px-4 px-md-8 d-flex flex-column"
+<MudContainer MaxWidth="MaxWidth.Large" Class="pt-6 px-4 d-flex flex-column"
               Style="height: calc(100vh - 64px); overflow: hidden;">
 
     @if (_isLoading)
@@ -54,7 +54,7 @@
 
                     <div style="flex-grow: 1; min-width: 0;">
                         <MudText Typo="Typo.h4" Class="fw-bold"
-                                 Style="color: #172b4d; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word;">
+                                 Style="color: var(--mud-palette-text-primary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word;">
                             @_task.Title
                         </MudText>
                     </div>
@@ -71,17 +71,21 @@
                 </div>
 
                 <div class="flex-grow-1 overflow-y-auto task-scroll-area pr-2">
-                    <MudPaper Elevation="0" Class="pa-4 mb-6"
-                              Style="border: 1px solid #e0e0e0; background-color: #fafbfc;">
-                        <MudText Typo="Typo.h6" Class="mb-2" Style="font-weight: 600;">Description</MudText>
+                    <MudPaper Elevation="0" Class="pa-4 mb-6 rounded-lg"
+                              Style="border: 1px solid var(--mud-palette-lines-default); background-color: var(--mud-palette-drawer-background);">
+                        <MudText Typo="Typo.h6" Class="mb-2"
+                                 Style="color: var(--mud-palette-text-primary); font-weight: 600;">Description
+                        </MudText>
                         @if (!string.IsNullOrWhiteSpace(_task.Description))
                         {
                             <MudText Typo="Typo.body1"
-                                     Style="white-space: pre-wrap; word-break: break-word; color: #172b4d;">@_task.Description</MudText>
+                                     Style="white-space: pre-wrap; word-break: break-word; color: var(--mud-palette-text-primary);">@_task.Description</MudText>
                         }
                         else
                         {
-                            <MudText Typo="Typo.body2" Style="color: #5e6c84; font-style: italic;">No description
+                            <MudText Typo="Typo.body2"
+                                     Style="color: var(--mud-palette-text-secondary); font-style: italic;">No
+                                description
                                 provided.
                             </MudText>
                         }
@@ -96,19 +100,24 @@
             </div>
 
             <div class="flex-shrink-0" style="width: 100%; max-width: 320px; overflow-y: auto;">
-                <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid #e0e0e0; background-color: #f4f5f7;">
-                    <MudText Typo="Typo.subtitle1" Class="fw-bold mb-4" Style="color: #172b4d;">Task Details</MudText>
+                <MudPaper Elevation="0" Class="pa-4 rounded-lg"
+                          Style="border: 1px solid var(--mud-palette-lines-default); background-color: var(--mud-palette-drawer-background);">
+                    <MudText Typo="Typo.subtitle1" Class="fw-bold mb-4" Style="color: var(--mud-palette-text-primary);">
+                        Task Details
+                    </MudText>
 
                     <div class="d-flex flex-column gap-4">
                         <div>
                             <MudText Typo="Typo.caption"
-                                     Style="color: #5e6c84; font-weight: 600; text-transform: uppercase;">Reporter
+                                     Style="color: var(--mud-palette-text-secondary); font-weight: 600; text-transform: uppercase;">
+                                Reporter
                             </MudText>
                             <div class="d-flex align-center gap-2 mt-1">
                                 <MudAvatar Size="Size.Small" Color="Color.Primary">
                                     @((_task.ReporterName?.FirstOrDefault() ?? 'U').ToString().ToUpper())
                                 </MudAvatar>
-                                <MudText Typo="Typo.body2" Style="color: #172b4d; font-weight: 500;">
+                                <MudText Typo="Typo.body2"
+                                         Style="color: var(--mud-palette-text-primary); font-weight: 500;">
                                     @(_task.ReporterName ?? "Unknown User")
                                 </MudText>
                             </div>
@@ -118,7 +127,8 @@
 
                         <div>
                             <MudText Typo="Typo.caption"
-                                     Style="color: #5e6c84; font-weight: 600; text-transform: uppercase;">Assignee
+                                     Style="color: var(--mud-palette-text-secondary); font-weight: 600; text-transform: uppercase;">
+                                Assignee
                             </MudText>
                             @if (_task.AssigneeId.HasValue)
                             {
@@ -126,14 +136,16 @@
                                     <MudAvatar Size="Size.Small" Color="Color.Secondary">
                                         @((_task.AssigneeName?.FirstOrDefault() ?? 'U').ToString().ToUpper())
                                     </MudAvatar>
-                                    <MudText Typo="Typo.body2" Style="color: #172b4d; font-weight: 500;">
+                                    <MudText Typo="Typo.body2"
+                                             Style="color: var(--mud-palette-text-primary); font-weight: 500;">
                                         @(_task.AssigneeName ?? "Unknown User")
                                     </MudText>
                                 </div>
                             }
                             else
                             {
-                                <MudText Typo="Typo.body2" Class="mt-1" Style="color: #5e6c84; font-style: italic;">
+                                <MudText Typo="Typo.body2" Class="mt-1"
+                                         Style="color: var(--mud-palette-text-secondary); font-style: italic;">
                                     Unassigned
                                 </MudText>
                             }
@@ -143,9 +155,11 @@
 
                         <div>
                             <MudText Typo="Typo.caption"
-                                     Style="color: #5e6c84; font-weight: 600; text-transform: uppercase;">Due Date
+                                     Style="color: var(--mud-palette-text-secondary); font-weight: 600; text-transform: uppercase;">
+                                Due Date
                             </MudText>
-                            <MudText Typo="Typo.body2" Class="mt-1" Style="color: #172b4d; font-weight: 500;">
+                            <MudText Typo="Typo.body2" Class="mt-1"
+                                     Style="color: var(--mud-palette-text-primary); font-weight: 500;">
                                 @(_task.DueDate.HasValue ? _task.DueDate.Value.ToString("MMM dd, yyyy") : "None")
                             </MudText>
                         </div>

@@ -10,25 +10,27 @@
     @if (ProfileStore.IsLoading)
     {
         <div class="d-flex justify-center align-center" style="height: 50vh;">
-            <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large"/>
         </div>
     }
     else if (ProfileStore.IsLoaded && ProfileStore.Profile is { } profile)
     {
         <MudGrid>
             <MudItem xs="12" sm="8" md="6" lg="5">
-                <MudPaper Elevation="2" Class="pa-6 rounded-lg">
-                    
+                <MudPaper Elevation="0" Class="pa-6 rounded-lg"
+                          Style="border: 1px solid var(--mud-palette-lines-default); background-color: var(--mud-palette-surface);">
+
                     <div class="d-flex align-center">
                         <MudAvatar Color="Color.Primary" Size="Size.Large" Class="mr-4 elevation-1 font-weight-bold">
                             @(profile.DisplayName?.FirstOrDefault() ?? profile.Email?.FirstOrDefault() ?? '?')
                         </MudAvatar>
-                        
+
                         <div>
-                            <MudText Typo="Typo.h5" Class="font-weight-bold">
+                            <MudText Typo="Typo.h5" Class="font-weight-bold"
+                                     Style="color: var(--mud-palette-text-primary);">
                                 Welcome, @(profile.DisplayName ?? "User")
                             </MudText>
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">
                                 @profile.Email
                             </MudText>
                         </div>
@@ -39,13 +41,14 @@
     }
     else if (ProfileStore.ErrorMessage is { } error)
     {
-        <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mt-4">
+        <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mt-4 rounded-lg">
             @error
         </MudAlert>
     }
 </MudContainer>
 
 @code {
+
     protected override void OnInitialized() =>
         ProfileStore.StateChanged += OnStoreStateChanged;
 

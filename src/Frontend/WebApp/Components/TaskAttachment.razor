@@ -4,7 +4,8 @@
 @inject ITaskApiService TaskApi
 @inject ISnackbar Snackbar
 
-<MudText Typo="Typo.h6" Class="mb-3" Style="font-weight: 600;">Attachments</MudText>
+<MudText Typo="Typo.h6" Class="mb-3" Style="font-weight: 600; color: var(--mud-palette-text-primary);">Attachments
+</MudText>
 
 <div class="d-flex flex-column gap-2 mb-4" style="max-width: 400px;">
     <div class="@(_selectedFile == null ? "" : "d-none")">
@@ -22,13 +23,14 @@
     @if (_selectedFile != null)
     {
         <MudPaper Elevation="0" Class="pa-3 d-flex align-center justify-space-between rounded-lg"
-                  Style="border: 1px solid #e0e0e0; background-color: #f8fafc;">
+                  Style="border: 1px solid var(--mud-palette-lines-default); background-color: var(--mud-palette-drawer-background);">
             <div class="d-flex align-center gap-2" style="overflow: hidden; flex-grow: 1; padding-right: 8px;">
                 <MudIcon Icon="@Icons.Material.Filled.InsertDriveFile" Color="Color.Default" Size="Size.Small"/>
-                <MudText Typo="Typo.body2" Class="text-truncate" Style="font-weight: 500; color: #172b4d;">
+                <MudText Typo="Typo.body2" Class="text-truncate"
+                         Style="font-weight: 500; color: var(--mud-palette-text-primary);">
                     @_selectedFile.Name
                 </MudText>
-                <MudText Typo="Typo.caption" Style="color: #5e6c84; flex-shrink: 0;">
+                <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary); flex-shrink: 0;">
                     (@(Math.Round(_selectedFile.Size / 1024.0, 1)) KB)
                 </MudText>
             </div>
@@ -52,23 +54,25 @@
         @foreach (var attachment in Attachments.OrderByDescending(a => a.CreatedAt))
         {
             <MudItem xs="12" sm="6" md="4">
-                <MudPaper Elevation="0" Class="pa-3 d-flex align-center gap-3" Style="border: 1px solid #e0e0e0;">
+                <MudPaper Elevation="0" Class="pa-3 d-flex align-center gap-3 rounded-lg"
+                          Style="border: 1px solid var(--mud-palette-lines-default); background-color: var(--mud-palette-surface);">
                     <MudIcon Icon="@Icons.Material.Filled.InsertDriveFile" Color="Color.Default" Size="Size.Large"/>
                     <div class="d-flex flex-column flex-grow-1" style="overflow: hidden;">
-                        <MudText Typo="Typo.body2" Class="text-truncate" Style="font-weight: 500;">
+                        <MudText Typo="Typo.body2" Class="text-truncate"
+                                 Style="font-weight: 500; color: var(--mud-palette-text-primary);">
                             @attachment.FileName
                         </MudText>
-                        <MudText Typo="Typo.caption" Style="color: #5e6c84;">
+                        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">
                             @(Math.Round(attachment.SizeInBytes / 1024.0, 1)) KB
                         </MudText>
                     </div>
-                    
-                    <MudIconButton Icon="@Icons.Material.Filled.Download" 
-                                   Color="Color.Primary" 
+
+                    <MudIconButton Icon="@Icons.Material.Filled.Download"
+                                   Color="Color.Primary"
                                    Size="Size.Small"
                                    Href="@attachment.FileUrl"
                                    Target="_blank"
-                                   download="@attachment.FileName" />
+                                   download="@attachment.FileName"/>
                 </MudPaper>
             </MudItem>
         }
@@ -76,7 +80,7 @@
 }
 else
 {
-    <MudText Typo="Typo.body2" Style="color: #5e6c84;">No attachments yet.</MudText>
+    <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">No attachments yet.</MudText>
 }
 
 @code {
@@ -122,4 +126,5 @@ else
             _isUploading = false;
         }
     }
+
 }

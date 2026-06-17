@@ -3,37 +3,61 @@
 @inject IProfileStore ProfileStore
 @inject ICurrentUserService CurrentUserService
 @inject AuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JsRuntime
 
-<MudThemeProvider Theme="@_myCustomTheme"/>
+<MudThemeProvider @ref="_themeProvider" @bind-IsDarkMode="_isDarkMode" Theme="@_trelloTheme"/>
 <MudPopoverProvider/>
 <MudDialogProvider/>
 <MudSnackbarProvider/>
 
 <MudLayout>
-    <AppNavBar/>
+    <AppNavBar IsDarkMode="_isDarkMode" OnThemeToggled="ToggleTheme"/>
     <MudMainContent>
         @Body
     </MudMainContent>
 </MudLayout>
 
 @code {
+    private bool _isDarkMode;
+    private MudThemeProvider _themeProvider = null!;
 
-    private readonly MudTheme _myCustomTheme = new MudTheme()
+    private readonly MudTheme _trelloTheme = new MudTheme()
     {
         PaletteLight = new PaletteLight
         {
-            Primary = "#2563EB",
-            Secondary = "#64748B",
-            Background = "#F8FAFC",
+            Primary = "#0052CC",
+            Secondary = "#172B4D",
+            Background = "#FFFFFF",
+            DrawerBackground = "#F4F5F7", 
             Surface = "#FFFFFF",
             AppbarBackground = "#FFFFFF",
-            AppbarText = "#0F172A",
-            TextPrimary = "#0F172A",
-            TextSecondary = "#475569",
-            Info = "#0EA5E9",
-            Success = "#10B981",
-            Warning = "#F59E0B",
-            Error = "#EF4444"
+            AppbarText = "#172B4D",
+            TextPrimary = "#172B4D",
+            TextSecondary = "#5E6C84",
+            LinesDefault = "#DFE1E6",
+            Divider = "#DFE1E6",
+            Info = "#0052CC",
+            Success = "#00875A",
+            Warning = "#FF991F",
+            Error = "#DE350B"
+        },
+        PaletteDark = new PaletteDark
+        {
+            Primary = "#579DFF",
+            Secondary = "#B6C2CF",
+            Background = "#161A1D",
+            DrawerBackground = "#22272B", 
+            Surface = "#2C333A",
+            AppbarBackground = "#1D2125",
+            AppbarText = "#9FADBC",
+            TextPrimary = "#B6C2CF",
+            TextSecondary = "#8C9BAB",
+            LinesDefault = "#A6C5E229",
+            Divider = "#A6C5E229",
+            Info = "#579DFF",
+            Success = "#216E4E",
+            Warning = "#A54800",
+            Error = "#AE2E24"
         }
     };
 
@@ -47,6 +71,23 @@
         {
             await CurrentUserService.InitializeAsync();
         }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var storedTheme = await JsRuntime.InvokeAsync<string>("localStorage.getItem", "themePreference");
+            _isDarkMode = !string.IsNullOrEmpty(storedTheme) ? storedTheme == "dark" : await _themeProvider.GetSystemDarkModeAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleTheme()
+    {
+        _isDarkMode = !_isDarkMode;
+        await JsRuntime.InvokeVoidAsync("localStorage.setItem", "themePreference", _isDarkMode ? "dark" : "light");
+        await JsRuntime.InvokeVoidAsync("updateBodyTheme", _isDarkMode);
     }
 
     public void Dispose() => ProfileStore.StateChanged -= OnStoreStateChanged;

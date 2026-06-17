@@ -4,23 +4,25 @@
 @inject ITaskApiService TaskApi
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
-@inject ICurrentUserService CurrentUserService 
+@inject ICurrentUserService CurrentUserService
 
 <div class="d-flex gap-3 mb-6">
     <MudAvatar Color="Color.Primary" Size="Size.Medium">
         @(CurrentUserService.User?.DisplayName?.FirstOrDefault().ToString()?.ToUpper() ?? "U")
     </MudAvatar>
-    <MudPaper Elevation="0" Class="pa-0 flex-grow-1" Style="border: 1px solid #e0e0e0; overflow: hidden; border-radius: 8px;">
-        <MudTextField @bind-Value="_newCommentText" 
-                      Placeholder="Write a comment..." 
-                      Lines="3" 
+    <MudPaper Elevation="0" Class="pa-0 flex-grow-1"
+              Style="border: 1px solid var(--mud-palette-lines-default); overflow: hidden; border-radius: 8px; background-color: var(--mud-palette-surface);">
+        <MudTextField @bind-Value="_newCommentText"
+                      Placeholder="Write a comment..."
+                      Lines="3"
                       DisableUnderLine="true"
                       Class="pa-3 mx-0"
-                      Immediate="true" />
-        
-        <div class="d-flex justify-end pa-2" style="background-color: #f8fafc; border-top: 1px solid #e0e0e0;">
-            <MudButton Variant="Variant.Filled" 
-                       Color="Color.Primary" 
+                      Immediate="true"/>
+
+        <div class="d-flex justify-end pa-2"
+             style="background-color: var(--mud-palette-drawer-background); border-top: 1px solid var(--mud-palette-lines-default);">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
                        Size="Size.Small"
                        OnClick="SubmitCommentAsync"
                        Disabled="@(string.IsNullOrWhiteSpace(_newCommentText) || _isSubmittingComment)">
@@ -32,7 +34,7 @@
 
 @if (_isLoading)
 {
-    <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Small" Class="mt-2" />
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Small" Class="mt-2"/>
 }
 else if (_comments != null)
 {
@@ -43,60 +45,61 @@ else if (_comments != null)
                 <MudAvatar Color="Color.Secondary" Size="Size.Medium">
                     @(string.IsNullOrWhiteSpace(comment.AuthorName) ? "U" : comment.AuthorName.Substring(0, 1).ToUpper())
                 </MudAvatar>
-                
+
                 <div class="flex-grow-1">
                     <div class="d-flex align-center gap-2 mb-1">
-                        <MudText Typo="Typo.subtitle2" Style="font-weight: 600; color: #172b4d;">
+                        <MudText Typo="Typo.subtitle2"
+                                 Style="font-weight: 600; color: var(--mud-palette-text-primary);">
                             @comment.AuthorName
                         </MudText>
-                        
-                        <MudText Typo="Typo.caption" Style="color: #5e6c84;">
+
+                        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">
                             @comment.CreatedAt.ToString("MMM dd, HH:mm")
                             @if (comment.UpdatedAt.HasValue)
                             {
                                 <span>(edited)</span>
                             }
                         </MudText>
-                        
-                        <MudSpacer />
-                        
+
+                        <MudSpacer/>
+
                         @if (_editingCommentId != comment.Id && CurrentUserService.User?.Id == comment.AuthorId)
                         {
-                            <MudIconButton Icon="@Icons.Material.Outlined.Edit" 
-                                           Size="Size.Small" 
-                                           Color="Color.Default" 
+                            <MudIconButton Icon="@Icons.Material.Outlined.Edit"
+                                           Size="Size.Small"
+                                           Color="Color.Default"
                                            Style="opacity: 0.5;"
-                                           OnClick="@(() => StartEditComment(comment))" />
+                                           OnClick="@(() => StartEditComment(comment))"/>
 
-                            <MudIconButton Icon="@Icons.Material.Outlined.Delete" 
-                                           Size="Size.Small" 
-                                           Color="Color.Error" 
+                            <MudIconButton Icon="@Icons.Material.Outlined.Delete"
+                                           Size="Size.Small"
+                                           Color="Color.Error"
                                            Style="opacity: 0.5;"
-                                           OnClick="@(() => ConfirmDeleteComment(comment))" />
+                                           OnClick="@(() => ConfirmDeleteComment(comment))"/>
                         }
                     </div>
-                    
+
                     @if (_editingCommentId == comment.Id)
                     {
                         <div class="mt-2">
-                            <MudTextField @bind-Value="_editingCommentText" 
-                                          Lines="2" 
-                                          Variant="Variant.Outlined" 
-                                          Margin="Margin.Dense" 
+                            <MudTextField @bind-Value="_editingCommentText"
+                                          Lines="2"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
                                           Class="mb-2"
                                           Immediate="true"
                                           AutoFocus="true"/>
-                            
+
                             <div class="d-flex gap-2">
-                                <MudButton Size="Size.Small" 
-                                           Color="Color.Primary" 
-                                           Variant="Variant.Filled" 
-                                           OnClick="@(() => SubmitEditAsync(comment))" 
+                                <MudButton Size="Size.Small"
+                                           Color="Color.Primary"
+                                           Variant="Variant.Filled"
+                                           OnClick="@(() => SubmitEditAsync(comment))"
                                            Disabled="@(_isUpdatingComment || string.IsNullOrWhiteSpace(_editingCommentText))">
                                     Update
                                 </MudButton>
-                                <MudButton Size="Size.Small" 
-                                           OnClick="CancelEdit" 
+                                <MudButton Size="Size.Small"
+                                           OnClick="CancelEdit"
                                            Disabled="_isUpdatingComment">
                                     Cancel
                                 </MudButton>
@@ -105,7 +108,8 @@ else if (_comments != null)
                     }
                     else
                     {
-                        <MudText Typo="Typo.body2" Style="color: #172b4d; white-space: pre-wrap;">
+                        <MudText Typo="Typo.body2"
+                                 Style="color: var(--mud-palette-text-primary); white-space: pre-wrap;">
                             @comment.Text
                         </MudText>
                     }
@@ -144,7 +148,7 @@ else if (_comments != null)
         catch (Exception ex)
         {
             Snackbar.Add($"Failed to load comments: {ex.Message}", Severity.Error);
-            _comments = new List<CommentDto>(); 
+            _comments = new List<CommentDto>();
         }
         finally
         {
@@ -161,9 +165,9 @@ else if (_comments != null)
             _isSubmittingComment = true;
             var request = new CreateCommentRequest(_newCommentText);
             var newComment = await TaskApi.CreateCommentAsync(BoardId, TaskId, request);
-            
+
             _comments?.Add(newComment);
-            _newCommentText = string.Empty; 
+            _newCommentText = string.Empty;
         }
         catch (Exception ex)
         {
@@ -198,10 +202,10 @@ else if (_comments != null)
         try
         {
             _isUpdatingComment = true;
-            
-            var request = new UpdateCommentRequest(_editingCommentText); 
+
+            var request = new UpdateCommentRequest(_editingCommentText);
             var updatedComment = await TaskApi.UpdateCommentAsync(BoardId, TaskId, comment.Id, request);
-            
+
             var index = _comments?.FindIndex(c => c.Id == comment.Id) ?? -1;
             if (index != -1 && _comments != null)
             {
@@ -220,12 +224,12 @@ else if (_comments != null)
             _isUpdatingComment = false;
         }
     }
-    
+
     private async Task ConfirmDeleteComment(CommentDto comment)
     {
         bool? result = await DialogService.ShowMessageBoxAsync(
-            "Delete Comment", 
-            "Are you sure you want to delete this comment?", 
+            "Delete Comment",
+            "Are you sure you want to delete this comment?",
             yesText: "Delete", cancelText: "Cancel");
 
         if (result == true)
@@ -242,4 +246,5 @@ else if (_comments != null)
             }
         }
     }
+
 }

@@ -3,6 +3,12 @@
 @using Contracts.Requests
 
 <MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-primary);">
+            <MudIcon Icon="@Icons.Material.Filled.Edit" Class="mr-2 mb-n1"/>
+            Edit Task
+        </MudText>
+    </TitleContent>
     <DialogContent>
         <MudForm @ref="_form" ValidationDelay="0">
             <MudTextField @bind-Value="_model.Title"
@@ -11,6 +17,8 @@
                           Required="true"
                           RequiredError="Title is required"
                           MaxLength="100"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
                           Class="mb-3"/>
 
             <MudTextField @bind-Value="_model.Description"
@@ -18,6 +26,7 @@
                           Label="Description"
                           Lines="5"
                           Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
                           MaxLength="500"/>
         </MudForm>
     </DialogContent>

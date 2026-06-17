@@ -5,10 +5,10 @@
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
-<MudPaper Elevation="1"
+<MudPaper Elevation="0"
           Class="@($"pa-3 d-flex flex-column rounded-lg column-grab {(IsDragged ? "column-drag-active" : "")} {(IsDropTarget ? "column-drop-target" : "")}")"
           Width="320px"
-          Style="max-height: 100%; flex-shrink: 0; background-color: #f4f5f7;"
+          Style="max-height: 100%; flex-shrink: 0; background-color: var(--mud-palette-drawer-background); border: 1px solid var(--mud-palette-lines-default);"
           draggable="true"
           @ondragstart="HandleColumnDragStart"
           @ondragenter="HandleColumnDragEnter"
@@ -17,25 +17,27 @@
           @ondragend="HandleColumnDragEnd">
 
     <div class="d-flex justify-space-between align-center mb-3">
-        <MudText Typo="Typo.h6" Style="font-weight: 600; pointer-events: none;">@Column.Name</MudText>
+        <MudText Typo="Typo.h6"
+                 Style="font-weight: 600; pointer-events: none; color: var(--mud-palette-text-primary);">@Column.Name</MudText>
 
         <MudMenu Icon="@Icons.Material.Filled.MoreHoriz" AnchorOrigin="Origin.BottomRight"
                  TransformOrigin="Origin.TopRight" Dense="true">
             <MudMenuItem OnClick="OpenEditColumnDialog" Icon="@Icons.Material.Filled.Edit">Edit</MudMenuItem>
-            <MudMenuItem OnClick="DeleteColumn" Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error">Delete</MudMenuItem>
+            <MudMenuItem OnClick="DeleteColumn" Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error">Delete
+            </MudMenuItem>
         </MudMenu>
     </div>
 
-    <MudDropZone T="TaskDto" 
-                 Identifier="@Column.Id.ToString()" 
+    <MudDropZone T="TaskDto"
+                 Identifier="@Column.Id.ToString()"
                  AllowReorder="true"
                  Class="d-flex flex-column flex-grow-1"
-                 Style="overflow-y: auto; overflow-x: hidden; min-height: 60px; padding-bottom: 2px; padding-top: 4px;" />
+                 Style="overflow-y: auto; overflow-x: hidden; min-height: 60px; padding-bottom: 2px; padding-top: 4px;"/>
 
     <MudButton StartIcon="@Icons.Material.Filled.Add"
                FullWidth="true"
                Class="mt-2 text-start"
-               Style="justify-content: flex-start; color: #5e6c84; background-color: transparent;"
+               Style="justify-content: flex-start; color: var(--mud-palette-text-secondary); background-color: transparent;"
                OnClick="OpenCreateTaskDialog">
         Add a new task
     </MudButton>
@@ -44,9 +46,11 @@
 <MudMessageBox @ref="_deleteColumnBox" Title="Delete Column?">
     <MessageContent>
         <MudText>Are you sure you want to delete '<b>@Column.Name</b>'?</MudText>
-        <br />
-        <div style="color: var(--mud-palette-error); font-weight: bold; background-color: var(--mud-palette-error-hover); padding: 12px; border-radius: 8px; border-left: 4px solid var(--mud-palette-error);">
-            ⚠️ WARNING: This action cannot be undone. All tasks, comments, and attachments inside this column will be DELETED.
+        <br/>
+        <div
+            style="color: var(--mud-palette-error); font-weight: bold; background-color: var(--mud-palette-drawer-background); padding: 12px; border-radius: 8px; border-left: 4px solid var(--mud-palette-error);">
+            ⚠️ WARNING: This action cannot be undone. All tasks, comments, and attachments inside this column will be
+            DELETED.
         </div>
     </MessageContent>
     <YesButton>
@@ -59,14 +63,14 @@
 
 @code {
     [Parameter, EditorRequired] public ColumnDto Column { get; set; } = null!;
-    
+
     [Parameter] public bool IsDragged { get; set; }
     [Parameter] public bool IsDropTarget { get; set; }
     [Parameter] public EventCallback<ColumnDto> OnColumnDragStart { get; set; }
     [Parameter] public EventCallback<ColumnDto> OnColumnDragEnter { get; set; }
     [Parameter] public EventCallback<ColumnDto> OnColumnDrop { get; set; }
     [Parameter] public EventCallback OnColumnDragEnd { get; set; }
-    
+
     private MudMessageBox? _deleteColumnBox;
 
     private async Task HandleColumnDragStart() => await OnColumnDragStart.InvokeAsync(Column);
@@ -77,16 +81,16 @@
     private async Task OpenEditColumnDialog()
     {
         var parameters = new DialogParameters { ["InitialName"] = Column.Name };
-        var options = new DialogOptions 
-        { 
-            CloseOnEscapeKey = true, 
-            MaxWidth = MaxWidth.Small, 
-            FullWidth = true 
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
         };
 
         var dialog = await DialogService.ShowAsync<ColumnDialog>("Edit Column", parameters, options);
         var result = await dialog.Result;
-        
+
         if (!result!.Canceled)
         {
             try
@@ -140,4 +144,5 @@
             }
         }
     }
+
 }

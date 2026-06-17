@@ -30,7 +30,7 @@
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="pt-6 pb-8 px-4">
     <div class="d-flex flex-column flex-md-row justify-space-between align-center mb-6 gap-4">
-        <MudText Typo="Typo.h4" Class="fw-bold" Style="color: #172b4d;">My Boards</MudText>
+        <MudText Typo="Typo.h4" Class="fw-bold" Style="color: var(--mud-palette-text-primary);">My Boards</MudText>
 
         <div class="d-flex flex-wrap align-center gap-4">
             <MudTextField T="string"
@@ -44,7 +44,7 @@
                           Dense="true"
                           Clearable="true"
                           DebounceInterval="500"
-                          Style="width: 250px; background-color: white;"/>
+                          Style="width: 250px; background-color: var(--mud-palette-surface);"/>
 
             @if (BoardStore.Pagination.TotalCount > 0 || !string.IsNullOrEmpty(BoardStore.SearchTerm))
             {
@@ -52,7 +52,7 @@
                     <MudText Typo="Typo.body2" Color="Color.Secondary">Items per page:</MudText>
                     <MudSelect T="int" Value="@BoardStore.PageSize" ValueChanged="OnPageSizeChangedAsync"
                                Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true"
-                               Style="width: 80px; background-color: white;">
+                               Style="width: 80px; background-color: var(--mud-palette-surface);">
                         <MudSelectItem Value="12">12</MudSelectItem>
                         <MudSelectItem Value="24">24</MudSelectItem>
                         <MudSelectItem Value="48">48</MudSelectItem>
@@ -94,15 +94,15 @@
             {
                 <MudItem xs="12" sm="6" md="4" lg="3">
                     <MudCard Elevation="2" Class="h-100 d-flex flex-column rounded-lg transition-transform"
-                             Style="border: 1px solid #e0e0e0;">
+                             Style="border: 1px solid var(--mud-palette-lines-default); background-color: var(--mud-palette-surface);">
                         <MudCardHeader>
                             <CardHeaderContent>
                                 <MudText Typo="Typo.h6" Class="fw-bold text-truncate-single" Title="@board.Name"
-                                         Style="color: #172b4d;">
+                                         Style="color: var(--mud-palette-text-primary);">
                                     @board.Name
                                 </MudText>
                                 <MudText Typo="Typo.caption"
-                                         Style="color: #5e6c84; font-weight: 600; text-transform: uppercase;">
+                                         Style="color: var(--mud-palette-text-secondary); font-weight: 600; text-transform: uppercase;">
                                     Role: @board.Role.ToString()
                                 </MudText>
                             </CardHeaderContent>
@@ -110,7 +110,7 @@
 
                         <MudCardContent Class="flex-grow-1 overflow-hidden pt-0">
                             <MudText Typo="Typo.body2" Class="text-truncate-multi" Title="@board.Description"
-                                     Style="color: #42526e;">
+                                     Style="color: var(--mud-palette-text-secondary);">
                                 @(string.IsNullOrWhiteSpace(board.Description) ? "No description provided." : board.Description)
                             </MudText>
                         </MudCardContent>

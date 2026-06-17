@@ -2,22 +2,31 @@
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthState
 
-<PageTitle>Log In — JustTaskTracker</PageTitle>
+<PageTitle>Log In — TaskTracker</PageTitle>
 
-<section class="login-scene">
-    <div class="card-surface-grain login-card">
-        <h1 class="login-card__title">Log in</h1>
+<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center justify-center" Style="min-height: 80vh;">
+    <MudPaper Elevation="0" Class="pa-8 d-flex flex-column align-center w-100 rounded-lg"
+              Style="border: 1px solid var(--mud-palette-lines-default); background-color: var(--mud-palette-surface);">
+        <MudIcon Icon="@Icons.Material.Filled.TaskAlt" Color="Color.Primary" Size="Size.Large" Class="mb-4"
+                 Style="font-size: 3rem;"/>
+        <MudText Typo="Typo.h4" Class="font-weight-bold mb-6" Style="color: var(--mud-palette-text-primary);">Log in to
+            TaskTracker
+        </MudText>
+
         <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Size="Size.Large"
                    FullWidth="true"
                    StartIcon="@Icons.Custom.Brands.Microsoft"
-                   Class="login-ms-btn"
-                   OnClick="BeginLogin">
+                   OnClick="BeginLogin"
+                   Class="font-weight-bold py-3">
             Log in with Microsoft
         </MudButton>
-    </div>
-</section>
+    </MudPaper>
+</MudContainer>
 
 @code {
+
     protected override async Task OnInitializedAsync()
     {
         var state = await AuthState.GetAuthenticationStateAsync();
