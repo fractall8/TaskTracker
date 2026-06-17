@@ -19,7 +19,7 @@ public interface IBoardDetailsStore
   
   void Reset();
 
-  Task LoadAsync(Guid boardId, CancellationToken ct = default);
+  Task LoadAsync(Guid boardId, string? searchTerm = null, CancellationToken ct = default);
 
   Task<ColumnDto> CreateColumnAsync(string name, CancellationToken ct = default);
 

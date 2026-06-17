@@ -28,11 +28,11 @@ public class BoardsController(ISender sender) : ControllerBase
         return Ok(result);
     }
     
-    [HttpGet("{id:guid}")] 
-    public async Task<ActionResult<BoardWithColumnsDto>> GetById([FromRoute] Guid id)
+    [HttpGet("{id}")]
+    public async Task<ActionResult<BoardWithColumnsDto>> GetBoardById(Guid id, [FromQuery] string? searchTerm, CancellationToken ct)
     {
-        var query = new GetBoardByIdQuery(id);
-        var result = await sender.Send(query);
+        var query = new GetBoardByIdQuery(id, searchTerm);
+        var result = await sender.Send(query, ct);
         return Ok(result);
     }
 

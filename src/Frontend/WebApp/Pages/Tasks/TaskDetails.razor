@@ -8,82 +8,152 @@
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 pb-8">
+<style>
+    .task-scroll-area::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .task-scroll-area::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .task-scroll-area::-webkit-scrollbar-thumb {
+        background: rgba(9, 30, 66, 0.13);
+        border-radius: 8px;
+    }
+
+    .task-scroll-area::-webkit-scrollbar-thumb:hover {
+        background: rgba(9, 30, 66, 0.25);
+    }
+</style>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pt-4 px-4 px-md-8 d-flex flex-column"
+              Style="height: calc(100vh - 64px); overflow: hidden;">
+
     @if (_isLoading)
     {
-        <div class="d-flex justify-center align-center" style="height: 50vh;">
+        <div class="d-flex justify-center align-center flex-grow-1">
             <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large"/>
         </div>
     }
     else if (_task != null)
     {
-        <MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
-                   Color="Color.Default"
-                   Class="mb-4"
-                   OnClick="@(() => Navigation.NavigateTo($"/boards/{BoardId}"))">
-            Back to Board
-        </MudButton>
+        <div class="mb-4 flex-shrink-0">
+            <MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
+                       Color="Color.Default"
+                       OnClick="@(() => Navigation.NavigateTo($"/boards/{BoardId}"))">
+                Back to Board
+            </MudButton>
+        </div>
 
-        <MudGrid>
-            <MudItem xs="12" md="8">
-                
-                <div class="d-flex justify-space-between align-start mb-4 gap-4">
-                    <MudText Typo="Typo.h4" Class="fw-bold" Style="color: #172b4d;">@_task.Title</MudText>
+        <div class="d-flex flex-column flex-md-row gap-6 flex-grow-1 overflow-hidden w-100 pb-4">
+
+            <div class="d-flex flex-column flex-grow-1 overflow-hidden" style="min-width: 0;">
+
+                <div class="d-flex justify-space-between align-start mb-4 gap-4 flex-shrink-0 w-100">
+    
+                    <div style="flex-grow: 1; min-width: 0;">
+                        <MudText Typo="Typo.h4" Class="fw-bold" 
+                                 Style="color: #172b4d; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word;">
+                            @_task.Title
+                        </MudText>
+                    </div>
+    
                     <MudButton StartIcon="@Icons.Material.Outlined.Edit" 
                                Variant="Variant.Outlined" 
                                Color="Color.Default"
                                Size="Size.Small" 
+                               Class="flex-shrink-0"
                                Style="white-space: nowrap;"
                                OnClick="OpenEditTaskDialog">
                         Edit Task
                     </MudButton>
                 </div>
 
-                <MudPaper Elevation="0" Class="pa-4 mb-6" Style="border: 1px solid #e0e0e0; background-color: #fafbfc;">
-                    <MudText Typo="Typo.h6" Class="mb-2" Style="font-weight: 600;">Description</MudText>
-                    @if (!string.IsNullOrWhiteSpace(_task.Description))
-                    {
-                        <MudText Typo="Typo.body1" Style="white-space: pre-wrap; color: #172b4d;">@_task.Description</MudText>
-                    }
-                    else
-                    {
-                        <MudText Typo="Typo.body2" Style="color: #5e6c84; font-style: italic;">No description provided.</MudText>
-                    }
-                </MudPaper>
+                <div class="flex-grow-1 overflow-y-auto task-scroll-area pr-2">
+                    <MudPaper Elevation="0" Class="pa-4 mb-6"
+                              Style="border: 1px solid #e0e0e0; background-color: #fafbfc;">
+                        <MudText Typo="Typo.h6" Class="mb-2" Style="font-weight: 600;">Description</MudText>
+                        @if (!string.IsNullOrWhiteSpace(_task.Description))
+                        {
+                            <MudText Typo="Typo.body1"
+                                     Style="white-space: pre-wrap; word-break: break-word; color: #172b4d;">@_task.Description</MudText>
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.body2" Style="color: #5e6c84; font-style: italic;">No description
+                                provided.
+                            </MudText>
+                        }
+                    </MudPaper>
 
-                <TaskAttachments BoardId="BoardId" TaskId="TaskId" Attachments="_task.Attachments" />
+                    <TaskAttachment BoardId="BoardId" TaskId="TaskId" Attachments="_task.Attachments"/>
 
-                <MudDivider Class="my-8" />
-                
-                <TaskComments BoardId="BoardId" TaskId="TaskId" />
-                
-            </MudItem>
+                    <MudDivider Class="my-8"/>
 
-            <MudItem xs="12" md="4">
-                <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid #e0e0e0;">
-                    <MudText Typo="Typo.subtitle1" Class="fw-bold mb-3">Task Details</MudText>
+                    <TaskComments BoardId="BoardId" TaskId="TaskId"/>
+                </div>
+            </div>
 
-                    <div class="d-flex flex-column gap-3">
+            <div class="flex-shrink-0" style="width: 100%; max-width: 320px; overflow-y: auto;">
+                <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid #e0e0e0; background-color: #f4f5f7;">
+                    <MudText Typo="Typo.subtitle1" Class="fw-bold mb-4" Style="color: #172b4d;">Task Details</MudText>
+
+                    <div class="d-flex flex-column gap-4">
                         <div>
-                            <MudText Typo="Typo.caption" Style="color: #5e6c84;">Created By</MudText>
+                            <MudText Typo="Typo.caption"
+                                     Style="color: #5e6c84; font-weight: 600; text-transform: uppercase;">Reporter
+                            </MudText>
                             <div class="d-flex align-center gap-2 mt-1">
-                                <MudAvatar Size="Size.Small" Color="Color.Primary">U</MudAvatar>
-                                <MudText Typo="Typo.body2">User ID: @(_task.ReporterId.ToString() ?? "System")</MudText>
+                                <MudAvatar Size="Size.Small" Color="Color.Primary">
+                                    U
+                                </MudAvatar>
+                                <MudText Typo="Typo.body2" Style="color: #172b4d; font-weight: 500;">
+                                    @(_task.ReporterId)
+                                </MudText>
                             </div>
                         </div>
 
                         <MudDivider/>
 
                         <div>
-                            <MudText Typo="Typo.caption" Style="color: #5e6c84;">Due Date</MudText>
-                            <MudText Typo="Typo.body2">
-                                @(_task.DueDate.HasValue ? _task.DueDate.Value.ToString("MMM dd, yyyy") : "No due date")
+                            <MudText Typo="Typo.caption"
+                                     Style="color: #5e6c84; font-weight: 600; text-transform: uppercase;">Assignee
+                            </MudText>
+                            @if (_task.AssigneeId.HasValue)
+                            {
+                                <div class="d-flex align-center gap-2 mt-1">
+                                    <MudAvatar Size="Size.Small" Color="Color.Secondary">
+                                        @((_task.AssigneeId).ToString()?.ToUpper())
+                                    </MudAvatar>
+                                    <MudText Typo="Typo.body2" Style="color: #172b4d; font-weight: 500;">
+                                        @_task.AssigneeId
+                                    </MudText>
+                                </div>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.body2" Class="mt-1" Style="color: #5e6c84; font-style: italic;">
+                                    Unassigned
+                                </MudText>
+                            }
+                        </div>
+
+                        <MudDivider/>
+
+                        <div>
+                            <MudText Typo="Typo.caption"
+                                     Style="color: #5e6c84; font-weight: 600; text-transform: uppercase;">Due Date
+                            </MudText>
+                            <MudText Typo="Typo.body2" Class="mt-1" Style="color: #172b4d; font-weight: 500;">
+                                @(_task.DueDate.HasValue ? _task.DueDate.Value.ToString("MMM dd, yyyy") : "None")
                             </MudText>
                         </div>
                     </div>
                 </MudPaper>
-            </MudItem>
-        </MudGrid>
+            </div>
+
+        </div>
     }
 </MudContainer>
 
@@ -130,9 +200,9 @@
             {
                 var updatedTask = await TaskApi.UpdateTaskAsync(BoardId, TaskId, request);
                 var currentAttachments = _task?.Attachments;
-                
+
                 _task = updatedTask with { Attachments = currentAttachments ?? new List<AttachmentDto>() };
-                
+
                 Snackbar.Add("Task updated", Severity.Success);
             }
             catch (Exception ex)
@@ -141,4 +211,5 @@
             }
         }
     }
+
 }

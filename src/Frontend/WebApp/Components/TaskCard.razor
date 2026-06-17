@@ -11,16 +11,19 @@
     
     <div class="d-flex justify-space-between align-start">
         
-        <div style="flex-grow: 1; padding: 4px; cursor: pointer;" 
+        <div style="flex-grow: 1; padding: 4px; cursor: pointer; min-width: 0;" 
              class="task-content-hover" 
              @onclick="NavigateToTaskDetails">
             
-            <MudText Typo="Typo.body2" Style="font-weight: 500;">@Task.Title</MudText>
+            <MudText Typo="Typo.body2" 
+                     Style="font-weight: 500; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word;">
+                @Task.Title
+            </MudText>
 
             @if (!string.IsNullOrWhiteSpace(Task.Description))
             {
                 <MudText Typo="Typo.caption" Class="mt-1"
-                         Style="color: #5e6c84; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap;">
+                         Style="color: #5e6c84; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; word-break: break-word;">
                     @Task.Description
                 </MudText>
             }

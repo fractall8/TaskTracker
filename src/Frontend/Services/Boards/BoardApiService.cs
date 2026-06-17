@@ -14,9 +14,9 @@ public class BoardApiService(IBoardApi boardApi) : IBoardApiService
         return await response.HandleResponseAsync();
     }
 
-    public async Task<BoardWithColumnsDto> GetBoardByIdAsync(Guid boardId, CancellationToken ct = default)
+    public async Task<BoardWithColumnsDto> GetBoardByIdAsync(Guid boardId, string? searchTerm = null, CancellationToken ct = default)
     {
-        var response = await boardApi.GetByIdAsync(boardId, ct);
+        var response = await boardApi.GetByIdAsync(boardId, searchTerm, ct);
         return await response.HandleResponseAsync();
     }
 

@@ -5,7 +5,7 @@ namespace Application.Interfaces;
 
 public interface IBoardRepository : IRepository<Board, Guid>
 {
-    Task<Board?> GetBoardWithHierarchyAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<Board?> GetBoardWithHierarchyAsync(Guid boardId, string? searchTerm = null, CancellationToken cancellationToken = default);
     
     Task<IEnumerable<Board>> GetUserBoardsAsync(Guid userId, CancellationToken ct = default);
     

@@ -28,5 +28,5 @@ public interface IBoardApi
     Task<IApiResponse> DeleteBoardAsync(Guid id, CancellationToken ct = default);
     
     [Get("/api/boards/{id}")]
-    Task<IApiResponse<BoardWithColumnsDto>> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task<IApiResponse<BoardWithColumnsDto>> GetByIdAsync(Guid id, [Query] string? searchTerm = null, CancellationToken ct = default);
 }

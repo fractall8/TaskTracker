@@ -8,12 +8,39 @@ namespace Persistence.Repositories;
 
 public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board, Guid>(dbContext), IBoardRepository
 {
-    public async Task<Board?> GetBoardWithHierarchyAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<Board?> GetBoardWithHierarchyAsync(Guid boardId, string? searchTerm = null,
+        CancellationToken ct = default)
     {
-        return await DbContext.Boards
-            .Include(b => b.Columns)
-            .ThenInclude(c => c.Tasks)
-            .FirstOrDefaultAsync(b => b.Id.Equals(id), cancellationToken);
+        IQueryable<Board> query;
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var lowerSearchTerm = searchTerm.ToLower();
+
+            query = DbContext.Set<Board>()
+                .Include(b => b.Columns.OrderBy(c => c.Position))
+                .ThenInclude(c => c.Tasks
+                    .Where(t =>
+                        t.Title.ToLower().Contains(lowerSearchTerm) ||
+                        (t.Description != null && t.Description.ToLower().Contains(lowerSearchTerm)))
+                    .OrderBy(t => t.Position))
+                .ThenInclude(t => t.Assignee)
+                .Include(b => b.Columns)
+                .ThenInclude(c => c.Tasks)
+                .ThenInclude(t => t.Reporter);
+        }
+        else
+        {
+            query = DbContext.Set<Board>()
+                .Include(b => b.Columns.OrderBy(c => c.Position))
+                .ThenInclude(c => c.Tasks.OrderBy(t => t.Position))
+                .ThenInclude(t => t.Assignee)
+                .Include(b => b.Columns)
+                .ThenInclude(c => c.Tasks)
+                .ThenInclude(t => t.Reporter);
+        }
+
+        return await query.FirstOrDefaultAsync(b => b.Id == boardId, ct);
     }
 
     public async Task<IEnumerable<Board>> GetUserBoardsAsync(Guid userId, CancellationToken ct = default)

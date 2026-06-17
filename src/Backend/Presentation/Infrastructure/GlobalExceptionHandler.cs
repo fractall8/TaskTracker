@@ -25,7 +25,7 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
                 (StatusCodes.Status403Forbidden, "Forbidden", exception.Message),
             
             InvalidOperationException => 
-                (StatusCodes.Status409Conflict, "Conflict", exception.Message),
+                (StatusCodes.Status400BadRequest, "Invalid Operation", "The requested operation could not be completed."),
             
             // Fallback for all other
             _ => 

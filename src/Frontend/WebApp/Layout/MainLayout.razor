@@ -5,20 +5,19 @@
 @inject AuthenticationStateProvider AuthStateProvider
 
 <MudThemeProvider Theme="@_myCustomTheme"/>
-<MudPopoverProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
+<MudPopoverProvider/>
+<MudDialogProvider/>
+<MudSnackbarProvider/>
 
 <MudLayout>
-    <AppNavBar />
+    <AppNavBar/>
     <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.Large" Class="pt-8 pb-8">
-            @Body
-        </MudContainer>
+        @Body
     </MudMainContent>
 </MudLayout>
 
 @code {
+
     private readonly MudTheme _myCustomTheme = new MudTheme()
     {
         PaletteLight = new PaletteLight
@@ -37,7 +36,7 @@
             Error = "#EF4444"
         }
     };
-    
+
     protected override void OnInitialized() =>
         ProfileStore.StateChanged += OnStoreStateChanged;
 
