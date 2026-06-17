@@ -1,8 +1,10 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Services;
+using Application.Options;
 using Contracts.DTOs;
 using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Options;
 
 namespace Application.Features.Boards.Queries;
 
@@ -38,7 +40,9 @@ public class GetBoardByIdQueryHandler(
                     DueDate: t.DueDate,
                     ColumnId: t.ColumnId,
                     AssigneeId: t.AssigneeId,
+                    AssigneeName: t.Assignee?.DisplayName,
                     ReporterId: t.ReporterId,
+                    ReporterName: t.Reporter?.DisplayName,
                     Attachments: new List<AttachmentDto>()
                 )).ToList()
             ))
@@ -50,5 +54,19 @@ public class GetBoardByIdQueryHandler(
             Description: board.Description,
             Columns: columnDtos
         );
+    }
+}
+
+public class GetBoardByIdQueryValidator : AbstractValidator<GetBoardByIdQuery>
+{
+    public GetBoardByIdQueryValidator(IOptions<PaginationOptions> options)
+    {
+        var paginationOptions = options.Value;
+        
+        RuleFor(x => x.BoardId)
+            .NotEmpty().WithMessage("Board ID is required.");
+        
+        RuleFor(v => v.SearchTerm)
+            .MaximumLength(paginationOptions.MaxSearchTermLength).WithMessage($"Search term must not exceed {paginationOptions.MaxSearchTermLength} characters.");
     }
 }

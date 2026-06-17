@@ -27,7 +27,7 @@ public class UpdateTaskCommandHandler(
     public async Task<TaskDto> Handle(UpdateTaskCommand request, CancellationToken ct)
     {
         await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, ct);
-        
+
         var task = await taskRepository.GetTaskWithColumnAsync(request.TaskId, ct);
 
         if (task == null)
@@ -38,8 +38,8 @@ public class UpdateTaskCommandHandler(
         if (task.Column?.BoardId != request.BoardId)
         {
             throw new KeyNotFoundException("Task not found on this board.");
-        } 
-        
+        }
+
         task.Title = request.Title;
         task.Description = request.Description;
         task.DueDate = request.DueDate;
@@ -48,7 +48,7 @@ public class UpdateTaskCommandHandler(
         if (task.ColumnId != request.ColumnId)
         {
             var targetColumn = await columnRepository.GetByIdAsync(request.ColumnId, ct);
-            
+
             if (targetColumn == null)
             {
                 throw new Exception("Target column not found.");
@@ -62,17 +62,20 @@ public class UpdateTaskCommandHandler(
             await taskRepository.DecrementPositionsAsync(task.ColumnId, task.Position + 1, ct);
 
             var maxPosition = await taskRepository.GetMaxPositionAsync(request.ColumnId, ct);
-            
+
             task.ColumnId = request.ColumnId;
             task.Position = maxPosition + 1;
         }
 
-        taskRepository.Update(task); 
+        taskRepository.Update(task);
         await unitOfWork.SaveChangesAsync(ct);
+        
+        await taskRepository.LoadUsersForTaskAsync(task, ct);
 
         return new TaskDto(
             task.Id, task.Title, task.Description, task.Position, task.DueDate,
-            task.ColumnId, task.AssigneeId, task.ReporterId, []);
+            task.ColumnId, task.AssigneeId, task.Assignee?.DisplayName, task.ReporterId, task.Reporter?.DisplayName,
+            []);
     }
 }
 
@@ -81,16 +84,18 @@ public class UpdateTaskCommandValidator : AbstractValidator<UpdateTaskCommand>
     public UpdateTaskCommandValidator()
     {
         RuleFor(x => x.BoardId).NotEmpty();
-        
+
         RuleFor(x => x.TaskId).NotEmpty();
-        
+
         RuleFor(x => x.ColumnId).NotEmpty();
-        
+
         RuleFor(x => x.Title)
             .NotEmpty().WithMessage("Task title is required.")
-            .MaximumLength(TaskItemConstants.MaxTitleLength).WithMessage($"Task title must not exceed {TaskItemConstants.MaxTitleLength} characters.");
-            
+            .MaximumLength(TaskItemConstants.MaxTitleLength)
+            .WithMessage($"Task title must not exceed {TaskItemConstants.MaxTitleLength} characters.");
+
         RuleFor(x => x.Description)
-            .MaximumLength(TaskItemConstants.MaxDescriptionLength).WithMessage($"Description must not exceed {TaskItemConstants.MaxDescriptionLength} characters.");
+            .MaximumLength(TaskItemConstants.MaxDescriptionLength)
+            .WithMessage($"Description must not exceed {TaskItemConstants.MaxDescriptionLength} characters.");
     }
 }

@@ -51,18 +51,18 @@
             <div class="d-flex flex-column flex-grow-1 overflow-hidden" style="min-width: 0;">
 
                 <div class="d-flex justify-space-between align-start mb-4 gap-4 flex-shrink-0 w-100">
-    
+
                     <div style="flex-grow: 1; min-width: 0;">
-                        <MudText Typo="Typo.h4" Class="fw-bold" 
+                        <MudText Typo="Typo.h4" Class="fw-bold"
                                  Style="color: #172b4d; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word;">
                             @_task.Title
                         </MudText>
                     </div>
-    
-                    <MudButton StartIcon="@Icons.Material.Outlined.Edit" 
-                               Variant="Variant.Outlined" 
+
+                    <MudButton StartIcon="@Icons.Material.Outlined.Edit"
+                               Variant="Variant.Outlined"
                                Color="Color.Default"
-                               Size="Size.Small" 
+                               Size="Size.Small"
                                Class="flex-shrink-0"
                                Style="white-space: nowrap;"
                                OnClick="OpenEditTaskDialog">
@@ -106,10 +106,10 @@
                             </MudText>
                             <div class="d-flex align-center gap-2 mt-1">
                                 <MudAvatar Size="Size.Small" Color="Color.Primary">
-                                    U
+                                    @((_task.ReporterName?.FirstOrDefault() ?? 'U').ToString().ToUpper())
                                 </MudAvatar>
                                 <MudText Typo="Typo.body2" Style="color: #172b4d; font-weight: 500;">
-                                    @(_task.ReporterId)
+                                    @(_task.ReporterName ?? "Unknown User")
                                 </MudText>
                             </div>
                         </div>
@@ -124,10 +124,10 @@
                             {
                                 <div class="d-flex align-center gap-2 mt-1">
                                     <MudAvatar Size="Size.Small" Color="Color.Secondary">
-                                        @((_task.AssigneeId).ToString()?.ToUpper())
+                                        @((_task.AssigneeName?.FirstOrDefault() ?? 'U').ToString().ToUpper())
                                     </MudAvatar>
                                     <MudText Typo="Typo.body2" Style="color: #172b4d; font-weight: 500;">
-                                        @_task.AssigneeId
+                                        @(_task.AssigneeName ?? "Unknown User")
                                     </MudText>
                                 </div>
                             }

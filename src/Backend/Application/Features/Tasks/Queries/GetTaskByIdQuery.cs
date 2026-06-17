@@ -27,13 +27,14 @@ public class GetTaskByIdQueryHandler(
         {
             throw new KeyNotFoundException("Task not found on this board.");
         }
-        
+
         var attachments = task.Attachments.Select(a => new AttachmentDto(
             a.Id, a.FileName, a.FileUrl, a.SizeInBytes, a.CreatedAt, a.CreatedById)).ToList();
 
         return new TaskDto(
             task.Id, task.Title, task.Description, task.Position, task.DueDate,
-            task.ColumnId, task.AssigneeId, task.ReporterId, attachments);
+            task.ColumnId, task.AssigneeId, task.Assignee?.DisplayName, task.ReporterId, task.Reporter?.DisplayName,
+            attachments);
     }
 }
 
