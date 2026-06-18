@@ -28,7 +28,8 @@ public class CreateCommentCommandHandler(
             throw new KeyNotFoundException("Task not found.");
 
         var userInfo =
-            await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => new {u.Id, u.DisplayName}, ct);
+            await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId,
+                u => new { u.Id, u.DisplayName }, ct);
 
         if (userInfo == null)
         {
@@ -47,8 +48,14 @@ public class CreateCommentCommandHandler(
         await commentRepository.AddAsync(comment, ct);
         await unitOfWork.SaveChangesAsync(ct);
 
-        return new CommentDto(Id: comment.Id, Text: comment.Text, TaskId: comment.TaskId, CreatedAt: comment.CreatedAt,
-            AuthorId: comment.CreatedById.Value, AuthorName: userInfo.DisplayName ?? string.Empty, UpdatedAt: comment.UpdatedAt);
+        return new CommentDto(
+            Id: comment.Id,
+            Text: comment.Text,
+            TaskId: comment.TaskId,
+            CreatedAt: comment.CreatedAt,
+            AuthorId: comment.CreatedById.Value,
+            AuthorName: userInfo.DisplayName ?? string.Empty,
+            UpdatedAt: comment.UpdatedAt);
     }
 }
 
