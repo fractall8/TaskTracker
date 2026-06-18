@@ -34,6 +34,19 @@ public class CommentsController(ISender sender) : ControllerBase
         return Ok(result);
     }
 
+    [HttpPut("{commentId}")]
+    public async Task<ActionResult<CommentDto>> UpdateComment(
+        Guid boardId, 
+        Guid taskId, 
+        Guid commentId, 
+        [FromBody] UpdateCommentRequest request, 
+        CancellationToken ct)
+    {
+        var command = new UpdateCommentCommand(boardId, taskId, commentId, request.Text);
+        var result = await sender.Send(command, ct);
+        return Ok(result);
+    }
+    
     [HttpDelete("{commentId:guid}")]
     public async Task<IActionResult> DeleteComment(
         [FromRoute] Guid boardId, 

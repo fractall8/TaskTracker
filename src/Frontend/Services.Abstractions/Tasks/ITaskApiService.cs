@@ -25,5 +25,8 @@ public interface ITaskApiService
     Task<CommentDto> CreateCommentAsync(Guid boardId, Guid taskId, CreateCommentRequest request,
         CancellationToken ct = default);
 
+    Task<CommentDto> UpdateCommentAsync(Guid boardId, Guid taskId, Guid commentId, UpdateCommentRequest request,
+        CancellationToken ct = default);
+
     Task DeleteCommentAsync(Guid boardId, Guid taskId, Guid commentId, CancellationToken ct = default);
 }

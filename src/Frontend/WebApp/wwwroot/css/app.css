@@ -13,8 +13,14 @@ html, body {
 /* Dummy variables to stop IDE warnings. 
    MudBlazor will override these at runtime anyway. */
 :root {
-    --mud-palette-primary: #594AE2;
-    --mud-palette-action-default: rgba(0,0,0, 0.54);
-    --mud-palette-error: #f44336;
-    --mud-palette-error-hover: #972922;
+    --mud-palette-primary: #0052CC;
+    --mud-palette-secondary: #172B4D;
+    --mud-palette-surface: #FFFFFF;
+    --mud-palette-background: #FFFFFF;
+    --mud-palette-drawer-background: #F4F5F7;
+    --mud-palette-text-primary: #172B4D;
+    --mud-palette-text-secondary: #5E6C84;
+    --mud-palette-lines-default: #DFE1E6;
+    --mud-palette-error: #DE350B;
+    --mud-palette-error-hover: #BF2600;
 }

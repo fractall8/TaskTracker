@@ -2,17 +2,27 @@
 @using Contracts.Requests
 
 <MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-primary);">
+            <MudIcon Icon="@Icons.Material.Filled.Add" Class="mr-2 mb-n1"/>
+            New Task
+        </MudText>
+    </TitleContent>
     <DialogContent>
         <MudForm @ref="_form" ValidationDelay="0">
             <MudTextField @bind-Value="_model.Title"
                           For="@(() => _model.Title)"
                           Label="Task Title"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
                           MaxLength="100"
-                          Class="mb-3" />
+                          Class="mb-3"/>
 
             <MudTextField @bind-Value="_model.Description"
                           For="@(() => _model.Description)"
                           Label="Description (Optional)"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
                           Lines="3"
                           MaxLength="500"/>
         </MudForm>
@@ -53,11 +63,11 @@
 
     public class TaskFormModel
     {
-        [Required(ErrorMessage = "Title is required")] 
-        [MaxLength(100)] 
+        [Required(ErrorMessage = "Title is required")]
+        [MaxLength(100)]
         public string Title { get; set; } = string.Empty;
 
-        [MaxLength(500)] 
-        public string? Description { get; set; }
+        [MaxLength(500)] public string? Description { get; set; }
     }
+
 }

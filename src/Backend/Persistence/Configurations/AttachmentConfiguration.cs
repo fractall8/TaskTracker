@@ -29,5 +29,6 @@ public class AttachmentConfiguration : IEntityTypeConfiguration<Attachment>
             .OnDelete(DeleteBehavior.Cascade);
             
         builder.HasIndex(a => a.TaskId);
+        builder.HasQueryFilter(a => !a.IsDeleted);
     }
 }

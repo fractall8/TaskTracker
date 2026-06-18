@@ -4,30 +4,38 @@
 <MudAppBar Elevation="1" Color="Color.Surface" Fixed="true">
     <MudContainer MaxWidth="MaxWidth.Large" Class="d-flex align-center w-100 px-0">
         <MudLink Href="/" Underline="Underline.None" Class="d-flex align-center">
-            <MudIcon Icon="@Icons.Material.Filled.TaskAlt" Color="Color.Primary" Size="Size.Large" Class="mr-2" />
+            <MudIcon Icon="@Icons.Material.Filled.TaskAlt" Color="Color.Primary" Size="Size.Large" Class="mr-2"/>
             <MudText Typo="Typo.h5" Color="Color.Primary" Class="font-weight-bold">TaskTracker</MudText>
         </MudLink>
         
-        <MudSpacer />
+        <MudSpacer/>
+
+        <MudIconButton Icon="@(IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                       Color="Color.Inherit"
+                       OnClick="OnThemeToggled"
+                       Class="mr-4"/>
 
         <AuthorizeView>
             <Authorized>
                 @if (ProfileStore.IsLoading)
                 {
-                    <MudProgressCircular Color="Color.Primary" Size="Size.Small" Indeterminate="true" Class="mr-4" />
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Small" Indeterminate="true" Class="mr-4"/>
                 }
                 else if (ProfileStore.Profile != null)
                 {
-                    <MudText Color="Color.Dark" Class="mr-4 font-weight-medium">Hi, @ProfileStore.Profile.DisplayName</MudText>
+                    <MudText Color="Color.Inherit" Class="mr-4 font-weight-medium">
+                        Hi, @ProfileStore.Profile.DisplayName</MudText>
                 }
-                
-                <MudButton Variant="Variant.Outlined" Color="Color.Dark" OnClick="BeginSignOut" StartIcon="@Icons.Material.Filled.Logout">
+
+                <MudButton Variant="Variant.Outlined" Color="Color.Inherit" OnClick="BeginSignOut"
+                           StartIcon="@Icons.Material.Filled.Logout">
                     Log out
                 </MudButton>
             </Authorized>
-            
+
             <NotAuthorized>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="BeginSignIn" StartIcon="@Icons.Material.Filled.Login" Class="font-weight-bold px-6">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="BeginSignIn"
+                           StartIcon="@Icons.Material.Filled.Login" Class="font-weight-bold px-6">
                     Log In
                 </MudButton>
             </NotAuthorized>
@@ -37,6 +45,9 @@
 </MudAppBar>
 
 @code {
+    [Parameter] public bool IsDarkMode { get; set; }
+    [Parameter] public EventCallback OnThemeToggled { get; set; }
+
     private void BeginSignIn()
     {
         NavigationManager.NavigateTo("authentication/login");
@@ -46,4 +57,5 @@
     {
         NavigationManager.NavigateToLogout("authentication/logout", "./");
     }
+
 }

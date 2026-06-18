@@ -1,9 +1,14 @@
 ﻿@using Contracts.DTOs
+@using Contracts.Requests
+@using WebApp.Shared.Dialogs
+@inject IBoardDetailsStore Store
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
-<MudPaper Elevation="1"
+<MudPaper Elevation="0"
           Class="@($"pa-3 d-flex flex-column rounded-lg column-grab {(IsDragged ? "column-drag-active" : "")} {(IsDropTarget ? "column-drop-target" : "")}")"
           Width="320px"
-          Style="max-height: 100%; flex-shrink: 0; background-color: #f4f5f7;"
+          Style="max-height: 100%; flex-shrink: 0; background-color: var(--mud-palette-drawer-background); border: 1px solid var(--mud-palette-lines-default);"
           draggable="true"
           @ondragstart="HandleColumnDragStart"
           @ondragenter="HandleColumnDragEnter"
@@ -12,49 +17,132 @@
           @ondragend="HandleColumnDragEnd">
 
     <div class="d-flex justify-space-between align-center mb-3">
-        <MudText Typo="Typo.h6" Style="font-weight: 600; pointer-events: none;">@Column.Name</MudText>
+        <MudText Typo="Typo.h6"
+                 Style="font-weight: 600; pointer-events: none; color: var(--mud-palette-text-primary);">@Column.Name</MudText>
 
         <MudMenu Icon="@Icons.Material.Filled.MoreHoriz" AnchorOrigin="Origin.BottomRight"
                  TransformOrigin="Origin.TopRight" Dense="true">
-            <MudMenuItem OnClick="HandleEditColumn" Icon="@Icons.Material.Filled.Edit">Edit</MudMenuItem>
-            <MudMenuItem OnClick="HandleDeleteColumn" Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error">Delete</MudMenuItem>
+            <MudMenuItem OnClick="OpenEditColumnDialog" Icon="@Icons.Material.Filled.Edit">Edit</MudMenuItem>
+            <MudMenuItem OnClick="DeleteColumn" Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error">Delete
+            </MudMenuItem>
         </MudMenu>
     </div>
 
-    <MudDropZone T="TaskDto" 
-                 Identifier="@Column.Id.ToString()" 
+    <MudDropZone T="TaskDto"
+                 Identifier="@Column.Id.ToString()"
                  AllowReorder="true"
-                 Class="d-flex flex-column flex-grow-1 overflow-y-auto"
-                 Style="min-height: 60px; padding-bottom: 2px; padding-top: 4px;" />
+                 Class="d-flex flex-column flex-grow-1"
+                 Style="overflow-y: auto; overflow-x: hidden; min-height: 60px; padding-bottom: 2px; padding-top: 4px;"/>
 
     <MudButton StartIcon="@Icons.Material.Filled.Add"
                FullWidth="true"
                Class="mt-2 text-start"
-               Style="justify-content: flex-start; color: #5e6c84; background-color: transparent;"
-               OnClick="HandleCreateTask">
+               Style="justify-content: flex-start; color: var(--mud-palette-text-secondary); background-color: transparent;"
+               OnClick="OpenCreateTaskDialog">
         Add a new task
     </MudButton>
 </MudPaper>
 
+<MudMessageBox @ref="_deleteColumnBox" Title="Delete Column?">
+    <MessageContent>
+        <MudText>Are you sure you want to delete '<b>@Column.Name</b>'?</MudText>
+        <br/>
+        <div
+            style="color: var(--mud-palette-error); font-weight: bold; background-color: var(--mud-palette-drawer-background); padding: 12px; border-radius: 8px; border-left: 4px solid var(--mud-palette-error);">
+            ⚠️ WARNING: This action cannot be undone. All tasks, comments, and attachments inside this column will be
+            DELETED.
+        </div>
+    </MessageContent>
+    <YesButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error">Delete</MudButton>
+    </YesButton>
+    <CancelButton>
+        <MudButton Variant="Variant.Text" Color="Color.Default">Cancel</MudButton>
+    </CancelButton>
+</MudMessageBox>
+
 @code {
     [Parameter, EditorRequired] public ColumnDto Column { get; set; } = null!;
-    
+
     [Parameter] public bool IsDragged { get; set; }
     [Parameter] public bool IsDropTarget { get; set; }
     [Parameter] public EventCallback<ColumnDto> OnColumnDragStart { get; set; }
     [Parameter] public EventCallback<ColumnDto> OnColumnDragEnter { get; set; }
     [Parameter] public EventCallback<ColumnDto> OnColumnDrop { get; set; }
     [Parameter] public EventCallback OnColumnDragEnd { get; set; }
-    
-    [Parameter] public EventCallback<ColumnDto> OnEditColumn { get; set; }
-    [Parameter] public EventCallback<ColumnDto> OnDeleteColumn { get; set; }
-    [Parameter] public EventCallback<Guid> OnCreateTask { get; set; }
+
+    private MudMessageBox? _deleteColumnBox;
 
     private async Task HandleColumnDragStart() => await OnColumnDragStart.InvokeAsync(Column);
     private async Task HandleColumnDragEnter() => await OnColumnDragEnter.InvokeAsync(Column);
     private async Task HandleColumnDrop() => await OnColumnDrop.InvokeAsync(Column);
     private async Task HandleColumnDragEnd() => await OnColumnDragEnd.InvokeAsync();
-    private async Task HandleEditColumn() => await OnEditColumn.InvokeAsync(Column);
-    private async Task HandleDeleteColumn() => await OnDeleteColumn.InvokeAsync(Column);
-    private async Task HandleCreateTask() => await OnCreateTask.InvokeAsync(Column.Id);
+
+    private async Task OpenEditColumnDialog()
+    {
+        var parameters = new DialogParameters { ["InitialName"] = Column.Name };
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        var dialog = await DialogService.ShowAsync<ColumnDialog>("Edit Column", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result!.Canceled)
+        {
+            try
+            {
+                var newName = result.Data?.ToString() ?? string.Empty;
+                await Store.UpdateColumnNameAsync(Column.Id, newName);
+                Snackbar.Add("Column updated successfully", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteColumn()
+    {
+        bool? result = await _deleteColumnBox!.ShowAsync();
+
+        if (result == true)
+        {
+            try
+            {
+                await Store.DeleteColumnAsync(Column.Id);
+                Snackbar.Add("Column and all its content deleted", Severity.Info);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenCreateTaskDialog()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+        var dialog = await DialogService.ShowAsync<TaskDialog>("Create Task", options);
+        var result = await dialog.Result;
+
+        if (!result!.Canceled)
+        {
+            try
+            {
+                var request = (CreateTaskRequest)result.Data!;
+                await Store.CreateTaskAsync(Column.Id, request);
+                Snackbar.Add("Task created successfully", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+    }
+
 }

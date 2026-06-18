@@ -7,18 +7,32 @@ namespace Persistence.Repositories;
 
 public class TaskRepository(TaskTrackerDbContext dbContext) : Repository<TaskItem, Guid>(dbContext), ITaskRepository
 {
+    public async Task LoadUsersForTaskAsync(TaskItem task, CancellationToken ct = default)
+    {
+        await DbContext.Entry(task).Reference(t => t.Reporter).LoadAsync(ct);
+    
+        if (task.AssigneeId.HasValue)
+        {
+            await DbContext.Entry(task).Reference(t => t.Assignee).LoadAsync(ct);
+        }
+    }
+    
     public async Task<TaskItem?> GetTaskWithDetailsAsync(Guid taskId, CancellationToken ct = default)
     {
         return await DbContext.Tasks
             .Include(t => t.Column)
             .Include(t => t.Attachments)
+            .Include(t => t.Reporter)
+            .Include(t => t.Assignee)
             .FirstOrDefaultAsync(t => t.Id == taskId, ct);
     }
-
+    
     public async Task<IEnumerable<TaskItem>> GetTasksByBoardIdAsync(Guid boardId, CancellationToken ct = default)
     {
         return await DbContext.Tasks
             .Include(t => t.Column)
+            .Include(t => t.Reporter)
+            .Include(t => t.Assignee)
             .Where(t => t.Column!.BoardId == boardId)
             .OrderBy(t => t.Position)
             .ToListAsync(ct);

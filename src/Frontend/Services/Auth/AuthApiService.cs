@@ -7,7 +7,7 @@ namespace Services.Auth;
 
 internal class AuthApiService(IAuthApi api) : IAuthApiService
 {
-    public async Task<UserWithRoleDto> LoginAsync(CancellationToken ct = default)
+    public async Task<UserDto> LoginAsync(CancellationToken ct = default)
     {
         var response = await api.LoginAsync(ct);
 
@@ -19,7 +19,7 @@ internal class AuthApiService(IAuthApi api) : IAuthApiService
         return response.Content!;
     }
 
-    public async Task<UserWithRoleDto?> GetCurrentUserAsync(CancellationToken ct = default)
+    public async Task<UserDto?> GetCurrentUserAsync(CancellationToken ct = default)
     {
         var response = await api.GetCurrentUserAsync(ct);
 

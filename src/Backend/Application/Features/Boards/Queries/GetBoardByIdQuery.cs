@@ -1,12 +1,14 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Services;
+using Application.Options;
 using Contracts.DTOs;
 using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Options;
 
 namespace Application.Features.Boards.Queries;
 
-public record GetBoardByIdQuery(Guid BoardId) : IRequest<BoardWithColumnsDto>;
+public record GetBoardByIdQuery(Guid BoardId, string? SearchTerm = null) : IRequest<BoardWithColumnsDto>;
 
 public class GetBoardByIdQueryHandler(
     IBoardAccessService boardAccessService,
@@ -17,7 +19,7 @@ public class GetBoardByIdQueryHandler(
     {
         await boardAccessService.EnsureCanViewBoardAsync(request.BoardId, ct);
         
-        var board = await boardRepository.GetBoardWithHierarchyAsync(request.BoardId, ct);
+        var board = await boardRepository.GetBoardWithHierarchyAsync(request.BoardId, request.SearchTerm, ct);
         
         if (board is null)
         {
@@ -26,7 +28,24 @@ public class GetBoardByIdQueryHandler(
 
         var columnDtos = board.Columns
             .OrderBy(c => c.Position)
-            .Select(c => new ColumnDto(c.Id, c.Name, c.Position))
+            .Select(c => new ColumnDto(
+                Id: c.Id, 
+                Name: c.Name, 
+                Position: c.Position,
+                Tasks: c.Tasks.OrderBy(t => t.Position).Select(t => new TaskDto(
+                    Id: t.Id,
+                    Title: t.Title,
+                    Description: t.Description,
+                    Position: t.Position,
+                    DueDate: t.DueDate,
+                    ColumnId: t.ColumnId,
+                    AssigneeId: t.AssigneeId,
+                    AssigneeName: t.Assignee?.DisplayName,
+                    ReporterId: t.ReporterId,
+                    ReporterName: t.Reporter?.DisplayName,
+                    Attachments: new List<AttachmentDto>()
+                )).ToList()
+            ))
             .ToList();
 
         return new BoardWithColumnsDto(
@@ -34,15 +53,20 @@ public class GetBoardByIdQueryHandler(
             Name: board.Name,
             Description: board.Description,
             Columns: columnDtos
-            );
+        );
     }
 }
 
 public class GetBoardByIdQueryValidator : AbstractValidator<GetBoardByIdQuery>
 {
-    public GetBoardByIdQueryValidator()
+    public GetBoardByIdQueryValidator(IOptions<PaginationOptions> options)
     {
+        var paginationOptions = options.Value;
+        
         RuleFor(x => x.BoardId)
             .NotEmpty().WithMessage("Board ID is required.");
+        
+        RuleFor(v => v.SearchTerm)
+            .MaximumLength(paginationOptions.MaxSearchTermLength).WithMessage($"Search term must not exceed {paginationOptions.MaxSearchTermLength} characters.");
     }
 }

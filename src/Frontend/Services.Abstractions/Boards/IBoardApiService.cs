@@ -6,8 +6,9 @@ namespace Services.Abstractions.Boards;
 public interface IBoardApiService
 {
     Task<PagedList<BoardPreviewDto>> GetMyBoardsAsync(int pageNumber, int pageSize, string? searchTerm = null, CancellationToken ct = default);
-    
-    Task<BoardWithColumnsDto> GetBoardByIdAsync(Guid boardId, CancellationToken ct = default);
+
+    Task<BoardWithColumnsDto>
+        GetBoardByIdAsync(Guid boardId, string? searchTerm = null, CancellationToken ct = default);
     
     Task<BoardPreviewDto?> CreateBoardAsync(UpdateBoardRequest request, CancellationToken ct = default);
     

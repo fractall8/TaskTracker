@@ -1,58 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Task Tracker</title>
+    <base href="/"/>
+    <link rel="preload" id="webassembly"/>
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="css/app.css"/>
+    <link rel="icon" type="image/png" href="favicon.png"/>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet"/>
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet"/>
+    <script type="importmap"></script>
+
     <style>
-        .loading-screen {
+        :root {
+            --background-color: #FFFFFF;
+            --text-color: #172B4D;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--background-color) !important;
+            color: var(--text-color) !important;
+            transition: background-color 0.2s;
+        }
+
+        .app-loader {
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             height: 100vh;
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #e0e0e0;
-            border-top: 5px solid #007bff;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #0052CC;
             border-radius: 50%;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
-            margin-bottom: 20px;
+        }
+
+        .dark-mode .spinner {
+            border-color: rgba(255, 255, 255, 0.1);
+            border-left-color: #579DFF;
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            color: #555;
-            font-size: 1.2rem;
-            font-weight: 500;
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
         }
     </style>
-
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Task Tracker</title>
-    <base href="/" />
-    <link rel="preload" id="webassembly" />
-    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="css/app.css" />
-    <link rel="icon" type="image/png" href="favicon.png" />
-    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
-    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
-    <script type="importmap"></script>
 </head>
 <body>
 
+<script>
+    window.updateBodyTheme = function (isDark) {
+        if (isDark) {
+            document.documentElement.style.setProperty('--background-color', '#161A1D');
+            document.documentElement.style.setProperty('--text-color', '#B6C2CF');
+            document.body.classList.add('dark-mode');
+        } else {
+            document.documentElement.style.setProperty('--background-color', '#FFFFFF');
+            document.documentElement.style.setProperty('--text-color', '#172B4D');
+            document.body.classList.remove('dark-mode');
+        }
+    };
+
+    (function () {
+        let theme = localStorage.getItem('themePreference');
+        let isDark = (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches));
+        window.updateBodyTheme(isDark);
+    })();
+</script>
+
 <div id="app">
-    <div class="loading-screen">
+    <div class="app-loader">
         <div class="spinner"></div>
-        <div class="loading-text">Loading TaskTracker...</div>
+        <div style="font-weight: 500; margin-top: 16px;">Loading TaskTracker...</div>
     </div>
+</div>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
 </div>
 
 <script src="_content/Microsoft.Authentication.WebAssembly.Msal/AuthenticationService.js"></script>

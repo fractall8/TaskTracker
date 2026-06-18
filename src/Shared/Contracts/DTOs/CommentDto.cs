@@ -5,5 +5,6 @@ public record CommentDto(
     string Text,
     Guid TaskId,
     DateTimeOffset CreatedAt,
-    Guid? CreatedById,
-    DateTimeOffset? UpdatedAt);
+    DateTimeOffset? UpdatedAt,
+    Guid AuthorId,
+    string AuthorName);

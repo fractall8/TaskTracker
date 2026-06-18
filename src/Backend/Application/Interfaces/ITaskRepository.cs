@@ -4,6 +4,8 @@ namespace Application.Interfaces;
 
 public interface ITaskRepository : IRepository<TaskItem, Guid>
 {
+    Task LoadUsersForTaskAsync(TaskItem task, CancellationToken ct = default);
+    
     Task<TaskItem?> GetTaskWithDetailsAsync(Guid taskId, CancellationToken ct = default);
 
     Task<IEnumerable<TaskItem>> GetTasksByBoardIdAsync(Guid boardId, CancellationToken ct = default);

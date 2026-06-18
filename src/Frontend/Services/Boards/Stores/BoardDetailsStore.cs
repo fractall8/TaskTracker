@@ -33,7 +33,7 @@ public class BoardDetailsStore(IBoardApiService boardsApi, IColumnApiService col
         Tasks.Clear();
     }
 
-    public async Task LoadAsync(Guid boardId, CancellationToken ct = default)
+    public async Task LoadAsync(Guid boardId, string? searchTerm = null, CancellationToken ct = default)
     {
         IsLoading = true;
         ErrorMessage = null;
@@ -41,14 +41,24 @@ public class BoardDetailsStore(IBoardApiService boardsApi, IColumnApiService col
 
         try
         {
-            var loadedBoard = await boardsApi.GetBoardByIdAsync(boardId, ct);
-            Tasks = await tasksApi.GetTasksForBoardAsync(boardId, ct);
+            var loadedBoard = await boardsApi.GetBoardByIdAsync(boardId, searchTerm, ct);
 
             BoardId = boardId;
             Board = loadedBoard with
             {
                 Columns = loadedBoard.Columns.OrderBy(c => c.Position).ToList()
             };
+
+            if (loadedBoard.Columns != null)
+            {
+                Tasks = loadedBoard.Columns
+                    .SelectMany(c => c.Tasks ?? Enumerable.Empty<TaskDto>())
+                    .ToList();
+            }
+            else
+            {
+                Tasks = new List<TaskDto>();
+            }
         }
         catch (Exception ex)
         {
@@ -153,7 +163,7 @@ public class BoardDetailsStore(IBoardApiService boardsApi, IColumnApiService col
         catch
         {
             // If the API fails, reload the board from the server
-            await LoadAsync(BoardId.Value, ct);
+            await LoadAsync(BoardId.Value, null, ct);
             throw;
         }
     }
@@ -255,7 +265,7 @@ public class BoardDetailsStore(IBoardApiService boardsApi, IColumnApiService col
         }
         catch
         {
-            await LoadAsync(BoardId.Value, ct);
+            await LoadAsync(BoardId.Value, null, ct);
             throw;
         }
     }

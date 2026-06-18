@@ -26,7 +26,7 @@ public class CreateTaskCommandHandler(
     public async Task<TaskDto> Handle(CreateTaskCommand request, CancellationToken ct)
     {
         var boardAccessContext = await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, ct);
-        
+
         var column = await columnRepository.GetByIdAsync(request.ColumnId, ct);
 
         if (column == null)
@@ -38,7 +38,7 @@ public class CreateTaskCommandHandler(
         {
             throw new KeyNotFoundException("Column not found on this board.");
         }
-        
+
         var maxPosition = await taskRepository.GetMaxPositionAsync(request.ColumnId, ct);
 
         var task = new TaskItem
@@ -56,9 +56,12 @@ public class CreateTaskCommandHandler(
         await taskRepository.AddAsync(task, ct);
         await unitOfWork.SaveChangesAsync(ct);
         
+        await taskRepository.LoadUsersForTaskAsync(task, ct);
+
         return new TaskDto(
             task.Id, task.Title, task.Description, task.Position, task.DueDate,
-            task.ColumnId, task.AssigneeId, task.ReporterId, []);
+            task.ColumnId, task.AssigneeId, task.Assignee?.DisplayName, task.ReporterId, task.Reporter?.DisplayName,
+            []);
     }
 }
 
@@ -67,15 +70,16 @@ public class CreateTaskCommandValidator : AbstractValidator<CreateTaskCommand>
     public CreateTaskCommandValidator()
     {
         RuleFor(x => x.BoardId).NotEmpty();
-        
+
         RuleFor(x => x.ColumnId).NotEmpty();
-        
+
         RuleFor(x => x.Title)
             .NotEmpty().WithMessage("Task title is required.")
-            .MaximumLength(TaskItemConstants.MaxTitleLength).WithMessage($"Task title must not exceed {TaskItemConstants.MaxTitleLength} characters.");
-            
-        RuleFor(x => x.Description)
-            .MaximumLength(TaskItemConstants.MaxDescriptionLength).WithMessage($"Description must not exceed {TaskItemConstants.MaxDescriptionLength} characters.");
+            .MaximumLength(TaskItemConstants.MaxTitleLength)
+            .WithMessage($"Task title must not exceed {TaskItemConstants.MaxTitleLength} characters.");
 
+        RuleFor(x => x.Description)
+            .MaximumLength(TaskItemConstants.MaxDescriptionLength)
+            .WithMessage($"Description must not exceed {TaskItemConstants.MaxDescriptionLength} characters.");
     }
 }

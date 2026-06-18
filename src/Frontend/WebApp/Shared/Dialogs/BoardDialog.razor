@@ -3,21 +3,32 @@
 @using Contracts.Requests
 
 <MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-primary);">
+            <MudIcon Icon="@(Board is null ? Icons.Material.Filled.Add : Icons.Material.Filled.Edit)"
+                     Class="mr-2 mb-n1"/>
+            @(Board is null ? "New Board" : "Edit Board")
+        </MudText>
+    </TitleContent>
     <DialogContent>
         <MudForm @ref="_form" ValidationDelay="0">
-            <MudTextField @bind-Value="_model.Name" 
-                          For="@(() => _model.Name)" 
-                          Label="Board Name" 
-                          Required="true" 
-                          RequiredError="Name is required" 
-                          MaxLength="100" 
-                          Class="mb-3" />
-                          
-            <MudTextField @bind-Value="_model.Description" 
-                          For="@(() => _model.Description)" 
-                          Label="Description (Optional)" 
-                          Lines="3" 
-                          MaxLength="500" />
+            <MudTextField @bind-Value="_model.Name"
+                          For="@(() => _model.Name)"
+                          Label="Board Name"
+                          Required="true"
+                          RequiredError="Name is required"
+                          MaxLength="100"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Class="mb-3"/>
+
+            <MudTextField @bind-Value="_model.Description"
+                          For="@(() => _model.Description)"
+                          Label="Description (Optional)"
+                          Lines="3"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          MaxLength="500"/>
         </MudForm>
     </DialogContent>
     <DialogActions>
@@ -27,15 +38,13 @@
 </MudDialog>
 
 @code {
-    [CascadingParameter] 
-    public IMudDialogInstance? MudDialog { get; set; }
+    [CascadingParameter] public IMudDialogInstance? MudDialog { get; set; }
 
-    [Parameter] 
-    public BoardPreviewDto? Board { get; set; } 
+    [Parameter] public BoardPreviewDto? Board { get; set; }
 
     private MudForm? _form;
     private BoardFormModel _model = new();
-    
+
     protected override void OnInitialized()
     {
         if (Board is not null)
@@ -52,7 +61,7 @@
         if (_form is not null)
         {
             await _form.ValidateAsync();
-            
+
             if (_form.IsValid)
             {
                 var resultData = new UpdateBoardRequest(_model.Name, _model.Description);
@@ -63,11 +72,9 @@
 
     public class BoardFormModel
     {
-        [Required]
-        [MaxLength(100)]
-        public string Name { get; set; } = string.Empty;
+        [Required] [MaxLength(100)] public string Name { get; set; } = string.Empty;
 
-        [MaxLength(500)]
-        public string? Description { get; set; }
+        [MaxLength(500)] public string? Description { get; set; }
     }
+
 }

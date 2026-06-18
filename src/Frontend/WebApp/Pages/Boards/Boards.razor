@@ -1,7 +1,6 @@
 ﻿@page "/boards"
 @using Contracts.DTOs
 @using Contracts.Requests
-@using Refit
 @using WebApp.Shared.Dialogs
 @implements IDisposable
 @inject IBoardStore BoardStore
@@ -12,7 +11,7 @@
     .mud-card-header-content {
         min-width: 0;
     }
-    
+
     .text-truncate-single {
         white-space: nowrap;
         overflow: hidden;
@@ -29,29 +28,31 @@
     }
 </style>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+<MudContainer MaxWidth="MaxWidth.Large" Class="pt-6 pb-8 px-4">
     <div class="d-flex flex-column flex-md-row justify-space-between align-center mb-6 gap-4">
-        <MudText Typo="Typo.h4">My Boards</MudText>
-        
+        <MudText Typo="Typo.h4" Class="fw-bold" Style="color: var(--mud-palette-text-primary);">My Boards</MudText>
+
         <div class="d-flex flex-wrap align-center gap-4">
-            <MudTextField T="string" 
-                          Value="@BoardStore.SearchTerm" 
-                          ValueChanged="OnSearchTermChangedAsync" 
-                          Placeholder="Search boards..." 
-                          Adornment="Adornment.Start" 
-                          AdornmentIcon="@Icons.Material.Filled.Search" 
-                          Variant="Variant.Outlined" 
-                          Margin="Margin.Dense" 
-                          Dense="true" 
-                          Clearable="true" 
-                          DebounceInterval="500" 
-                          Style="width: 250px;" />
+            <MudTextField T="string"
+                          Value="@BoardStore.SearchTerm"
+                          ValueChanged="OnSearchTermChangedAsync"
+                          Placeholder="Search boards..."
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Dense="true"
+                          Clearable="true"
+                          DebounceInterval="500"
+                          Style="width: 250px; background-color: var(--mud-palette-surface);"/>
 
             @if (BoardStore.Pagination.TotalCount > 0 || !string.IsNullOrEmpty(BoardStore.SearchTerm))
             {
                 <div class="d-flex align-center gap-2">
                     <MudText Typo="Typo.body2" Color="Color.Secondary">Items per page:</MudText>
-                    <MudSelect T="int" Value="@BoardStore.PageSize" ValueChanged="OnPageSizeChangedAsync" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Style="width: 80px;">
+                    <MudSelect T="int" Value="@BoardStore.PageSize" ValueChanged="OnPageSizeChangedAsync"
+                               Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true"
+                               Style="width: 80px; background-color: var(--mud-palette-surface);">
                         <MudSelectItem Value="12">12</MudSelectItem>
                         <MudSelectItem Value="24">24</MudSelectItem>
                         <MudSelectItem Value="48">48</MudSelectItem>
@@ -59,29 +60,30 @@
                 </div>
             }
 
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateDialog">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="OpenCreateDialog">
                 Create Board
             </MudButton>
         </div>
     </div>
-    
+
     @if (BoardStore.IsLoading && !BoardStore.IsLoaded)
     {
         <div class="d-flex justify-center mt-10">
-            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large"/>
         </div>
     }
     else if (!string.IsNullOrEmpty(BoardStore.ErrorMessage))
     {
-        <MudAlert Severity="Severity.Error" Class="mt-4">
+        <MudAlert Severity="Severity.Error" Class="mt-4 rounded-lg">
             @BoardStore.ErrorMessage
         </MudAlert>
     }
     else if (!BoardStore.Boards.Any())
     {
-        <MudAlert Severity="Severity.Info" Class="mt-4">
-            @(BoardStore.CurrentPage > 1 
-                ? "This page is empty. Please return to the previous pages." 
+        <MudAlert Severity="Severity.Info" Class="mt-4 rounded-lg">
+            @(BoardStore.CurrentPage > 1
+                ? "This page is empty. Please return to the previous pages."
                 : "You don't have any boards yet. Create your first one!")
         </MudAlert>
     }
@@ -91,31 +93,40 @@
             @foreach (var board in BoardStore.Boards)
             {
                 <MudItem xs="12" sm="6" md="4" lg="3">
-                    <MudCard Elevation="3" Class="h-100 d-flex flex-column rounded-lg">
+                    <MudCard Elevation="2" Class="h-100 d-flex flex-column rounded-lg transition-transform"
+                             Style="border: 1px solid var(--mud-palette-lines-default); background-color: var(--mud-palette-surface);">
                         <MudCardHeader>
                             <CardHeaderContent>
-                                <MudText Typo="Typo.h6" Class="fw-bold text-truncate-single" Title="@board.Name">
+                                <MudText Typo="Typo.h6" Class="fw-bold text-truncate-single" Title="@board.Name"
+                                         Style="color: var(--mud-palette-text-primary);">
                                     @board.Name
                                 </MudText>
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">Role: @board.Role.ToString()</MudText>
+                                <MudText Typo="Typo.caption"
+                                         Style="color: var(--mud-palette-text-secondary); font-weight: 600; text-transform: uppercase;">
+                                    Role: @board.Role.ToString()
+                                </MudText>
                             </CardHeaderContent>
                         </MudCardHeader>
-    
-                        <MudCardContent Class="flex-grow-1 overflow-hidden">
-                            <MudText Typo="Typo.body2" Class="text-truncate-multi" Title="@board.Description">
+
+                        <MudCardContent Class="flex-grow-1 overflow-hidden pt-0">
+                            <MudText Typo="Typo.body2" Class="text-truncate-multi" Title="@board.Description"
+                                     Style="color: var(--mud-palette-text-secondary);">
                                 @(string.IsNullOrWhiteSpace(board.Description) ? "No description provided." : board.Description)
                             </MudText>
                         </MudCardContent>
-    
+
                         <MudCardActions Class="justify-end px-4 pb-4">
                             <MudTooltip Text="Edit Board">
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Default" Size="Size.Small" OnClick="@(() => OpenEditDialog(board))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Default"
+                                               Size="Size.Small" OnClick="@(() => OpenEditDialog(board))"/>
                             </MudTooltip>
                             <MudTooltip Text="Delete Board">
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteBoard(board))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                               Size="Size.Small" OnClick="@(() => DeleteBoard(board))"/>
                             </MudTooltip>
-                            
-                            <MudButton Href="@($"/boards/{board.Id}")" Variant="Variant.Text" Color="Color.Primary" Class="ml-2">
+
+                            <MudButton Href="@($"/boards/{board.Id}")" Variant="Variant.Text" Color="Color.Primary"
+                                       Class="ml-2 fw-bold">
                                 Open
                             </MudButton>
                         </MudCardActions>
@@ -124,14 +135,14 @@
             }
         </MudGrid>
     }
-    
+
     @if (BoardStore.Pagination.TotalPages > 1)
     {
-        <div class="d-flex justify-center mt-6">
-            <MudPagination Color="Color.Primary" 
-                           Count="@BoardStore.Pagination.TotalPages" 
-                           Selected="@BoardStore.CurrentPage" 
-                           SelectedChanged="OnPageChangedAsync" />
+        <div class="d-flex justify-center mt-8">
+            <MudPagination Color="Color.Primary"
+                           Count="@BoardStore.Pagination.TotalPages"
+                           Selected="@BoardStore.CurrentPage"
+                           SelectedChanged="OnPageChangedAsync"/>
         </div>
     }
 </MudContainer>
@@ -171,10 +182,10 @@
             {
                 await BoardApiService.CreateBoardAsync(request);
                 Snackbar.Add("Board created successfully.", Severity.Success);
-                
+
                 await BoardStore.RefreshAsync();
             }
-            catch (ApiException ex)
+            catch (Exception ex)
             {
                 Snackbar.Add($"Failed to create board: {ex.Message}", Severity.Error);
             }
@@ -194,10 +205,10 @@
             {
                 await BoardApiService.UpdateBoardAsync(board.Id, request);
                 Snackbar.Add("Board updated successfully.", Severity.Success);
-                
+
                 await BoardStore.RefreshAsync();
             }
-            catch (ApiException ex)
+            catch (Exception ex)
             {
                 Snackbar.Add($"Failed to update board: {ex.Message}", Severity.Error);
             }
@@ -219,23 +230,24 @@
             {
                 await BoardApiService.DeleteBoardAsync(board.Id);
                 Snackbar.Add("Board deleted successfully.", Severity.Success);
-                
+
                 await BoardStore.RefreshAsync();
             }
-            catch (ApiException ex)
+            catch (Exception ex)
             {
                 Snackbar.Add($"Failed to delete board: {ex.Message}", Severity.Error);
             }
         }
     }
-    
+
     private async Task OnPageSizeChangedAsync(int newSize)
     {
         await BoardStore.ChangePageSizeAsync(newSize);
     }
-    
+
     private async Task OnSearchTermChangedAsync(string text)
     {
         await BoardStore.SetSearchTermAsync(text);
     }
+
 }

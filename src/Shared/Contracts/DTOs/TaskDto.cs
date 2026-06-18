@@ -7,6 +7,11 @@ public record TaskDto(
     int Position,
     DateTimeOffset? DueDate,
     Guid ColumnId,
+    
     Guid? AssigneeId,
+    string? AssigneeName,
+    
     Guid ReporterId,
+    string? ReporterName,
+    
     List<AttachmentDto> Attachments);
