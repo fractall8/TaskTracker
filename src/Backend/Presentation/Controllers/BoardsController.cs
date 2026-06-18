@@ -28,7 +28,7 @@ public class BoardsController(ISender sender) : ControllerBase
         return Ok(result);
     }
     
-    [HttpGet("{id}")]
+    [HttpGet("{id:guid}")]
     public async Task<ActionResult<BoardWithColumnsDto>> GetBoardById(Guid id, [FromQuery] string? searchTerm, CancellationToken ct)
     {
         var query = new GetBoardByIdQuery(id, searchTerm);
