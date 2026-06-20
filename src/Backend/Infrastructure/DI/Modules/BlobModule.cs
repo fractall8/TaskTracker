@@ -1,4 +1,4 @@
-﻿using Application.Interfaces.Services;
+using Application.Interfaces.Services;
 using Azure.Storage.Blobs;
 using Domain.Constants;
 using Infrastructure.Services;
@@ -13,9 +13,9 @@ internal static class BlobModule
     {
         var blobConnectionString = configuration.GetConnectionString(ConnectionStrings.AzureBlobStorageConnection);
         services.AddSingleton(_ => new BlobServiceClient(blobConnectionString));
-        
+
         services.AddScoped<IFileService, BlobStorageService>();
-        
+
         return services;
     }
 }

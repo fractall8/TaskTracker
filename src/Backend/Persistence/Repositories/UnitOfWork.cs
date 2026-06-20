@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Persistence.Contexts;
 
 namespace Persistence.Repositories;

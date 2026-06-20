@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using Application.Interfaces.Services;
 using Infrastructure.Auth.Constants;
 using Microsoft.AspNetCore.Http;

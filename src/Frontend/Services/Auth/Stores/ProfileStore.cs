@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Contracts.DTOs;
 using Refit;
 using Services.Abstractions.Auth;
@@ -40,15 +40,19 @@ internal sealed class ProfileStore(IAuthApiService authApiService) : IProfileSto
     private async Task EnsureLoadedInternalAsync(bool forceRefresh, CancellationToken ct)
     {
         if (!forceRefresh && IsLoaded)
+        {
             return;
+        }
 
         Task loadTask;
-        
+
         await _sync.WaitAsync(ct);
         try
         {
             if (!forceRefresh && IsLoaded)
+            {
                 return;
+            }
 
             _inFlightLoad ??= LoadProfileAsync();
             loadTask = _inFlightLoad;
@@ -64,7 +68,7 @@ internal sealed class ProfileStore(IAuthApiService authApiService) : IProfileSto
     private async Task LoadProfileAsync()
     {
         await Task.Yield();
-        
+
         IsLoading = true;
         ErrorMessage = null;
         NotifyStateChanged();

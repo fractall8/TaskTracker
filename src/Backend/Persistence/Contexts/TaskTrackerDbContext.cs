@@ -1,25 +1,25 @@
-﻿using Domain.Entities;
+using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Persistence.Contexts;
 
 public class TaskTrackerDbContext(DbContextOptions options) : DbContext(options)
 {
-    public DbSet<Board> Boards { get; set; }
-    public DbSet<BoardMember> BoardMembers { get; set; }
-    public DbSet<Column> Columns { get; set; }
-    public DbSet<TaskItem> Tasks { get; set; }
-    public DbSet<User> Users { get; set; }
-    public DbSet<Attachment> Attachments { get; set; }
-    public DbSet<Comment> Comments { get; set; }
-    
+    public DbSet<Board>? Boards { get; set; }
+    public DbSet<BoardMember>? BoardMembers { get; set; }
+    public DbSet<Column>? Columns { get; set; }
+    public DbSet<TaskItem>? Tasks { get; set; }
+    public DbSet<User>? Users { get; set; }
+    public DbSet<Attachment>? Attachments { get; set; }
+    public DbSet<Comment>? Comments { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        
+
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(TaskTrackerDbContext).Assembly);
     }
-    
+
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         var entries = ChangeTracker.Entries<IAuditableEntity>();
@@ -32,11 +32,11 @@ public class TaskTrackerDbContext(DbContextOptions options) : DbContext(options)
                     entry.Entity.CreatedAt = DateTimeOffset.UtcNow;
                     // maybe add user id here in future 
                     break;
-                
+
                 case EntityState.Modified:
                     entry.Entity.UpdatedAt = DateTimeOffset.UtcNow;
                     break;
-                
+
                 case EntityState.Deleted:
                     entry.State = EntityState.Modified;
                     entry.Entity.IsDeleted = true;
@@ -44,7 +44,7 @@ public class TaskTrackerDbContext(DbContextOptions options) : DbContext(options)
                     break;
             }
         }
-        
+
         return base.SaveChangesAsync(cancellationToken);
     }
 }

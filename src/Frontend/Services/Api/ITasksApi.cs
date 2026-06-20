@@ -1,4 +1,4 @@
-﻿using Contracts.DTOs;
+using Contracts.DTOs;
 using Contracts.Requests;
 using Refit;
 
@@ -15,11 +15,11 @@ public interface ITasksApi
     [Multipart]
     [Post("/api/boards/{boardId}/tasks/{taskId}/attachments")]
     Task<IApiResponse<AttachmentDto>> UploadAttachmentAsync(
-        Guid boardId, 
-        Guid taskId, 
-        [AliasAs("file")] StreamPart file, 
+        Guid boardId,
+        Guid taskId,
+        [AliasAs("file")] StreamPart file,
         CancellationToken ct = default);
-    
+
     [Post("/api/boards/{boardId}/tasks/columns/{columnId}")]
     Task<IApiResponse<TaskDto>> CreateAsync(Guid boardId, Guid columnId, [Body] CreateTaskRequest request,
         CancellationToken ct = default);
@@ -34,19 +34,19 @@ public interface ITasksApi
     [Post("/api/boards/{boardId}/tasks/{taskId}/move")]
     Task<IApiResponse> MoveAsync(Guid boardId, Guid taskId, [Body] MoveTaskRequest request,
         CancellationToken ct = default);
-    
+
     [Get("/api/boards/{boardId}/tasks/{taskId}/comments")]
     Task<IApiResponse<List<CommentDto>>> GetCommentsAsync(Guid boardId, Guid taskId, CancellationToken ct = default);
 
     [Post("/api/boards/{boardId}/tasks/{taskId}/comments")]
     Task<IApiResponse<CommentDto>> CreateCommentAsync(Guid boardId, Guid taskId, [Body] CreateCommentRequest request, CancellationToken ct = default);
-    
+
     [Put("/api/boards/{boardId}/tasks/{taskId}/comments/{commentId}")]
     Task<ApiResponse<CommentDto>> UpdateCommentAsync(
-        Guid boardId, 
-        Guid taskId, 
-        Guid commentId, 
-        [Body] UpdateCommentRequest request, 
+        Guid boardId,
+        Guid taskId,
+        Guid commentId,
+        [Body] UpdateCommentRequest request,
         CancellationToken ct = default);
 
     [Delete("/api/boards/{boardId}/tasks/{taskId}/comments/{commentId}")]

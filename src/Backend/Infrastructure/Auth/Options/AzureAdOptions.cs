@@ -1,4 +1,4 @@
-﻿namespace Infrastructure.Auth.Options;
+namespace Infrastructure.Auth.Options;
 
 public class AzureAdOptions
 {

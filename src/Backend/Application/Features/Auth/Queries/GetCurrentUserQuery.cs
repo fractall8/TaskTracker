@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
 using MediatR;
@@ -12,12 +12,12 @@ public class GetCurrentUserQueryHandler(
     IUserRepository userRepository)
     : IRequestHandler<GetCurrentUserQuery, UserDto?>
 {
-    public async Task<UserDto?> Handle(GetCurrentUserQuery request, CancellationToken ct)
+    public async Task<UserDto?> Handle(GetCurrentUserQuery request, CancellationToken cancellationToken)
     {
         var userDto = await userRepository.GetUserByAzureAdIdAsync(
             currentUser.AzureAdObjectId,
             u => new UserDto(u.Id, u.Email, u.DisplayName),
-            ct);
+            cancellationToken);
 
         if (userDto == null)
         {

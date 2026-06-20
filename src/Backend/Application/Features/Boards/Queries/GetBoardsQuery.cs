@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Application.Interfaces.Services;
 using Application.Options;
 using Contracts.DTOs;
@@ -16,29 +16,29 @@ public class GetBoardsQueryHandler(
     IBoardRepository boardRepository)
     : IRequestHandler<GetBoardsQuery, PagedList<BoardPreviewDto>>
 {
-    public async Task<PagedList<BoardPreviewDto>> Handle(GetBoardsQuery request, CancellationToken ct)
+    public async Task<PagedList<BoardPreviewDto>> Handle(GetBoardsQuery request, CancellationToken cancellationToken)
     {
         var currentUserId = await userRepository.GetUserByAzureAdIdAsync(
-                                currentUserAccessor.AzureAdObjectId, 
-                                u => (Guid?)u.Id, 
-                                ct) 
+                                currentUserAccessor.AzureAdObjectId,
+                                u => (Guid?)u.Id,
+                                cancellationToken)
                             ?? throw new UnauthorizedAccessException("User is not authenticated");
 
-        var totalCount = await boardRepository.CountUserBoardsAsync(currentUserId, request.SearchTerm, ct);
-        
+        var totalCount = await boardRepository.CountUserBoardsAsync(currentUserId, request.SearchTerm, cancellationToken);
+
         var boards = await boardRepository.GetUserBoardsPaginatedAsync(
-            currentUserId, 
-            request.PageNumber, 
-            request.PageSize, 
+            currentUserId,
+            request.PageNumber,
+            request.PageSize,
             request.SearchTerm,
-            ct);
-        
-        var boardDtos=  boards.Select(board => new BoardPreviewDto(
+            cancellationToken);
+
+        var boardDtos = boards.Select(board => new BoardPreviewDto(
             Id: board.Id,
             Name: board.Name,
             Description: board.Description,
             CreatedAt: board.CreatedAt,
-            Role: (Contracts.Enums.BoardRoleDto)board.Members.First().Role 
+            Role: (Contracts.Enums.BoardRoleDto)board.Members.First().Role
         )).ToList();
 
         return new PagedList<BoardPreviewDto>
@@ -59,7 +59,7 @@ public class GetBoardsQueryValidator : AbstractValidator<GetBoardsQuery>
     public GetBoardsQueryValidator(IOptions<PaginationOptions> options)
     {
         var paginationOptions = options.Value;
-        
+
         RuleFor(v => v.PageNumber)
             .GreaterThanOrEqualTo(1).WithMessage("Page number must be at least 1.");
 

@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,20 +15,20 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
 
         var (statusCode, title, detail) = exception switch
         {
-            ValidationException => 
+            ValidationException =>
                 (StatusCodes.Status400BadRequest, "Validation Error", "One or more validation errors occurred."),
-            
-            KeyNotFoundException => 
+
+            KeyNotFoundException =>
                 (StatusCodes.Status404NotFound, "Not Found", exception.Message),
-            
-            UnauthorizedAccessException => 
+
+            UnauthorizedAccessException =>
                 (StatusCodes.Status403Forbidden, "Forbidden", exception.Message),
-            
-            InvalidOperationException => 
+
+            InvalidOperationException =>
                 (StatusCodes.Status400BadRequest, "Invalid Operation", "The requested operation could not be completed."),
-            
+
             // Fallback for all other
-            _ => 
+            _ =>
                 (StatusCodes.Status500InternalServerError, "Server Error", "An unexpected error occurred.")
         };
 
@@ -48,13 +48,13 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
                     g => g.Key,
                     g => g.Select(x => x.ErrorMessage).ToArray()
                 );
-                
+
             problemDetails.Extensions.Add("errors", errors);
         }
 
         httpContext.Response.StatusCode = statusCode;
         await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
 
-        return true; 
+        return true;
     }
 }

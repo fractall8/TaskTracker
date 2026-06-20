@@ -1,4 +1,4 @@
-﻿namespace Contracts.Enums;
+namespace Contracts.Enums;
 
 public enum BoardRoleDto : byte
 {

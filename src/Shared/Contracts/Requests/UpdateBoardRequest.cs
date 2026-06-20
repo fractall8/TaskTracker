@@ -1,6 +1,6 @@
-﻿namespace Contracts.Requests;
+namespace Contracts.Requests;
 
 public record UpdateBoardRequest(
-    string Name, 
+    string Name,
     string? Description
 );

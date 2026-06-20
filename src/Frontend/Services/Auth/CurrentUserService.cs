@@ -1,4 +1,4 @@
-﻿using Contracts.DTOs;
+using Contracts.DTOs;
 using Services.Abstractions.Auth;
 
 namespace Services.Auth;
@@ -10,16 +10,19 @@ public class CurrentUserService(IAuthApiService authApiService) : ICurrentUserSe
 
     public async Task InitializeAsync()
     {
-        if (_isInitialized) return;
+        if (_isInitialized)
+        {
+            return;
+        }
 
         try
         {
-            User = await authApiService.GetCurrentUserAsync(); 
+            User = await authApiService.GetCurrentUserAsync();
             _isInitialized = true;
         }
         catch
         {
-            User = null; 
+            User = null;
         }
     }
 }

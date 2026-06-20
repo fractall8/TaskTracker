@@ -1,4 +1,4 @@
-﻿using DbUp.Engine.Output;
+using DbUp.Engine.Output;
 using Serilog;
 
 namespace Database;

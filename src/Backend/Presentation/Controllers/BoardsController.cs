@@ -1,4 +1,4 @@
-﻿using Application.Features.Boards.Commands;
+using Application.Features.Boards.Commands;
 using Application.Features.Boards.Queries;
 using Application.Options;
 using Contracts.DTOs;
@@ -22,12 +22,12 @@ public class BoardsController(ISender sender) : ControllerBase
         [FromQuery] string? searchTerm = null)
     {
         int resolvedPageSize = pageSize ?? paginationOptions.Value.DefaultPageSize;
-        
+
         var result = await sender.Send(new GetBoardsQuery(pageNumber, resolvedPageSize, searchTerm), ct);
 
         return Ok(result);
     }
-    
+
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<BoardWithColumnsDto>> GetBoardById(Guid id, [FromQuery] string? searchTerm, CancellationToken ct)
     {

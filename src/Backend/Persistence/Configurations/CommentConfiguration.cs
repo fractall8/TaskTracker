@@ -1,4 +1,4 @@
-﻿using Domain.Constants;
+using Domain.Constants;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -10,7 +10,7 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
     public void Configure(EntityTypeBuilder<Comment> builder)
     {
         builder.ToTable("Comments");
-        
+
         builder.HasKey(c => c.Id);
 
         builder.Property(c => c.Text)
@@ -21,9 +21,9 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
             .WithMany(t => t.Comments)
             .HasForeignKey(c => c.TaskId)
             .OnDelete(DeleteBehavior.Cascade);
-            
+
         builder.HasIndex(c => c.TaskId);
-        
+
         builder.HasQueryFilter(c => !c.IsDeleted);
     }
 }

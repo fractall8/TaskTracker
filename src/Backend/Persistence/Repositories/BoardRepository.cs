@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Domain.Entities;
 using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -9,7 +9,7 @@ namespace Persistence.Repositories;
 public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board, Guid>(dbContext), IBoardRepository
 {
     public async Task<Board?> GetBoardWithHierarchyAsync(Guid boardId, string? searchTerm = null,
-        CancellationToken ct = default)
+        CancellationToken cancellationToken = default)
     {
         IQueryable<Board> query;
 
@@ -40,7 +40,7 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
                 .ThenInclude(t => t.Reporter);
         }
 
-        return await query.FirstOrDefaultAsync(b => b.Id == boardId, ct);
+        return await query.FirstOrDefaultAsync(b => b.Id == boardId, cancellationToken);
     }
 
     public async Task<IEnumerable<Board>> GetUserBoardsAsync(Guid userId, CancellationToken ct = default)

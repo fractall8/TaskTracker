@@ -1,4 +1,4 @@
-﻿namespace Services.Extensions;
+namespace Services.Extensions;
 
 public class ApiProblemDetails
 {

@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Application.Interfaces.Services;
 using FluentValidation;
 using MediatR;
@@ -12,16 +12,16 @@ public class DeleteBoardCommandHandler(
     IBoardRepository boardRepository,
     IUnitOfWork unitOfWork) : IRequestHandler<DeleteBoardCommand>
 {
-    public async Task Handle(DeleteBoardCommand request, CancellationToken ct)
+    public async Task Handle(DeleteBoardCommand request, CancellationToken cancellationToken)
     {
-        await boardAccessService.EnsureCanDeleteBoardAsync(request.BoardId, ct);
+        await boardAccessService.EnsureCanDeleteBoardAsync(request.BoardId, cancellationToken);
 
-        var board = await boardRepository.GetByIdAsync(request.BoardId, ct)
+        var board = await boardRepository.GetByIdAsync(request.BoardId, cancellationToken)
                     ?? throw new KeyNotFoundException($"Board with ID {request.BoardId} not found.");
 
         boardRepository.Delete(board);
 
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }
 

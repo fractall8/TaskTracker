@@ -1,3 +1,3 @@
-﻿namespace Contracts.Requests;
+namespace Contracts.Requests;
 
 public record UpdateCommentRequest(string Text);

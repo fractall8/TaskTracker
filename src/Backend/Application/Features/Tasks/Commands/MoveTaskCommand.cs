@@ -1,13 +1,13 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Application.Interfaces.Services;
 using MediatR;
 
 namespace Application.Features.Tasks.Commands;
 
 public record MoveTaskCommand(
-    Guid BoardId, 
-    Guid TaskId, 
-    Guid TargetColumnId, 
+    Guid BoardId,
+    Guid TaskId,
+    Guid TargetColumnId,
     int NewPosition) : IRequest;
 
 public class MoveTaskCommandHandler(
@@ -17,19 +17,19 @@ public class MoveTaskCommandHandler(
     IUnitOfWork unitOfWork)
     : IRequestHandler<MoveTaskCommand>
 {
-    public async Task Handle(MoveTaskCommand request, CancellationToken ct)
+    public async Task Handle(MoveTaskCommand request, CancellationToken cancellationToken)
     {
-        await accessService.EnsureCanManageTasksAsync(request.BoardId, ct);
+        await accessService.EnsureCanManageTasksAsync(request.BoardId, cancellationToken);
 
-        var taskToMove = await taskRepository.GetTaskWithColumnAsync(request.TaskId, ct);
-        
+        var taskToMove = await taskRepository.GetTaskWithColumnAsync(request.TaskId, cancellationToken);
+
         if (taskToMove?.Column?.BoardId != request.BoardId)
         {
             throw new KeyNotFoundException("Task not found on this board.");
         }
 
-        var targetColumn = await columnRepository.GetByIdAsync(request.TargetColumnId, ct);
-        
+        var targetColumn = await columnRepository.GetByIdAsync(request.TargetColumnId, cancellationToken);
+
         if (targetColumn == null || targetColumn.BoardId != request.BoardId)
         {
             throw new KeyNotFoundException("Target column not found on this board.");
@@ -40,22 +40,25 @@ public class MoveTaskCommandHandler(
 
         if (oldColumnId == request.TargetColumnId)
         {
-            if (oldPosition == request.NewPosition) return;
+            if (oldPosition == request.NewPosition)
+            {
+                return;
+            }
 
-            await taskRepository.UpdatePositionsOnMoveAsync(oldColumnId, oldPosition, request.NewPosition, ct);
+            await taskRepository.UpdatePositionsOnMoveAsync(oldColumnId, oldPosition, request.NewPosition, cancellationToken);
         }
         else
         {
-            await taskRepository.DecrementPositionsAsync(oldColumnId, oldPosition + 1, ct);
+            await taskRepository.DecrementPositionsAsync(oldColumnId, oldPosition + 1, cancellationToken);
 
-            await taskRepository.IncrementPositionsAsync(request.TargetColumnId, request.NewPosition, ct);
+            await taskRepository.IncrementPositionsAsync(request.TargetColumnId, request.NewPosition, cancellationToken);
 
             taskToMove.ColumnId = request.TargetColumnId;
         }
 
         taskToMove.Position = request.NewPosition;
-        
+
         taskRepository.Update(taskToMove);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

@@ -1,4 +1,4 @@
-﻿using Application.Interfaces.Services;
+using Application.Interfaces.Services;
 using Application.Settings;
 using Domain.Constants;
 using FluentValidation;
@@ -15,19 +15,19 @@ public class UploadAvatarCommandValidator : AbstractValidator<UploadAvatarComman
     {
         var settings = options.Value.Avatars;
         var maxFileSizeBytes = settings.MaxSizeMb * 1024 * 1024;
-        
+
         RuleFor(x => x.ContentType)
             .Must(type => settings.AllowedTypes.Contains(type))
             .WithMessage("Unsupported file type. Please upload an image (png/jpg).");
 
         RuleFor(x => x.FileStream.Length)
-            .LessThanOrEqualTo(maxFileSizeBytes) 
+            .LessThanOrEqualTo(maxFileSizeBytes)
             .WithMessage($"File size must not exceed {settings.MaxSizeMb} MB.");
     }
 }
 
 
-public class UploadAvatarCommandHandler(IFileService fileService) 
+public class UploadAvatarCommandHandler(IFileService fileService)
     : IRequestHandler<UploadAvatarCommand, string>
 {
     public async Task<string> Handle(UploadAvatarCommand request, CancellationToken cancellationToken)

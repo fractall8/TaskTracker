@@ -1,4 +1,4 @@
-﻿using Contracts.DTOs;
+using Contracts.DTOs;
 using Contracts.Enums;
 using Services.Abstractions.Boards;
 
@@ -11,11 +11,13 @@ internal sealed class BoardStore(IBoardApiService boardApiService) : IBoardStore
     private readonly Dictionary<Guid, BoardRoleDto> _roleCache = [];
 
     public string? SearchTerm { get; private set; }
-    
+
     public async Task SetSearchTermAsync(string? searchTerm, CancellationToken ct = default)
     {
-        if (SearchTerm == searchTerm) 
+        if (SearchTerm == searchTerm)
+        {
             return;
+        }
 
         SearchTerm = searchTerm;
         CurrentPage = 1;
@@ -23,34 +25,38 @@ internal sealed class BoardStore(IBoardApiService boardApiService) : IBoardStore
     }
 
     public IReadOnlyList<BoardPreviewDto> Boards { get; private set; } = [];
-    
+
     public PaginationMetadata Pagination { get; private set; } = new();
-    
+
     public int CurrentPage { get; private set; } = 1;
-    
+
     public bool IsLoading { get; private set; }
-    
+
     public bool IsLoaded { get; private set; }
-    
-      public string? ErrorMessage { get; private set; }
+
+    public string? ErrorMessage { get; private set; }
 
     public event Action? StateChanged;
-    
+
     public Task ChangePageSizeAsync(int newSize, CancellationToken ct = default)
     {
-        if (PageSize == newSize) 
+        if (PageSize == newSize)
+        {
             return Task.CompletedTask;
+        }
 
         PageSize = newSize;
         CurrentPage = 1;
-        
+
         return LoadInternalAsync(CurrentPage, ct);
     }
 
     public Task LoadAsync(int pageNumber, CancellationToken ct = default)
     {
         if (IsLoaded && pageNumber == CurrentPage && !IsLoading)
+        {
             return Task.CompletedTask;
+        }
 
         return LoadInternalAsync(pageNumber, ct);
     }
@@ -89,7 +95,9 @@ internal sealed class BoardStore(IBoardApiService boardApiService) : IBoardStore
             IsLoaded = true;
 
             foreach (var board in page.Items)
+            {
                 _roleCache[board.Id] = board.Role;
+            }
         }
         catch (Exception ex)
         {

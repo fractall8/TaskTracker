@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
 using Domain.Entities;
@@ -14,17 +14,17 @@ public class LoginCommandHandler(
     IUnitOfWork unitOfWork)
     : IRequestHandler<LoginCommand, UserDto>
 {
-    public async Task<UserDto> Handle(LoginCommand request, CancellationToken ct)
+    public async Task<UserDto> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
         var user = await userRepository.GetUserByAzureAdIdAsync(
-            currentUser.AzureAdObjectId, 
-            u => u, 
-            ct);
+            currentUser.AzureAdObjectId,
+            u => u,
+            cancellationToken);
 
         user ??= await CreateUser();
 
         SyncProfile(user);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new UserDto(
             user.Id,

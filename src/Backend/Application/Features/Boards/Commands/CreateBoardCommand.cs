@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
 using Domain.Constants;
@@ -18,18 +18,18 @@ public class CreateBoardCommandHandler(
     IUnitOfWork unitOfWork)
     : IRequestHandler<CreateBoardCommand, BoardDto>
 {
-    public async Task<BoardDto> Handle(CreateBoardCommand request, CancellationToken ct)
+    public async Task<BoardDto> Handle(CreateBoardCommand request, CancellationToken cancellationToken)
     {
         var userInfo = await userRepository.GetUserByAzureAdIdAsync(
-                           currentUserAccessor.AzureAdObjectId, 
-                           u => new { Id = (Guid?)u.Id, u.Email }, 
-                           ct);
+                           currentUserAccessor.AzureAdObjectId,
+                           u => new { Id = (Guid?)u.Id, u.Email },
+                           cancellationToken);
 
         if (userInfo == null || userInfo.Id == null)
         {
             throw new UnauthorizedAccessException("User is not authenticated");
         }
-        
+
         var board = new Board
         {
             Id = Guid.NewGuid(),
@@ -47,18 +47,18 @@ public class CreateBoardCommandHandler(
 
         board.Members.Add(admin);
 
-        await boardRepository.AddAsync(board, ct);
-        
-        await unitOfWork.SaveChangesAsync(ct);
-        
+        await boardRepository.AddAsync(board, cancellationToken);
+
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
         return new BoardDto(
             Id: board.Id,
             Name: board.Name,
             Description: board.Description,
-            CreatedAt: board.CreatedAt, 
+            CreatedAt: board.CreatedAt,
             UserRole: (Contracts.Enums.BoardRoleDto)admin.Role,
             Members: [new UserWithRoleDto(userInfo.Id.Value, userInfo.Email, null, (Contracts.Enums.BoardRoleDto)admin.Role)],
-            Columns: [] 
+            Columns: []
         );
     }
 }

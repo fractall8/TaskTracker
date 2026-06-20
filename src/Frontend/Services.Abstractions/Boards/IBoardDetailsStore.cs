@@ -1,41 +1,41 @@
-﻿using Contracts.DTOs;
+using Contracts.DTOs;
 using Contracts.Requests;
 
 namespace Services.Abstractions.Boards;
 
 public interface IBoardDetailsStore
 {
-  Guid? BoardId { get; }
+    Guid? BoardId { get; }
 
-  BoardWithColumnsDto? Board { get; }
-  
-  List<TaskDto> Tasks { get; }
+    BoardWithColumnsDto? Board { get; }
 
-  bool IsLoading { get; }
+    List<TaskDto> Tasks { get; }
 
-  string? ErrorMessage { get; }
-  
-  event Action? StateChanged;
-  
-  void Reset();
+    bool IsLoading { get; }
 
-  Task LoadAsync(Guid boardId, string? searchTerm = null, CancellationToken ct = default);
+    string? ErrorMessage { get; }
 
-  Task<ColumnDto> CreateColumnAsync(string name, CancellationToken ct = default);
+    event Action? StateChanged;
 
-  Task UpdateColumnNameAsync(Guid columnId, string name, CancellationToken ct = default);
+    void Reset();
 
-  Task DeleteColumnAsync(Guid columnId, CancellationToken ct = default);
+    Task LoadAsync(Guid boardId, string? searchTerm = null, CancellationToken ct = default);
 
-  Task ReorderColumnsAsync(Guid columnId, int newPosition, CancellationToken ct = default);
+    Task<ColumnDto> CreateColumnAsync(string name, CancellationToken ct = default);
 
-  void UpdateBoardName(string name);
+    Task UpdateColumnNameAsync(Guid columnId, string name, CancellationToken ct = default);
 
-  Task UpdateTaskAsync(Guid taskId, UpdateTaskRequest request, CancellationToken ct = default);
+    Task DeleteColumnAsync(Guid columnId, CancellationToken ct = default);
 
-  Task DeleteTaskAsync(Guid taskId, CancellationToken ct = default);
+    Task ReorderColumnsAsync(Guid columnId, int newPosition, CancellationToken ct = default);
 
-  Task CreateTaskAsync(Guid columnId, CreateTaskRequest request, CancellationToken ct = default);
+    void UpdateBoardName(string name);
 
-  Task MoveTaskAsync(Guid taskId, Guid targetColumnId, int newPosition, CancellationToken ct = default);
+    Task UpdateTaskAsync(Guid taskId, UpdateTaskRequest request, CancellationToken ct = default);
+
+    Task DeleteTaskAsync(Guid taskId, CancellationToken ct = default);
+
+    Task CreateTaskAsync(Guid columnId, CreateTaskRequest request, CancellationToken ct = default);
+
+    Task MoveTaskAsync(Guid taskId, Guid targetColumnId, int newPosition, CancellationToken ct = default);
 }

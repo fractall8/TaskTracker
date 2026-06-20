@@ -1,8 +1,8 @@
-﻿namespace Presentation.Options;
+namespace Presentation.Options;
 
 public class FrontendOptions
 {
     public const string SectionName = "Frontend";
-    
+
     public string[] AllowedOrigins { get; set; } = [];
 }

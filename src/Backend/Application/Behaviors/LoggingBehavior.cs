@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -10,7 +10,7 @@ public class LoggingBehavior<TRequest, TResponse>(ILogger<LoggingBehavior<TReque
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
         var requestName = typeof(TRequest).Name;
-        
+
         logger.LogInformation("Executing {RequestName} with parameters: {@Request}", requestName, request);
 
         try
@@ -19,7 +19,7 @@ public class LoggingBehavior<TRequest, TResponse>(ILogger<LoggingBehavior<TReque
 
             if (response is ICollection collection)
             {
-                logger.LogInformation("Completed {RequestName}. Returned {Type} with {Count} items.", 
+                logger.LogInformation("Completed {RequestName}. Returned {Type} with {Count} items.",
                     requestName, response.GetType().Name, collection.Count);
             }
             else

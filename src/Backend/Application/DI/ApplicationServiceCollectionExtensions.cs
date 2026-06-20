@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using Application.Behaviors;
 using Application.Interfaces.Services;
 using Application.Services;
@@ -15,21 +15,21 @@ public static class ApplicationServiceCollectionExtensions
     public static IServiceCollection AddApplication(this IServiceCollection services, IConfiguration configuration)
     {
         var executingAssembly = Assembly.GetExecutingAssembly();
-        
+
         services.Configure<FileSettings>(configuration.GetSection("FileSettings"));
-        
+
         services.AddMediatR(config =>
         {
             config.RegisterServicesFromAssembly(executingAssembly);
-            
+
             config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
             config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
         });
-        
+
         services.AddValidatorsFromAssembly(executingAssembly);
-        
+
         services.AddScoped<IBoardAccessService, BoardAccessService>();
-        
+
         return services;
     }
 }

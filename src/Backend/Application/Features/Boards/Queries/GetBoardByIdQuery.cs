@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Application.Interfaces.Services;
 using Application.Options;
 using Contracts.DTOs;
@@ -15,12 +15,12 @@ public class GetBoardByIdQueryHandler(
     IBoardRepository boardRepository)
     : IRequestHandler<GetBoardByIdQuery, BoardWithColumnsDto>
 {
-    public async Task<BoardWithColumnsDto> Handle(GetBoardByIdQuery request, CancellationToken ct)
+    public async Task<BoardWithColumnsDto> Handle(GetBoardByIdQuery request, CancellationToken cancellationToken)
     {
-        await boardAccessService.EnsureCanViewBoardAsync(request.BoardId, ct);
-        
-        var board = await boardRepository.GetBoardWithHierarchyAsync(request.BoardId, request.SearchTerm, ct);
-        
+        await boardAccessService.EnsureCanViewBoardAsync(request.BoardId, cancellationToken);
+
+        var board = await boardRepository.GetBoardWithHierarchyAsync(request.BoardId, request.SearchTerm, cancellationToken);
+
         if (board is null)
         {
             throw new KeyNotFoundException($"Board {request.BoardId} does not exist");
@@ -29,8 +29,8 @@ public class GetBoardByIdQueryHandler(
         var columnDtos = board.Columns
             .OrderBy(c => c.Position)
             .Select(c => new ColumnDto(
-                Id: c.Id, 
-                Name: c.Name, 
+                Id: c.Id,
+                Name: c.Name,
                 Position: c.Position,
                 Tasks: c.Tasks.OrderBy(t => t.Position).Select(t => new TaskDto(
                     Id: t.Id,
@@ -62,10 +62,10 @@ public class GetBoardByIdQueryValidator : AbstractValidator<GetBoardByIdQuery>
     public GetBoardByIdQueryValidator(IOptions<PaginationOptions> options)
     {
         var paginationOptions = options.Value;
-        
+
         RuleFor(x => x.BoardId)
             .NotEmpty().WithMessage("Board ID is required.");
-        
+
         RuleFor(v => v.SearchTerm)
             .MaximumLength(paginationOptions.MaxSearchTermLength).WithMessage($"Search term must not exceed {paginationOptions.MaxSearchTermLength} characters.");
     }

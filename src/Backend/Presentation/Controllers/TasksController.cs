@@ -1,4 +1,4 @@
-﻿using Application.Features.Files.Commands;
+using Application.Features.Files.Commands;
 using Application.Features.Tasks.Commands;
 using Application.Features.Tasks.Queries;
 using Contracts.DTOs;
@@ -16,7 +16,7 @@ public class TasksController(ISender sender) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<List<TaskDto>>> GetAllForBoard(
-        [FromRoute] Guid boardId, 
+        [FromRoute] Guid boardId,
         CancellationToken ct)
     {
         var query = new GetTasksByBoardIdQuery(boardId);
@@ -26,15 +26,15 @@ public class TasksController(ISender sender) : ControllerBase
 
     [HttpGet("{taskId:guid}")]
     public async Task<ActionResult<TaskDto>> GetById(
-        [FromRoute] Guid boardId, 
-        [FromRoute] Guid taskId, 
+        [FromRoute] Guid boardId,
+        [FromRoute] Guid taskId,
         CancellationToken ct)
     {
         var query = new GetTaskByIdQuery(boardId, taskId);
         var result = await sender.Send(query, ct);
         return Ok(result);
     }
-    
+
     [HttpPost("columns/{columnId:guid}")]
     public async Task<ActionResult<TaskDto>> Create(
         [FromRoute] Guid boardId,
@@ -99,9 +99,9 @@ public class TasksController(ISender sender) : ControllerBase
     [HttpPost("{taskId:guid}/attachments")]
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<AttachmentDto>> UploadAttachment(
-        [FromRoute] Guid boardId, 
+        [FromRoute] Guid boardId,
         [FromRoute] Guid taskId,
-        IFormFile? file, 
+        IFormFile? file,
         CancellationToken ct)
     {
         if (file == null || file.Length == 0)
@@ -119,7 +119,7 @@ public class TasksController(ISender sender) : ControllerBase
             ContentType: file.ContentType,
             SizeInBytes: file.Length
         );
-    
+
         var attachmentDto = await sender.Send(command, ct);
 
         return Ok(attachmentDto);

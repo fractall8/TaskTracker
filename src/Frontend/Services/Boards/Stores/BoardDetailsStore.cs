@@ -1,4 +1,4 @@
-﻿using Contracts.DTOs;
+using Contracts.DTOs;
 using Contracts.Requests;
 using Services.Abstractions.Boards;
 using Services.Abstractions.Columns;
@@ -92,10 +92,16 @@ public class BoardDetailsStore(IBoardApiService boardsApi, IColumnApiService col
 
     public async Task UpdateColumnNameAsync(Guid columnId, string name, CancellationToken ct = default)
     {
-        if (BoardId == null || Board == null) return;
+        if (BoardId == null || Board == null)
+        {
+            return;
+        }
 
         var column = Board.Columns.FirstOrDefault(c => c.Id == columnId);
-        if (column == null || column.Name == name) return;
+        if (column == null || column.Name == name)
+        {
+            return;
+        }
 
         await columnsApi.UpdateColumnAsync(BoardId.Value, columnId, name, ct);
 
@@ -110,10 +116,16 @@ public class BoardDetailsStore(IBoardApiService boardsApi, IColumnApiService col
 
     public async Task DeleteColumnAsync(Guid columnId, CancellationToken ct = default)
     {
-        if (BoardId == null || Board == null) return;
+        if (BoardId == null || Board == null)
+        {
+            return;
+        }
 
         var columnToDelete = Board.Columns.FirstOrDefault(c => c.Id == columnId);
-        if (columnToDelete == null) return;
+        if (columnToDelete == null)
+        {
+            return;
+        }
 
         await columnsApi.DeleteColumnAsync(BoardId.Value, columnId, ct);
 
@@ -130,10 +142,16 @@ public class BoardDetailsStore(IBoardApiService boardsApi, IColumnApiService col
 
     public async Task ReorderColumnsAsync(Guid columnId, int newPosition, CancellationToken ct = default)
     {
-        if (BoardId == null || Board == null) return;
+        if (BoardId == null || Board == null)
+        {
+            return;
+        }
 
         var columnToMove = Board.Columns.FirstOrDefault(c => c.Id == columnId);
-        if (columnToMove == null || columnToMove.Position == newPosition) return;
+        if (columnToMove == null || columnToMove.Position == newPosition)
+        {
+            return;
+        }
 
         var oldPosition = columnToMove.Position;
 
@@ -141,12 +159,19 @@ public class BoardDetailsStore(IBoardApiService boardsApi, IColumnApiService col
         var updatedColumns = Board.Columns.Select(c =>
             {
                 if (c.Id == columnId)
+                {
                     return c with { Position = newPosition };
+                }
+
                 if (oldPosition < newPosition && c.Position > oldPosition && c.Position <= newPosition)
+                {
                     return c with { Position = c.Position - 1 };
+                }
 
                 if (oldPosition > newPosition && c.Position >= newPosition && c.Position < oldPosition)
+                {
                     return c with { Position = c.Position + 1 };
+                }
 
                 return c;
             })
@@ -179,10 +204,16 @@ public class BoardDetailsStore(IBoardApiService boardsApi, IColumnApiService col
 
     public async Task UpdateTaskAsync(Guid taskId, UpdateTaskRequest request, CancellationToken ct = default)
     {
-        if (BoardId == null) return;
+        if (BoardId == null)
+        {
+            return;
+        }
 
         var task = Tasks.FirstOrDefault(t => t.Id == taskId);
-        if (task == null) return;
+        if (task == null)
+        {
+            return;
+        }
 
         var updatedTask = await tasksApi.UpdateTaskAsync(BoardId.Value, taskId, request, ct);
 
@@ -192,30 +223,42 @@ public class BoardDetailsStore(IBoardApiService boardsApi, IColumnApiService col
 
     public async Task DeleteTaskAsync(Guid taskId, CancellationToken ct = default)
     {
-        if (BoardId == null) return;
+        if (BoardId == null)
+        {
+            return;
+        }
 
         await tasksApi.DeleteTaskAsync(BoardId.Value, taskId, ct);
 
         Tasks = Tasks.Where(t => t.Id != taskId).ToList();
         NotifyStateChanged();
     }
-    
+
     public async Task CreateTaskAsync(Guid columnId, CreateTaskRequest request, CancellationToken ct = default)
     {
-        if (BoardId == null) return;
+        if (BoardId == null)
+        {
+            return;
+        }
 
         var newTask = await tasksApi.CreateTaskAsync(BoardId.Value, columnId, request, ct);
         Tasks.Add(newTask);
-    
+
         NotifyStateChanged();
     }
 
     public async Task MoveTaskAsync(Guid taskId, Guid targetColumnId, int newPosition, CancellationToken ct = default)
     {
-        if (BoardId == null) return;
+        if (BoardId == null)
+        {
+            return;
+        }
 
         var taskToMove = Tasks.FirstOrDefault(t => t.Id == taskId);
-        if (taskToMove == null || (taskToMove.ColumnId == targetColumnId && taskToMove.Position == newPosition)) return;
+        if (taskToMove == null || (taskToMove.ColumnId == targetColumnId && taskToMove.Position == newPosition))
+        {
+            return;
+        }
 
         var oldColumnId = taskToMove.ColumnId;
         var oldPosition = taskToMove.Position;
@@ -232,10 +275,14 @@ public class BoardDetailsStore(IBoardApiService boardsApi, IColumnApiService col
                     if (t.ColumnId == targetColumnId)
                     {
                         if (oldPosition < newPosition && t.Position > oldPosition && t.Position <= newPosition)
+                        {
                             return t with { Position = t.Position - 1 };
+                        }
 
                         if (oldPosition > newPosition && t.Position >= newPosition && t.Position < oldPosition)
+                        {
                             return t with { Position = t.Position + 1 };
+                        }
                     }
 
                     return t;

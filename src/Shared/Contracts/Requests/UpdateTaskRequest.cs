@@ -1,8 +1,8 @@
-﻿namespace Contracts.Requests;
+namespace Contracts.Requests;
 
 public record UpdateTaskRequest(
-    string Title, 
-    string? Description, 
-    DateTimeOffset? DueDate, 
+    string Title,
+    string? Description,
+    DateTimeOffset? DueDate,
     Guid? AssigneeId,
     Guid ColumnId);

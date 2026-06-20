@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
 using Domain.Constants;
@@ -15,12 +15,12 @@ public class UpdateColumnCommandHandler(
     IUnitOfWork unitOfWork)
     : IRequestHandler<UpdateColumnCommand, ColumnDto>
 {
-    public async Task<ColumnDto> Handle(UpdateColumnCommand request, CancellationToken ct)
+    public async Task<ColumnDto> Handle(UpdateColumnCommand request, CancellationToken cancellationToken)
     {
-        await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, ct);
+        await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, cancellationToken);
 
-        var column = await columnRepository.GetByIdAsync(request.ColumnId, ct);
-        
+        var column = await columnRepository.GetByIdAsync(request.ColumnId, cancellationToken);
+
         if (column == null)
         {
             throw new KeyNotFoundException($"Column {request.ColumnId} does not exist");
@@ -33,7 +33,7 @@ public class UpdateColumnCommandHandler(
 
         if (!string.Equals(column.Name, request.Name, StringComparison.OrdinalIgnoreCase))
         {
-            var existingNames = await columnRepository.GetNameListByBoardIdAsync(column.BoardId, ct);
+            var existingNames = await columnRepository.GetNameListByBoardIdAsync(column.BoardId, cancellationToken);
 
             if (existingNames.Any(existingName =>
                     string.Equals(existingName, request.Name, StringComparison.OrdinalIgnoreCase)))
@@ -45,7 +45,7 @@ public class UpdateColumnCommandHandler(
         }
 
         columnRepository.Update(column);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new ColumnDto(
             column.Id,
@@ -60,7 +60,7 @@ public class UpdateColumnCommandValidator : AbstractValidator<UpdateColumnComman
     {
         RuleFor(x => x.BoardId)
             .NotEmpty().WithMessage("BoardId is required.");
-        
+
         RuleFor(x => x.ColumnId)
             .NotEmpty().WithMessage("Column ID is required.");
 

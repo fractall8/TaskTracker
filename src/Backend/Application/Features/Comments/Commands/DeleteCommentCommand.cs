@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Application.Interfaces.Services;
 using FluentValidation;
 using MediatR;
@@ -9,32 +9,38 @@ public record DeleteCommentCommand(Guid BoardId, Guid TaskId, Guid CommentId) : 
 
 public class DeleteCommentCommandHandler(
     IBoardAccessService boardAccessService,
-    ICommentRepository commentRepository, 
+    ICommentRepository commentRepository,
     ITaskRepository taskRepository,
     IUserRepository userRepository,
     ICurrentUserAccessor currentUserAccessor,
-    IUnitOfWork unitOfWork) 
+    IUnitOfWork unitOfWork)
     : IRequestHandler<DeleteCommentCommand>
 {
-    public async Task Handle(DeleteCommentCommand request, CancellationToken ct)
+    public async Task Handle(DeleteCommentCommand request, CancellationToken cancellationToken)
     {
-        await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, ct);
+        await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, cancellationToken);
 
-        var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, ct);
+        var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, cancellationToken);
         if (task == null || task.Column?.BoardId != request.BoardId)
+        {
             throw new KeyNotFoundException("Task not found on this board.");
+        }
 
-        var comment = await commentRepository.GetByIdAsync(request.CommentId, ct);
+        var comment = await commentRepository.GetByIdAsync(request.CommentId, cancellationToken);
         if (comment == null || comment.TaskId != request.TaskId)
+        {
             throw new KeyNotFoundException("Comment not found.");
+        }
 
-        var currentUserId = await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => u.Id, ct);
-        
+        var currentUserId = await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => u.Id, cancellationToken);
+
         if (comment.CreatedById != currentUserId)
+        {
             throw new UnauthorizedAccessException("You can only delete your own comments.");
+        }
 
         commentRepository.Delete(comment);
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }
 

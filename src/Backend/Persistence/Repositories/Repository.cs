@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Persistence.Contexts;
@@ -15,7 +15,7 @@ public class Repository<TEntity, TId> : IRepository<TEntity, TId> where TEntity 
         DbContext = dbContext;
         DbSet = DbContext.Set<TEntity>();
     }
-    
+
     public async Task<TEntity?> GetByIdAsync(TId id, CancellationToken cancellationToken = default)
     {
         return await DbSet.FirstOrDefaultAsync(e => e.Id != null && e.Id.Equals(id), cancellationToken);

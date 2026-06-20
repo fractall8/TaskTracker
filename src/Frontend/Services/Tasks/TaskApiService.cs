@@ -1,4 +1,4 @@
-﻿using Contracts.DTOs;
+using Contracts.DTOs;
 using Contracts.Requests;
 using Refit;
 using Services.Abstractions.Tasks;

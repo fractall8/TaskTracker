@@ -1,4 +1,4 @@
-﻿using Domain.Constants;
+using Domain.Constants;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -12,7 +12,7 @@ public class BoardConfiguration : IEntityTypeConfiguration<Board>
         builder.ToTable("Boards");
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Name).IsRequired().HasMaxLength(BoardConstants.MaxNameLength);
-        
+
         builder.HasQueryFilter(e => !e.IsDeleted);
     }
 }

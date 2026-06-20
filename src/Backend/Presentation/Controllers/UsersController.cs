@@ -1,4 +1,4 @@
-﻿using Application.Features.Files.Commands;
+using Application.Features.Files.Commands;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,9 +16,9 @@ public class UsersController(IMediator mediator) : ControllerBase
         {
             return BadRequest("File is empty or was not provided.");
         }
-    
+
         await using var stream = file.OpenReadStream();
-        
+
         var command = new UploadAvatarCommand(stream, file.FileName, file.ContentType);
         var fileUrl = await mediator.Send(command, cancellationToken);
 

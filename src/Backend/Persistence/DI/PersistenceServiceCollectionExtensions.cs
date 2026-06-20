@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Persistence.DI.Modules;
 
@@ -10,7 +10,7 @@ public static class PersistenceServiceCollectionExtensions
     {
         services.AddDatabaseModule(configuration);
         services.AddRepositoriesModule();
-        
+
         return services;
     }
 }

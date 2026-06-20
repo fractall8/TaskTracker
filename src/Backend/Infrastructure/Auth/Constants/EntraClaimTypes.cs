@@ -1,4 +1,4 @@
-﻿namespace Infrastructure.Auth.Constants;
+namespace Infrastructure.Auth.Constants;
 
 public static class EntraClaimTypes
 {

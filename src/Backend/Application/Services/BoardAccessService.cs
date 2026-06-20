@@ -1,4 +1,4 @@
-﻿using Application.Common.Models;
+using Application.Common.Models;
 using Application.Interfaces;
 using Application.Interfaces.Services;
 using Domain.Authorization;
@@ -14,8 +14,8 @@ public class BoardAccessService(
     public async Task<(Guid UserId, string Email)> GetCurrentUserAsync(CancellationToken ct = default)
     {
         var userInfo = await userRepository.GetUserByAzureAdIdAsync(
-            currentUserAccessor.AzureAdObjectId, 
-            u => new { Id = (Guid?)u.Id, u.Email }, 
+            currentUserAccessor.AzureAdObjectId,
+            u => new { Id = (Guid?)u.Id, u.Email },
             ct);
 
         if (userInfo?.Id == null || string.IsNullOrEmpty(userInfo.Email))
@@ -44,14 +44,18 @@ public class BoardAccessService(
     private async Task<BoardAccessContext> EnsureAccessAsync(Guid boardId, Func<BoardRole, bool> permissionCheck, string errorMessage, CancellationToken ct)
     {
         var (userId, _) = await GetCurrentUserAsync(ct);
-        
+
         var userRole = await boardRepository.GetUserRoleAsync(boardId, userId, ct);
 
         if (userRole == null)
+        {
             throw new UnauthorizedAccessException("You are not a member of this board.");
+        }
 
         if (!permissionCheck(userRole.Value))
+        {
             throw new UnauthorizedAccessException(errorMessage);
+        }
 
         return new BoardAccessContext(userId, userRole.Value);
     }

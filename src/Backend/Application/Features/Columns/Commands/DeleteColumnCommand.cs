@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Application.Interfaces.Services;
 using FluentValidation;
 using MediatR;
@@ -15,32 +15,32 @@ public class DeleteColumnCommandHandler(
     IUnitOfWork unitOfWork)
     : IRequestHandler<DeleteColumnCommand>
 {
-    public async Task Handle(DeleteColumnCommand request, CancellationToken ct)
+    public async Task Handle(DeleteColumnCommand request, CancellationToken cancellationToken)
     {
-        await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, ct);
-        
-        var board = await boardRepository.GetByIdAsync(request.BoardId, ct);
-        
+        await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, cancellationToken);
+
+        var board = await boardRepository.GetByIdAsync(request.BoardId, cancellationToken);
+
         if (board is null)
         {
             throw new KeyNotFoundException($"Board {request.BoardId} does not exist");
         }
-        
-        var column = await columnRepository.GetByIdAsync(request.ColumnId, ct);
-        
+
+        var column = await columnRepository.GetByIdAsync(request.ColumnId, cancellationToken);
+
         if (column is null || column.BoardId != request.BoardId)
         {
             throw new KeyNotFoundException($"Column {request.ColumnId} does not exist on this board");
         }
-        
+
         var positionToShift = column.Position;
-        
-        columnRepository.Delete(column); 
-        await unitOfWork.SaveChangesAsync(ct);
 
-        await taskRepository.SoftDeleteTasksAndRelationsByColumnIdAsync(column.Id, ct);
+        columnRepository.Delete(column);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        await columnRepository.DecrementPositionsAsync(request.BoardId, positionToShift, ct);
+        await taskRepository.SoftDeleteTasksAndRelationsByColumnIdAsync(column.Id, cancellationToken);
+
+        await columnRepository.DecrementPositionsAsync(request.BoardId, positionToShift, cancellationToken);
     }
 }
 

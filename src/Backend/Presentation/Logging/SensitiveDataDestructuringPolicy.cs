@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using Serilog.Core;
 using Serilog.Events;
 
@@ -6,12 +6,12 @@ namespace Presentation.Logging;
 
 public class SensitiveDataDestructuringPolicy : IDestructuringPolicy
 {
-    private readonly string[] _sensitiveProperties = 
+    private readonly string[] _sensitiveProperties =
     [
-        "Password", 
-        "Token", 
-        "RefreshToken", 
-        "ClientSecret", 
+        "Password",
+        "Token",
+        "RefreshToken",
+        "ClientSecret",
         "AccessToken"
     ];
 

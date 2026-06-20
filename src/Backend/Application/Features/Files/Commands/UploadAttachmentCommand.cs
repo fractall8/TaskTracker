@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Application.Interfaces.Services;
 using Application.Settings;
 using Contracts.DTOs;
@@ -13,8 +13,8 @@ namespace Application.Features.Files.Commands;
 public record UploadAttachmentCommand(
     Guid BoardId,
     Guid TaskId,
-    Stream FileStream, 
-    string FileName, 
+    Stream FileStream,
+    string FileName,
     string ContentType,
     long SizeInBytes) : IRequest<AttachmentDto>;
 
@@ -25,14 +25,14 @@ public class UploadAttachmentCommandHandler(
     IFileService fileService,
     IUserRepository userRepository,
     ICurrentUserAccessor currentUserAccessor,
-    IUnitOfWork unitOfWork) 
+    IUnitOfWork unitOfWork)
     : IRequestHandler<UploadAttachmentCommand, AttachmentDto>
 {
-    public async Task<AttachmentDto> Handle(UploadAttachmentCommand request, CancellationToken ct)
+    public async Task<AttachmentDto> Handle(UploadAttachmentCommand request, CancellationToken cancellationToken)
     {
-        await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, ct);
+        await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, cancellationToken);
 
-        var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, ct);
+        var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, cancellationToken);
         if (task == null || task.Column?.BoardId != request.BoardId)
         {
             throw new KeyNotFoundException("Task not found on this board.");
@@ -43,9 +43,9 @@ public class UploadAttachmentCommandHandler(
             request.FileName,
             request.ContentType,
             BlobContainerNames.Attachments,
-            ct);
+            cancellationToken);
 
-        var currentUserId = await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => u.Id, ct);
+        var currentUserId = await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => u.Id, cancellationToken);
 
         var attachment = new Attachment
         {
@@ -59,8 +59,8 @@ public class UploadAttachmentCommandHandler(
             ContentType = request.ContentType
         };
 
-        await attachmentRepository.AddAsync(attachment, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await attachmentRepository.AddAsync(attachment, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new AttachmentDto(
             attachment.Id,
@@ -78,16 +78,16 @@ public class UploadAttachmentCommandValidator : AbstractValidator<UploadAttachme
     {
         var settings = options.Value.Attachments;
         var maxFileSizeBytes = settings.MaxSizeMb * 1024 * 1024;
-        
+
         RuleFor(x => x.BoardId).NotEmpty();
         RuleFor(x => x.TaskId).NotEmpty();
-        
+
         RuleFor(x => x.ContentType)
             .Must(type => settings.AllowedTypes.Contains(type))
             .WithMessage("Unsupported file type. Please upload an image, PDF, or Word document.");
 
         RuleFor(x => x.SizeInBytes)
-            .LessThanOrEqualTo(maxFileSizeBytes) 
+            .LessThanOrEqualTo(maxFileSizeBytes)
             .WithMessage($"File size must not exceed {settings.MaxSizeMb} MB.");
     }
 }

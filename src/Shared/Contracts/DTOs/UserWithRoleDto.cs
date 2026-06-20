@@ -1,4 +1,4 @@
-﻿using Contracts.Enums;
+using Contracts.Enums;
 
 namespace Contracts.DTOs;
 

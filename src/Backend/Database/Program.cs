@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using Database;
 using DbUp;
 using Domain.Constants;

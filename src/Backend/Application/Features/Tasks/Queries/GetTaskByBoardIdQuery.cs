@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
 using FluentValidation;
@@ -13,11 +13,11 @@ public class GetTasksByBoardIdQueryHandler(
     ITaskRepository taskRepository)
     : IRequestHandler<GetTasksByBoardIdQuery, List<TaskDto>>
 {
-    public async Task<List<TaskDto>> Handle(GetTasksByBoardIdQuery request, CancellationToken ct)
+    public async Task<List<TaskDto>> Handle(GetTasksByBoardIdQuery request, CancellationToken cancellationToken)
     {
-        await boardAccessService.EnsureCanViewBoardAsync(request.BoardId, ct);
+        await boardAccessService.EnsureCanViewBoardAsync(request.BoardId, cancellationToken);
 
-        var tasks = await taskRepository.GetTasksByBoardIdAsync(request.BoardId, ct);
+        var tasks = await taskRepository.GetTasksByBoardIdAsync(request.BoardId, cancellationToken);
 
         return tasks.Select(task => new TaskDto(
             task.Id, task.Title, task.Description, task.Position, task.DueDate,

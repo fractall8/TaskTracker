@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Persistence.Contexts;
@@ -20,8 +20,8 @@ public class ColumnRepository(TaskTrackerDbContext dbContext)
             .Where(c => c.BoardId == boardId && c.Position > startingFromPosition)
             .ExecuteUpdateAsync(s => s.SetProperty(c => c.Position, c => c.Position - 1), ct);
     }
-    
-    
+
+
     public async Task UpdatePositionsOnMoveAsync(Guid boardId, int oldPosition, int newPosition, CancellationToken ct)
     {
         if (oldPosition < newPosition)

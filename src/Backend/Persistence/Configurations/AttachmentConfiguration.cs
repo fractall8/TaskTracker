@@ -1,4 +1,4 @@
-﻿using Domain.Constants;
+using Domain.Constants;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -19,15 +19,15 @@ public class AttachmentConfiguration : IEntityTypeConfiguration<Attachment>
         builder.Property(a => a.FileUrl)
             .IsRequired()
             .HasMaxLength(AttachmentConstants.MaxFileUrlLength);
-            
+
         builder.Property(a => a.ContentType)
             .HasMaxLength(AttachmentConstants.MaxContentTypeLength);
-        
+
         builder.HasOne(a => a.Task)
             .WithMany(t => t.Attachments)
             .HasForeignKey(a => a.TaskId)
             .OnDelete(DeleteBehavior.Cascade);
-            
+
         builder.HasIndex(a => a.TaskId);
         builder.HasQueryFilter(a => !a.IsDeleted);
     }

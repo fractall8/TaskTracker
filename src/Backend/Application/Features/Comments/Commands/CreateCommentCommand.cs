@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
 using Domain.Constants;
@@ -19,16 +19,18 @@ public class CreateCommentCommandHandler(
     IUnitOfWork unitOfWork)
     : IRequestHandler<CreateCommentCommand, CommentDto>
 {
-    public async Task<CommentDto> Handle(CreateCommentCommand request, CancellationToken ct)
+    public async Task<CommentDto> Handle(CreateCommentCommand request, CancellationToken cancellationToken)
     {
-        await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, ct);
+        await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, cancellationToken);
 
-        var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, ct);
+        var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, cancellationToken);
         if (task == null || task.Column?.BoardId != request.BoardId)
+        {
             throw new KeyNotFoundException("Task not found.");
+        }
 
         var userInfo =
-            await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => new {u.Id, u.DisplayName}, ct);
+            await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => new { u.Id, u.DisplayName }, cancellationToken);
 
         if (userInfo == null)
         {
@@ -44,8 +46,8 @@ public class CreateCommentCommandHandler(
             CreatedById = userInfo.Id,
         };
 
-        await commentRepository.AddAsync(comment, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await commentRepository.AddAsync(comment, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new CommentDto(
             Id: comment.Id,

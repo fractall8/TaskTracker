@@ -1,4 +1,4 @@
-﻿using Domain.Entities;
+using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -16,7 +16,7 @@ public class BoardMemberConfiguration : IEntityTypeConfiguration<BoardMember>
 
         builder.Property(m => m.Role)
             .IsRequired()
-            .HasConversion<int>(); 
+            .HasConversion<int>();
 
         builder.HasIndex(m => new { m.BoardId, m.UserId }) // so user can not be added twice to the same board 
             .IsUnique();
@@ -25,7 +25,7 @@ public class BoardMemberConfiguration : IEntityTypeConfiguration<BoardMember>
             .WithMany()
             .HasForeignKey(m => m.UserId)
             .OnDelete(DeleteBehavior.Restrict);
-        
+
         builder.HasQueryFilter(e => !e.IsDeleted);
     }
 }

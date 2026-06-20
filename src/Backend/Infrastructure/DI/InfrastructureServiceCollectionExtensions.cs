@@ -1,4 +1,4 @@
-﻿using Infrastructure.DI.Modules;
+using Infrastructure.DI.Modules;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 
@@ -10,7 +10,7 @@ public static class InfrastructureServiceCollectionExtensions
     {
         services.AddAuthenticationModule(configuration);
         services.AddBlobModule(configuration);
-        
+
         return services;
     }
 }

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Refit;
 using Services.Abstractions.Auth;
@@ -28,31 +28,31 @@ public static class ServiceCollectionExtensions
         services.AddRefitClient<IAuthApi>()
             .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
             .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
-        
+
         services.AddRefitClient<IBoardApi>()
             .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
             .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
-        
+
         services.AddRefitClient<IColumnsApi>()
             .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
             .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
-        
+
         services.AddRefitClient<ITasksApi>()
             .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
             .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
 
         services.AddScoped<IAuthApiService, AuthApiService>();
         services.AddScoped<IProfileStore, ProfileStore>();
-        
+
         services.AddScoped<IBoardApiService, BoardApiService>();
         services.AddScoped<IBoardStore, BoardStore>();
-        
+
         services.AddScoped<IColumnApiService, ColumnApiService>();
         services.AddScoped<ITaskApiService, TaskApiService>();
         services.AddScoped<IBoardDetailsStore, BoardDetailsStore>();
-        
+
         services.AddScoped<ICurrentUserService, CurrentUserService>();
-        
+
         return services;
     }
 }

@@ -1,4 +1,4 @@
-﻿using Presentation.Infrastructure;
+using Presentation.Infrastructure;
 
 namespace Presentation.Extensions;
 
@@ -8,7 +8,7 @@ public static class GlobalErrorHandlingExtensions
     {
         services.AddProblemDetails();
         services.AddExceptionHandler<GlobalExceptionHandler>();
-        
+
         return services;
     }
 }

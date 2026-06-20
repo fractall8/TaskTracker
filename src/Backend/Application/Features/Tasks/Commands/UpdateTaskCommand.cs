@@ -1,7 +1,6 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
-using Domain.Authorization;
 using Domain.Constants;
 using FluentValidation;
 using MediatR;
@@ -24,17 +23,11 @@ public class UpdateTaskCommandHandler(
     IUnitOfWork unitOfWork)
     : IRequestHandler<UpdateTaskCommand, TaskDto>
 {
-    public async Task<TaskDto> Handle(UpdateTaskCommand request, CancellationToken ct)
+    public async Task<TaskDto> Handle(UpdateTaskCommand request, CancellationToken cancellationToken)
     {
-        await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, ct);
+        await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, cancellationToken);
 
-        var task = await taskRepository.GetTaskWithColumnAsync(request.TaskId, ct);
-
-        if (task == null)
-        {
-            throw new Exception("Task not found.");
-        }
-
+        var task = await taskRepository.GetTaskWithColumnAsync(request.TaskId, cancellationToken) ?? throw new Exception("Task not found.");
         if (task.Column?.BoardId != request.BoardId)
         {
             throw new KeyNotFoundException("Task not found on this board.");
@@ -47,30 +40,25 @@ public class UpdateTaskCommandHandler(
 
         if (task.ColumnId != request.ColumnId)
         {
-            var targetColumn = await columnRepository.GetByIdAsync(request.ColumnId, ct);
-
-            if (targetColumn == null)
-            {
-                throw new Exception("Target column not found.");
-            }
+            var targetColumn = await columnRepository.GetByIdAsync(request.ColumnId, cancellationToken) ?? throw new Exception("Target column not found.");
 
             if (targetColumn.BoardId != request.BoardId)
             {
                 throw new Exception("Target column not found on this board.");
             }
 
-            await taskRepository.DecrementPositionsAsync(task.ColumnId, task.Position + 1, ct);
+            await taskRepository.DecrementPositionsAsync(task.ColumnId, task.Position + 1, cancellationToken);
 
-            var maxPosition = await taskRepository.GetMaxPositionAsync(request.ColumnId, ct);
+            var maxPosition = await taskRepository.GetMaxPositionAsync(request.ColumnId, cancellationToken);
 
             task.ColumnId = request.ColumnId;
             task.Position = maxPosition + 1;
         }
 
         taskRepository.Update(task);
-        await unitOfWork.SaveChangesAsync(ct);
-        
-        await taskRepository.LoadUsersForTaskAsync(task, ct);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        await taskRepository.LoadUsersForTaskAsync(task, cancellationToken);
 
         return new TaskDto(
             task.Id, task.Title, task.Description, task.Position, task.DueDate,

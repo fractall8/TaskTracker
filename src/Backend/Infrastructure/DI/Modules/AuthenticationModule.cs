@@ -1,4 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using Application.Interfaces.Services;
 using Infrastructure.Auth;
 using Infrastructure.Auth.Constants;
@@ -17,18 +17,18 @@ internal static class AuthenticationModule
     {
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserAccessor, CurrentuserAccessor>();
-        
+
         var azureAdSection = configuration.GetSection("AzureAd");
-        var azureAdOptions = azureAdSection.Get<AzureAdOptions>() 
+        var azureAdOptions = azureAdSection.Get<AzureAdOptions>()
                              ?? throw new InvalidOperationException("AzureAd configuration is missing.");
-        
+
         services.Configure<AzureAdOptions>(azureAdSection);
 
         JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
-        
+
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddMicrosoftIdentityWebApi(azureAdSection);
-        
+
         services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
             .Configure(options =>
             {

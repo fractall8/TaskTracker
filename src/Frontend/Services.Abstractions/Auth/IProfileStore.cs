@@ -1,4 +1,4 @@
-﻿using Contracts.DTOs;
+using Contracts.DTOs;
 
 namespace Services.Abstractions.Auth;
 

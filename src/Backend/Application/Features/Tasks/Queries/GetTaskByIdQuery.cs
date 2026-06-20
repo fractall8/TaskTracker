@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
 using FluentValidation;
@@ -13,11 +13,11 @@ public class GetTaskByIdQueryHandler(
     ITaskRepository taskRepository)
     : IRequestHandler<GetTaskByIdQuery, TaskDto>
 {
-    public async Task<TaskDto> Handle(GetTaskByIdQuery request, CancellationToken ct)
+    public async Task<TaskDto> Handle(GetTaskByIdQuery request, CancellationToken cancellationToken)
     {
-        await boardAccessService.EnsureCanViewBoardAsync(request.BoardId, ct);
+        await boardAccessService.EnsureCanViewBoardAsync(request.BoardId, cancellationToken);
 
-        var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, ct);
+        var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, cancellationToken);
         if (task == null)
         {
             throw new KeyNotFoundException("Task not found.");

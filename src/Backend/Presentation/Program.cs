@@ -16,15 +16,15 @@ builder.Services.AddApplication(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddControllers(options => options.Conventions.Add(new PrefixConventionConfigurator("api")));
-builder.Services.AddEndpointsApiExplorer(); 
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddPresentationCors(builder.Configuration);
 builder.Services.AddGlobalErrorHandling();
 
 builder.Host.UseSerilog((context, services, configuration) => configuration
-    .Destructure.With<SensitiveDataDestructuringPolicy>() 
-    
+    .Destructure.With<SensitiveDataDestructuringPolicy>()
+
     .ReadFrom.Configuration(context.Configuration)
     .ReadFrom.Services(services)
     .Enrich.FromLogContext());
@@ -33,7 +33,7 @@ var fileSettings = builder.Configuration.GetSection("FileSettings").Get<FileSett
 if (fileSettings != null)
 {
     var maxAllowedBytes = (fileSettings.Attachments.MaxSizeMb * 1024 * 1024) + (1 * 1024 * 1024);
-    
+
     builder.Services.Configure<FormOptions>(options =>
     {
         options.MultipartBodyLengthLimit = maxAllowedBytes;

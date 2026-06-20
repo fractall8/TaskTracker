@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Application.Interfaces.Services;
 using FluentValidation;
 using MediatR;
@@ -13,23 +13,26 @@ public class DeleteTaskCommandHandler(
     IUnitOfWork unitOfWork)
     : IRequestHandler<DeleteTaskCommand>
 {
-    public async Task Handle(DeleteTaskCommand request, CancellationToken ct)
+    public async Task Handle(DeleteTaskCommand request, CancellationToken cancellationToken)
     {
-        await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, ct);
-        
-        var task = await taskRepository.GetTaskWithColumnAsync(request.TaskId, ct);
+        await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, cancellationToken);
 
-        if (task == null) return;
+        var task = await taskRepository.GetTaskWithColumnAsync(request.TaskId, cancellationToken);
+
+        if (task == null)
+        {
+            return;
+        }
 
         if (task.Column?.BoardId != request.BoardId)
         {
             throw new KeyNotFoundException("Task not found on this board.");
         }
 
-        await taskRepository.DecrementPositionsAsync(task.ColumnId, task.Position + 1, ct);
+        await taskRepository.DecrementPositionsAsync(task.ColumnId, task.Position + 1, cancellationToken);
 
-        taskRepository.Delete(task); 
-        await unitOfWork.SaveChangesAsync(ct);
+        taskRepository.Delete(task);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }
 

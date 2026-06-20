@@ -1,4 +1,4 @@
-﻿using Application.Options;
+using Application.Options;
 using Presentation.Options;
 
 namespace Presentation.Extensions;
@@ -10,10 +10,10 @@ public static class OptionExtensions
     {
         services.Configure<PaginationOptions>(
             configuration.GetSection(PaginationOptions.SectionName));
-        
+
         services.Configure<FrontendOptions>(
             configuration.GetSection(FrontendOptions.SectionName));
-        
+
         return services;
     }
 }

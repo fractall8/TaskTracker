@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Application.Interfaces.Services;
 using FluentValidation;
 using MediatR;
@@ -14,18 +14,18 @@ public class MoveColumnCommandHandler(
     IUnitOfWork unitOfWork)
     : IRequestHandler<MoveColumnCommand>
 {
-    public async Task Handle(MoveColumnCommand request, CancellationToken ct)
+    public async Task Handle(MoveColumnCommand request, CancellationToken cancellationToken)
     {
-        await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, ct);
-        
-        var board = await boardRepository.GetByIdAsync(request.BoardId, ct);
-        
+        await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, cancellationToken);
+
+        var board = await boardRepository.GetByIdAsync(request.BoardId, cancellationToken);
+
         if (board is null)
         {
             throw new KeyNotFoundException($"Board {request.BoardId} does not exist");
         }
-        
-        var column = await columnRepository.GetByIdAsync(request.ColumnId, ct);
+
+        var column = await columnRepository.GetByIdAsync(request.ColumnId, cancellationToken);
 
         if (column is null || column.BoardId != request.BoardId)
         {
@@ -38,18 +38,19 @@ public class MoveColumnCommandHandler(
         }
 
         var oldPosition = column.Position;
-        await columnRepository.UpdatePositionsOnMoveAsync(request.BoardId, oldPosition, request.NewPosition, ct);
+        await columnRepository.UpdatePositionsOnMoveAsync(request.BoardId, oldPosition, request.NewPosition, cancellationToken);
 
         column.Position = request.NewPosition;
         columnRepository.Update(column);
-        
-        await unitOfWork.SaveChangesAsync(ct);
+
+        await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }
 
 public class MoveColumnCommandValidator : AbstractValidator<MoveColumnCommand>
 {
-    public MoveColumnCommandValidator() {
+    public MoveColumnCommandValidator()
+    {
         RuleFor(x => x.BoardId)
             .NotEmpty().WithMessage("Board ID is required.");
 

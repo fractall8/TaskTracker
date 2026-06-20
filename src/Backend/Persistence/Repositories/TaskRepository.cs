@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Persistence.Contexts;
@@ -10,13 +10,13 @@ public class TaskRepository(TaskTrackerDbContext dbContext) : Repository<TaskIte
     public async Task LoadUsersForTaskAsync(TaskItem task, CancellationToken ct = default)
     {
         await DbContext.Entry(task).Reference(t => t.Reporter).LoadAsync(ct);
-    
+
         if (task.AssigneeId.HasValue)
         {
             await DbContext.Entry(task).Reference(t => t.Assignee).LoadAsync(ct);
         }
     }
-    
+
     public async Task<TaskItem?> GetTaskWithDetailsAsync(Guid taskId, CancellationToken ct = default)
     {
         return await DbContext.Tasks
@@ -26,7 +26,7 @@ public class TaskRepository(TaskTrackerDbContext dbContext) : Repository<TaskIte
             .Include(t => t.Assignee)
             .FirstOrDefaultAsync(t => t.Id == taskId, ct);
     }
-    
+
     public async Task<IEnumerable<TaskItem>> GetTasksByBoardIdAsync(Guid boardId, CancellationToken ct = default)
     {
         return await DbContext.Tasks
@@ -98,7 +98,7 @@ public class TaskRepository(TaskTrackerDbContext dbContext) : Repository<TaskIte
 
     public async Task SoftDeleteTasksAndRelationsByColumnIdAsync(Guid columnId, CancellationToken ct = default)
     {
-        var deletedAt = DateTime.UtcNow; 
+        var deletedAt = DateTime.UtcNow;
 
         await DbContext.Set<Attachment>()
             .IgnoreQueryFilters()

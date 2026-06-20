@@ -1,4 +1,4 @@
-﻿namespace Contracts.DTOs;
+namespace Contracts.DTOs;
 
 public record UserDto(
     Guid Id,

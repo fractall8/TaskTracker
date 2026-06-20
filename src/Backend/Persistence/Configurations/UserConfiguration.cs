@@ -1,4 +1,4 @@
-﻿using Domain.Entities;
+using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,7 +10,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
     {
         builder.ToTable("Users");
         builder.HasKey(e => e.Id);
-        
+
         builder.HasIndex(e => e.AzureAdObjectId)
             .IsUnique();
 
@@ -25,7 +25,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(e => e.DisplayName)
             .IsRequired()
             .HasMaxLength(256);
-        
+
         builder.HasQueryFilter(e => !e.IsDeleted);
     }
 }

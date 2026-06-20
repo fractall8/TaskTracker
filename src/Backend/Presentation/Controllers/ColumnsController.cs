@@ -1,4 +1,4 @@
-﻿using Application.Features.Boards.Queries;
+using Application.Features.Boards.Queries;
 using Application.Features.Columns.Commands;
 using Contracts.DTOs;
 using Contracts.Requests;
@@ -20,10 +20,10 @@ public class ColumnsController(ISender sender) : ControllerBase
         CancellationToken ct)
     {
         var command = new CreateColumnCommand(boardId, request.Name);
-        
+
         var result = await sender.Send(command, ct);
-        
-        return Ok(result); 
+
+        return Ok(result);
     }
 
     [HttpPut("{columnId:guid}")]
@@ -34,12 +34,12 @@ public class ColumnsController(ISender sender) : ControllerBase
         CancellationToken ct)
     {
         var command = new UpdateColumnCommand(boardId, columnId, request.Name);
-        
+
         var result = await sender.Send(command, ct);
-        
+
         return Ok(result);
     }
-    
+
     [HttpDelete("{columnId:guid}")]
     public async Task<IActionResult> DeleteColumn(
         [FromRoute] Guid boardId,
@@ -47,12 +47,12 @@ public class ColumnsController(ISender sender) : ControllerBase
         CancellationToken ct)
     {
         var command = new DeleteColumnCommand(boardId, columnId);
-        
+
         await sender.Send(command, ct);
-        
+
         return NoContent();
     }
-    
+
     [HttpGet]
     public async Task<ActionResult<BoardWithColumnsDto>> GetBoardWithColumns(
         [FromRoute] Guid boardId,
@@ -70,7 +70,7 @@ public class ColumnsController(ISender sender) : ControllerBase
         CancellationToken ct)
     {
         var command = new MoveColumnCommand(boardId, columnId, newPosition);
-        
+
         await sender.Send(command, ct);
 
         return NoContent();

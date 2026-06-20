@@ -1,4 +1,4 @@
-﻿using Domain.Constants;
+using Domain.Constants;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,8 +12,8 @@ internal static class DatabaseModule
     {
         var postgresConnectionString = configuration.GetConnectionString(ConnectionStrings.PostgresConnection)
             ?? throw new InvalidOperationException("Database connection string not found");
-        
-        services.AddDbContext<TaskTrackerDbContext>(options => 
+
+        services.AddDbContext<TaskTrackerDbContext>(options =>
             options.UseNpgsql(postgresConnectionString));
 
         return services;

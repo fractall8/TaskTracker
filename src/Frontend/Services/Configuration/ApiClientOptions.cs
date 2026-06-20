@@ -1,4 +1,4 @@
-﻿namespace Services.Configuration;
+namespace Services.Configuration;
 
 public class ApiClientOptions
 {

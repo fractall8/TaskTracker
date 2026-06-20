@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Contracts.DTOs;
 using Services.Abstractions.Auth;
 using Services.Api;
@@ -13,7 +13,7 @@ internal class AuthApiService(IAuthApi api) : IAuthApiService
 
         if (!response.IsSuccessStatusCode)
         {
-            throw response.Error; 
+            throw response.Error;
         }
 
         return response.Content!;
