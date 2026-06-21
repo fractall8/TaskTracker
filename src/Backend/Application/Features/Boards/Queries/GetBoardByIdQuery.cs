@@ -1,4 +1,4 @@
-using Application.Interfaces;
+﻿using Application.Interfaces;
 using Application.Interfaces.Services;
 using Application.Options;
 using Contracts.DTOs;
@@ -15,11 +15,11 @@ public class GetBoardByIdQueryHandler(
     IBoardRepository boardRepository)
     : IRequestHandler<GetBoardByIdQuery, BoardWithColumnsDto>
 {
-    public async Task<BoardWithColumnsDto> Handle(GetBoardByIdQuery request, CancellationToken cancellationToken)
+    public async Task<BoardWithColumnsDto> Handle(GetBoardByIdQuery request, CancellationToken ct)
     {
-        await boardAccessService.EnsureCanViewBoardAsync(request.BoardId, cancellationToken);
+        await boardAccessService.EnsureCanViewBoardAsync(request.BoardId, ct);
 
-        var board = await boardRepository.GetBoardWithHierarchyAsync(request.BoardId, request.SearchTerm, cancellationToken);
+        var board = await boardRepository.GetBoardWithHierarchyAsync(request.BoardId, request.SearchTerm, ct);
 
         if (board is null)
         {

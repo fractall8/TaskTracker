@@ -1,4 +1,4 @@
-using Application.Interfaces;
+﻿using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
 using Domain.Constants;
@@ -15,11 +15,11 @@ public class UpdateColumnCommandHandler(
     IUnitOfWork unitOfWork)
     : IRequestHandler<UpdateColumnCommand, ColumnDto>
 {
-    public async Task<ColumnDto> Handle(UpdateColumnCommand request, CancellationToken cancellationToken)
+    public async Task<ColumnDto> Handle(UpdateColumnCommand request, CancellationToken ct)
     {
-        await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, cancellationToken);
+        await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, ct);
 
-        var column = await columnRepository.GetByIdAsync(request.ColumnId, cancellationToken);
+        var column = await columnRepository.GetByIdAsync(request.ColumnId, ct);
 
         if (column == null)
         {
@@ -33,7 +33,7 @@ public class UpdateColumnCommandHandler(
 
         if (!string.Equals(column.Name, request.Name, StringComparison.OrdinalIgnoreCase))
         {
-            var existingNames = await columnRepository.GetNameListByBoardIdAsync(column.BoardId, cancellationToken);
+            var existingNames = await columnRepository.GetNameListByBoardIdAsync(column.BoardId, ct);
 
             if (existingNames.Any(existingName =>
                     string.Equals(existingName, request.Name, StringComparison.OrdinalIgnoreCase)))
@@ -45,7 +45,7 @@ public class UpdateColumnCommandHandler(
         }
 
         columnRepository.Update(column);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.SaveChangesAsync(ct);
 
         return new ColumnDto(
             column.Id,

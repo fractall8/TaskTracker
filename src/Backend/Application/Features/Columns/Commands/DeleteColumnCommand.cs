@@ -1,4 +1,4 @@
-using Application.Interfaces;
+﻿using Application.Interfaces;
 using Application.Interfaces.Services;
 using FluentValidation;
 using MediatR;
@@ -15,18 +15,18 @@ public class DeleteColumnCommandHandler(
     IUnitOfWork unitOfWork)
     : IRequestHandler<DeleteColumnCommand>
 {
-    public async Task Handle(DeleteColumnCommand request, CancellationToken cancellationToken)
+    public async Task Handle(DeleteColumnCommand request, CancellationToken ct)
     {
-        await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, cancellationToken);
+        await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, ct);
 
-        var board = await boardRepository.GetByIdAsync(request.BoardId, cancellationToken);
+        var board = await boardRepository.GetByIdAsync(request.BoardId, ct);
 
         if (board is null)
         {
             throw new KeyNotFoundException($"Board {request.BoardId} does not exist");
         }
 
-        var column = await columnRepository.GetByIdAsync(request.ColumnId, cancellationToken);
+        var column = await columnRepository.GetByIdAsync(request.ColumnId, ct);
 
         if (column is null || column.BoardId != request.BoardId)
         {
@@ -36,11 +36,11 @@ public class DeleteColumnCommandHandler(
         var positionToShift = column.Position;
 
         columnRepository.Delete(column);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.SaveChangesAsync(ct);
 
-        await taskRepository.SoftDeleteTasksAndRelationsByColumnIdAsync(column.Id, cancellationToken);
+        await taskRepository.SoftDeleteTasksAndRelationsByColumnIdAsync(column.Id, ct);
 
-        await columnRepository.DecrementPositionsAsync(request.BoardId, positionToShift, cancellationToken);
+        await columnRepository.DecrementPositionsAsync(request.BoardId, positionToShift, ct);
     }
 }
 

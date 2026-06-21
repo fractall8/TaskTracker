@@ -2,9 +2,13 @@ namespace Domain.Entities;
 
 public class Board : BaseEntity<Guid>
 {
+    public required Guid WorkspaceId { get; set; }
+
     public required string Name { get; set; }
 
     public string? Description { get; set; }
+
+    public Workspace? Workspace { get; set; }
 
     public ICollection<BoardMember> Members { get; set; } = [];
 

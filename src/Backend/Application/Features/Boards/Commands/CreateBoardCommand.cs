@@ -9,7 +9,7 @@ using MediatR;
 
 namespace Application.Features.Boards.Commands;
 
-public record CreateBoardCommand(string Name, string? Description) : IRequest<BoardDto>;
+public record CreateBoardCommand(Guid WorkspaceId, string Name, string? Description) : IRequest<BoardDto>;
 
 public class CreateBoardCommandHandler(
     ICurrentUserAccessor currentUserAccessor,
@@ -18,12 +18,12 @@ public class CreateBoardCommandHandler(
     IUnitOfWork unitOfWork)
     : IRequestHandler<CreateBoardCommand, BoardDto>
 {
-    public async Task<BoardDto> Handle(CreateBoardCommand request, CancellationToken cancellationToken)
+    public async Task<BoardDto> Handle(CreateBoardCommand request, CancellationToken ct)
     {
         var userInfo = await userRepository.GetUserByAzureAdIdAsync(
                            currentUserAccessor.AzureAdObjectId,
                            u => new { Id = (Guid?)u.Id, u.Email },
-                           cancellationToken);
+                           ct);
 
         if (userInfo == null || userInfo.Id == null)
         {
@@ -33,6 +33,7 @@ public class CreateBoardCommandHandler(
         var board = new Board
         {
             Id = Guid.NewGuid(),
+            WorkspaceId = request.WorkspaceId,
             Name = request.Name,
             Description = request.Description
         };
@@ -47,9 +48,9 @@ public class CreateBoardCommandHandler(
 
         board.Members.Add(admin);
 
-        await boardRepository.AddAsync(board, cancellationToken);
+        await boardRepository.AddAsync(board, ct);
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.SaveChangesAsync(ct);
 
         return new BoardDto(
             Id: board.Id,

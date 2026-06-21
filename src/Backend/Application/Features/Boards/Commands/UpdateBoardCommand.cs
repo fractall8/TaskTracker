@@ -1,4 +1,4 @@
-using Application.Interfaces;
+﻿using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
 using Domain.Constants;
@@ -14,11 +14,11 @@ public class UpdateBoardCommandHandler(
     IBoardRepository boardRepository,
     IUnitOfWork unitOfWork) : IRequestHandler<UpdateBoardCommand, BoardPreviewDto>
 {
-    public async Task<BoardPreviewDto> Handle(UpdateBoardCommand request, CancellationToken cancellationToken)
+    public async Task<BoardPreviewDto> Handle(UpdateBoardCommand request, CancellationToken ct)
     {
-        var boardAccessContext = await boardAccessService.EnsureCanEditBoardAsync(request.BoardId, cancellationToken);
+        var boardAccessContext = await boardAccessService.EnsureCanEditBoardAsync(request.BoardId, ct);
 
-        var board = await boardRepository.GetByIdAsync(request.BoardId, cancellationToken);
+        var board = await boardRepository.GetByIdAsync(request.BoardId, ct);
 
         if (board == null)
         {
@@ -28,7 +28,7 @@ public class UpdateBoardCommandHandler(
         board.Name = request.Name;
         board.Description = request.Description;
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.SaveChangesAsync(ct);
 
         return new BoardPreviewDto(
             Id: board.Id,

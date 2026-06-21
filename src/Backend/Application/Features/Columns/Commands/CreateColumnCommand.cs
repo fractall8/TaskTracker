@@ -1,4 +1,4 @@
-using Application.Interfaces;
+﻿using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
 using Domain.Constants;
@@ -17,18 +17,18 @@ public class CreateColumnCommandHandler(
     IUnitOfWork unitOfWork)
     : IRequestHandler<CreateColumnCommand, ColumnDto>
 {
-    public async Task<ColumnDto> Handle(CreateColumnCommand request, CancellationToken cancellationToken)
+    public async Task<ColumnDto> Handle(CreateColumnCommand request, CancellationToken ct)
     {
-        await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, cancellationToken);
+        await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, ct);
 
-        var board = await boardRepository.GetByIdAsync(request.BoardId, cancellationToken);
+        var board = await boardRepository.GetByIdAsync(request.BoardId, ct);
 
         if (board is null)
         {
             throw new KeyNotFoundException($"Board {request.BoardId} does not exist");
         }
 
-        var existingNamesEnumerable = await columnRepository.GetNameListByBoardIdAsync(request.BoardId, cancellationToken);
+        var existingNamesEnumerable = await columnRepository.GetNameListByBoardIdAsync(request.BoardId, ct);
         var existingNames = existingNamesEnumerable.ToList();
 
         if (existingNames.Any(existingName =>
@@ -44,9 +44,9 @@ public class CreateColumnCommandHandler(
             Position = existingNames.Count
         };
 
-        await columnRepository.AddAsync(column, cancellationToken);
+        await columnRepository.AddAsync(column, ct);
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.SaveChangesAsync(ct);
 
         return new ColumnDto(
             column.Id,

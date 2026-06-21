@@ -1,4 +1,4 @@
-using Application.Interfaces;
+﻿using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
 using Domain.Constants;
@@ -23,11 +23,11 @@ public class CreateTaskCommandHandler(
     IUnitOfWork unitOfWork)
     : IRequestHandler<CreateTaskCommand, TaskDto>
 {
-    public async Task<TaskDto> Handle(CreateTaskCommand request, CancellationToken cancellationToken)
+    public async Task<TaskDto> Handle(CreateTaskCommand request, CancellationToken ct)
     {
-        var boardAccessContext = await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, cancellationToken);
+        var boardAccessContext = await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, ct);
 
-        var column = await columnRepository.GetByIdAsync(request.ColumnId, cancellationToken);
+        var column = await columnRepository.GetByIdAsync(request.ColumnId, ct);
 
         if (column == null)
         {
@@ -39,7 +39,7 @@ public class CreateTaskCommandHandler(
             throw new KeyNotFoundException("Column not found on this board.");
         }
 
-        var maxPosition = await taskRepository.GetMaxPositionAsync(request.ColumnId, cancellationToken);
+        var maxPosition = await taskRepository.GetMaxPositionAsync(request.ColumnId, ct);
 
         var task = new TaskItem
         {
@@ -53,10 +53,10 @@ public class CreateTaskCommandHandler(
             Position = maxPosition + 1
         };
 
-        await taskRepository.AddAsync(task, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await taskRepository.AddAsync(task, ct);
+        await unitOfWork.SaveChangesAsync(ct);
 
-        await taskRepository.LoadUsersForTaskAsync(task, cancellationToken);
+        await taskRepository.LoadUsersForTaskAsync(task, ct);
 
         return new TaskDto(
             task.Id, task.Title, task.Description, task.Position, task.DueDate,

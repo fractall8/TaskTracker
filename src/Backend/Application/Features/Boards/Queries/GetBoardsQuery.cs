@@ -1,4 +1,4 @@
-using Application.Interfaces;
+﻿using Application.Interfaces;
 using Application.Interfaces.Services;
 using Application.Options;
 using Contracts.DTOs;
@@ -16,22 +16,22 @@ public class GetBoardsQueryHandler(
     IBoardRepository boardRepository)
     : IRequestHandler<GetBoardsQuery, PagedList<BoardPreviewDto>>
 {
-    public async Task<PagedList<BoardPreviewDto>> Handle(GetBoardsQuery request, CancellationToken cancellationToken)
+    public async Task<PagedList<BoardPreviewDto>> Handle(GetBoardsQuery request, CancellationToken ct)
     {
         var currentUserId = await userRepository.GetUserByAzureAdIdAsync(
                                 currentUserAccessor.AzureAdObjectId,
                                 u => (Guid?)u.Id,
-                                cancellationToken)
+                                ct)
                             ?? throw new UnauthorizedAccessException("User is not authenticated");
 
-        var totalCount = await boardRepository.CountUserBoardsAsync(currentUserId, request.SearchTerm, cancellationToken);
+        var totalCount = await boardRepository.CountUserBoardsAsync(currentUserId, request.SearchTerm, ct);
 
         var boards = await boardRepository.GetUserBoardsPaginatedAsync(
             currentUserId,
             request.PageNumber,
             request.PageSize,
             request.SearchTerm,
-            cancellationToken);
+            ct);
 
         var boardDtos = boards.Select(board => new BoardPreviewDto(
             Id: board.Id,
