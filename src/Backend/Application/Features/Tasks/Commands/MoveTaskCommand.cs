@@ -40,7 +40,10 @@ public class MoveTaskCommandHandler(
 
         if (oldColumnId == request.TargetColumnId)
         {
-            if (oldPosition == request.NewPosition) return;
+            if (oldPosition == request.NewPosition)
+            {
+                return;
+            }
 
             await taskRepository.UpdatePositionsOnMoveAsync(oldColumnId, oldPosition, request.NewPosition, ct);
         }

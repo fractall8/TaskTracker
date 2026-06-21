@@ -1,7 +1,6 @@
 ﻿using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
-using Domain.Authorization;
 using Domain.Constants;
 using FluentValidation;
 using MediatR;

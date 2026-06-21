@@ -27,7 +27,7 @@ public class InviteUserToWorkspaceCommandHandler(
     {
         await workspaceAccessService.EnsureIsAdminAsync(request.WorkspaceId, ct);
 
-        User? existingUser = await userRepository.GetByEmailAsync(request.Email, ct);
+        var existingUser = await userRepository.GetByEmailAsync(request.Email, ct);
 
         if (existingUser != null)
         {
@@ -46,7 +46,7 @@ public class InviteUserToWorkspaceCommandHandler(
             return new InviteResultDto(true, null);
         }
 
-        string token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48))
+        var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48))
             .Replace("+", "-")
             .Replace("/", "_")
             .TrimEnd('=');

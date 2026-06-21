@@ -19,7 +19,10 @@ public class DeleteTaskCommandHandler(
 
         var task = await taskRepository.GetTaskWithColumnAsync(request.TaskId, ct);
 
-        if (task == null) return;
+        if (task == null)
+        {
+            return;
+        }
 
         if (task.Column?.BoardId != request.BoardId)
         {

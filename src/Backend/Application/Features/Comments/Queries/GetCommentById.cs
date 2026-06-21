@@ -21,11 +21,15 @@ public class GetCommentsByTaskIdQueryHandler(
 
         var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, ct);
         if (task == null || task.Column?.BoardId != request.BoardId)
+        {
             throw new KeyNotFoundException("Task not found on this board.");
+        }
 
         var comments = await commentRepository.GetByTaskIdAsync(request.TaskId, ct);
         if (!comments.Any())
+        {
             return new List<CommentDto>();
+        }
 
         var authorIds = comments
             .Where(c => c.CreatedById.HasValue)
@@ -41,7 +45,9 @@ public class GetCommentsByTaskIdQueryHandler(
         foreach (var comment in comments)
         {
             if (comment.CreatedById == null || !authorDictionary.TryGetValue(comment.CreatedById.Value, out var author))
+            {
                 continue;
+            }
 
             commentsDtos.Add(new CommentDto(
                 Id: comment.Id,

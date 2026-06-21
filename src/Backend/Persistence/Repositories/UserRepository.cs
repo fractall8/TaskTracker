@@ -42,7 +42,7 @@ public class UserRepository(TaskTrackerDbContext context) : Repository<User, Gui
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
-            string lower = searchTerm.ToLower();
+            var lower = searchTerm.ToLower();
             query = query.Where(u =>
                 u.Email.ToLower().Contains(lower) ||
                 (u.DisplayName != null && u.DisplayName.ToLower().Contains(lower)));

@@ -25,7 +25,9 @@ public class CreateCommentCommandHandler(
 
         var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, ct);
         if (task == null || task.Column?.BoardId != request.BoardId)
+        {
             throw new KeyNotFoundException("Task not found.");
+        }
 
         var userInfo =
             await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => new { u.Id, u.DisplayName }, ct);

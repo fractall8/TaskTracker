@@ -17,12 +17,14 @@ public class AcceptWorkspaceInviteCommandHandler(
 {
     public async Task<Unit> Handle(AcceptWorkspaceInviteCommand request, CancellationToken ct)
     {
-        WorkspaceInvite? invite = await workspaceInviteRepository.GetByTokenAsync(request.Token, ct);
+        var invite = await workspaceInviteRepository.GetByTokenAsync(request.Token, ct);
 
         if (invite == null || invite.ExpiresAt < DateTimeOffset.UtcNow)
+        {
             throw new InvalidOperationException("Invite token is invalid or has expired.");
+        }
 
-        Guid userId = await workspaceAccessService.GetCurrentUserIdAsync(ct);
+        var userId = await workspaceAccessService.GetCurrentUserIdAsync(ct);
 
         var member = new WorkspaceMember
         {
