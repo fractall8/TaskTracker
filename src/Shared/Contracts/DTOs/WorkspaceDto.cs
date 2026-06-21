@@ -1,3 +1,5 @@
-﻿namespace Contracts.DTOs;
+using Contracts.Enums;
 
-public record WorkspaceDto(Guid Id, string Name, string? Description);
+namespace Contracts.DTOs;
+
+public record WorkspaceDto(Guid Id, string Name, string? Description, WorkspaceRoleDto Role);

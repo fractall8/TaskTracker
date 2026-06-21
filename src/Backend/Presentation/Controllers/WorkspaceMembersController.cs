@@ -1,4 +1,4 @@
-﻿using Application.Features.Workspaces.Commands;
+using Application.Features.Workspaces.Commands;
 using Application.Features.Workspaces.Queries;
 using Contracts.DTOs;
 using Contracts.Requests;
@@ -18,6 +18,13 @@ public class WorkspaceMembersController(ISender sender) : ControllerBase
     public async Task<ActionResult<List<UserDto>>> GetWorkspaceUsers(Guid workspaceId, [FromQuery] string? searchTerm, CancellationToken ct)
     {
         var result = await sender.Send(new GetWorkspaceUsersQuery(workspaceId, searchTerm), ct);
+        return Ok(result);
+    }
+
+    [HttpGet("users/search-all")]
+    public async Task<ActionResult<List<UserSearchDto>>> SearchUsersNotInWorkspace(Guid workspaceId, [FromQuery] string? searchTerm, CancellationToken ct)
+    {
+        var result = await sender.Send(new SearchUsersNotInWorkspaceQuery(workspaceId, searchTerm), ct);
         return Ok(result);
     }
 

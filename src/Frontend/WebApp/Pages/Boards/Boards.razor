@@ -176,11 +176,12 @@
         var dialog = await DialogService.ShowAsync<BoardDialog>("Create Board", options);
         var result = await dialog.Result;
 
-        if (result != null && !result.Canceled && result.Data is UpdateBoardRequest request)
+        if (result != null && !result.Canceled && result.Data is CreateBoardRequest request)
         {
             try
             {
-                await BoardApiService.CreateBoardAsync(request);
+                Console.WriteLine("Cannot create board here!");
+                // await BoardApiService.CreateBoardAsync(request);
                 Snackbar.Add("Board created successfully.", Severity.Success);
 
                 await BoardStore.RefreshAsync();

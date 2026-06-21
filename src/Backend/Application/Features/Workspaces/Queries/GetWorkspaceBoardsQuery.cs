@@ -1,25 +1,35 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Application.Interfaces.Services;
+using Application.Options;
 using Contracts.DTOs;
+using Contracts.Enums;
 using Domain.Enums;
+using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Options;
 
 namespace Application.Features.Workspaces.Queries;
 
-public record GetWorkspaceBoardsQuery(Guid WorkspaceId) : IRequest<List<BoardPreviewDto>>;
+public record GetWorkspaceBoardsQuery(Guid WorkspaceId, int PageNumber, int PageSize, string? SearchTerm) : IRequest<PagedList<BoardPreviewDto>>;
 
 public class GetWorkspaceBoardsQueryHandler(
     IBoardRepository boardRepository,
     IWorkspaceAccessService workspaceAccessService)
-    : IRequestHandler<GetWorkspaceBoardsQuery, List<BoardPreviewDto>>
+    : IRequestHandler<GetWorkspaceBoardsQuery, PagedList<BoardPreviewDto>>
 {
-    public async Task<List<BoardPreviewDto>> Handle(GetWorkspaceBoardsQuery request,
-        CancellationToken cancellationToken)
+    public async Task<PagedList<BoardPreviewDto>> Handle(GetWorkspaceBoardsQuery request, CancellationToken ct)
     {
-        var workspaceRole = await workspaceAccessService.EnsureIsMemberAsync(request.WorkspaceId, cancellationToken);
-        var currentUserId = await workspaceAccessService.GetCurrentUserIdAsync(cancellationToken);
+        var workspaceRole = await workspaceAccessService.EnsureIsMemberAsync(request.WorkspaceId, ct);
+        var currentUserId = await workspaceAccessService.GetCurrentUserIdAsync(ct);
 
-        var boards = await boardRepository.GetBoardsByWorkspaceIdAsync(request.WorkspaceId, cancellationToken);
+        var totalCount = await boardRepository.CountBoardsByWorkspaceIdAsync(request.WorkspaceId, request.SearchTerm, ct);
+
+        var boards = await boardRepository.GetBoardsByWorkspaceIdPaginatedAsync(
+            request.WorkspaceId,
+            request.PageNumber,
+            request.PageSize,
+            request.SearchTerm,
+            ct);
 
         var boardDtos = new List<BoardPreviewDto>();
 
@@ -33,8 +43,7 @@ public class GetWorkspaceBoardsQueryHandler(
             }
             else
             {
-                var specificBoardRole =
-                    await boardRepository.GetUserRoleAsync(board.Id, currentUserId, cancellationToken);
+                var specificBoardRole = await boardRepository.GetUserRoleAsync(board.Id, currentUserId, ct);
                 if (specificBoardRole.HasValue)
                 {
                     boardRole = specificBoardRole.Value;
@@ -46,9 +55,37 @@ public class GetWorkspaceBoardsQueryHandler(
                 board.Name,
                 board.Description,
                 board.CreatedAt,
-                (Contracts.Enums.BoardRoleDto)boardRole));
+                (BoardRoleDto)boardRole));
         }
 
-        return boardDtos;
+        return new PagedList<BoardPreviewDto>
+        {
+            Metadata = new PaginationMetadata
+            {
+                CurrentPage = request.PageNumber,
+                PageSize = request.PageSize,
+                TotalCount = totalCount
+            },
+            Items = boardDtos
+        };
+    }
+}
+
+public class GetWorkspaceBoardsQueryValidator : AbstractValidator<GetWorkspaceBoardsQuery>
+{
+    public GetWorkspaceBoardsQueryValidator(IOptions<PaginationOptions> options)
+    {
+        var paginationOptions = options.Value;
+
+        RuleFor(v => v.PageNumber)
+            .GreaterThanOrEqualTo(1).WithMessage("Page number must be at least 1.");
+
+        RuleFor(v => v.PageSize)
+            .InclusiveBetween(1, paginationOptions.MaxPageSize)
+            .WithMessage($"Page size must be between 1 and {paginationOptions.MaxPageSize}.");
+
+        RuleFor(v => v.SearchTerm)
+            .MaximumLength(paginationOptions.MaxSearchTermLength)
+            .WithMessage("Search term must not exceed 100 characters.");
     }
 }

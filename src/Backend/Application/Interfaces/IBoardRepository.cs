@@ -16,4 +16,8 @@ public interface IBoardRepository : IRepository<Board, Guid>
     Task<BoardRole?> GetUserRoleAsync(Guid boardId, Guid userId, CancellationToken ct = default);
 
     Task<List<Board>> GetBoardsByWorkspaceIdAsync(Guid workspaceId, CancellationToken ct = default);
+
+    Task<int> CountBoardsByWorkspaceIdAsync(Guid workspaceId, string? searchTerm = null, CancellationToken ct = default);
+
+    Task<List<Board>> GetBoardsByWorkspaceIdPaginatedAsync(Guid workspaceId, int pageNumber, int pageSize, string? searchTerm = null, CancellationToken ct = default);
 }

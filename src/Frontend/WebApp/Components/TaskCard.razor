@@ -1,4 +1,4 @@
-﻿@using Contracts.DTOs
+@using Contracts.DTOs
 @using Contracts.Requests
 @using WebApp.Shared.Dialogs
 @inject IBoardDetailsStore Store
@@ -55,6 +55,8 @@
 @code {
     [Parameter, EditorRequired] public TaskDto Task { get; set; } = null!;
 
+    [Parameter] public Guid? WorkspaceId { get; set; }
+
     private async Task ConfirmDeleteTask()
     {
         bool? result = await DialogService.ShowMessageBoxAsync(
@@ -78,7 +80,11 @@
 
     private async Task OpenEditTaskDialog()
     {
-        var parameters = new DialogParameters { ["Task"] = Task };
+        var parameters = new DialogParameters
+        {
+            ["Task"] = Task,
+            ["WorkspaceId"] = WorkspaceId
+        };
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
 
         var dialog = await DialogService.ShowAsync<EditTaskDialog>("Edit Task", parameters, options);

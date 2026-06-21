@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+using Application.Interfaces;
 using Application.Interfaces.Services;
 using Application.Options;
 using Contracts.DTOs;
@@ -52,6 +52,7 @@ public class GetBoardByIdQueryHandler(
             Id: board.Id,
             Name: board.Name,
             Description: board.Description,
+            WorkspaceId: board.WorkspaceId,
             Columns: columnDtos
         );
     }

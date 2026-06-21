@@ -1,20 +1,21 @@
-﻿@using System.ComponentModel.DataAnnotations
+@using System.ComponentModel.DataAnnotations
 @using Contracts.DTOs
 @using Contracts.Requests
+@inject ICurrentUserService currentUserService
 
 <MudDialog>
     <TitleContent>
         <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-primary);">
-            <MudIcon Icon="@(Board is null ? Icons.Material.Filled.Add : Icons.Material.Filled.Edit)"
+            <MudIcon Icon="@(Workspace is null ? Icons.Material.Filled.Add : Icons.Material.Filled.Edit)"
                      Class="mr-2 mb-n1"/>
-            @(Board is null ? "New Board" : "Edit Board")
+            @(Workspace is null ? "New Workspace" : "Edit Workspace")
         </MudText>
     </TitleContent>
     <DialogContent>
         <MudForm @ref="_form" ValidationDelay="0">
             <MudTextField @bind-Value="_model.Name"
                           For="@(() => _model.Name)"
-                          Label="Board Name"
+                          Label="Workspace Name"
                           Required="true"
                           RequiredError="Name is required"
                           MaxLength="100"
@@ -40,17 +41,17 @@
 @code {
     [CascadingParameter] public IMudDialogInstance? MudDialog { get; set; }
 
-    [Parameter] public BoardPreviewDto? Board { get; set; }
+    [Parameter] public WorkspaceDto? Workspace { get; set; }
 
     private MudForm? _form;
-    private BoardFormModel _model = new();
+    private WorkspaceFormModel _model = new();
 
     protected override void OnInitialized()
     {
-        if (Board is not null)
+        if (Workspace is not null)
         {
-            _model.Name = Board.Name;
-            _model.Description = Board.Description;
+            _model.Name = Workspace.Name;
+            _model.Description = Workspace.Description;
         }
     }
 
@@ -64,25 +65,19 @@
 
             if (_form.IsValid)
             {
-                if (Board is null)
+                if (currentUserService.User == null) 
                 {
-                    var createRequest = new CreateBoardRequest(_model.Name, _model.Description);
-                    MudDialog?.Close(DialogResult.Ok(createRequest));
+                    await currentUserService.InitializeAsync();
                 }
-                else
-                {
-                    var updateRequest = new UpdateBoardRequest(_model.Name, _model.Description);
-                    MudDialog?.Close(DialogResult.Ok(updateRequest));
-                }
+                MudDialog?.Close(DialogResult.Ok(new CreateWorkspaceRequest(_model.Name, _model.Description)));
             }
         }
     }
 
-    public class BoardFormModel
+    public class WorkspaceFormModel
     {
         [Required] [MaxLength(100)] public string Name { get; set; } = string.Empty;
 
         [MaxLength(500)] public string? Description { get; set; }
     }
-
 }

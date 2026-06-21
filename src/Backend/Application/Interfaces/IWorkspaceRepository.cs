@@ -10,4 +10,8 @@ public interface IWorkspaceRepository : IRepository<Workspace, Guid>
     Task<WorkspaceRole?> GetUserRoleAsync(Guid workspaceId, Guid userId, CancellationToken ct = default);
 
     Task<List<Workspace>> GetUserWorkspacesAsync(Guid userId, CancellationToken ct = default);
+
+    Task<List<(Workspace Workspace, WorkspaceRole Role)>> GetUserWorkspacesWithRolesAsync(Guid userId, CancellationToken ct = default);
+
+    Task<Workspace?> GetByIdWithMembersAsync(Guid workspaceId, CancellationToken ct = default);
 }

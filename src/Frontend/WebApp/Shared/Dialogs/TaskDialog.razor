@@ -1,4 +1,5 @@
-﻿@using System.ComponentModel.DataAnnotations
+@using System.ComponentModel.DataAnnotations
+@using Contracts.DTOs
 @using Contracts.Requests
 
 <MudDialog>
@@ -24,7 +25,21 @@
                           Variant="Variant.Outlined"
                           Margin="Margin.Dense"
                           Lines="3"
-                          MaxLength="500"/>
+                          MaxLength="500"
+                          Class="mb-3"/>
+
+            <MudSelect T="Guid?"
+                       @bind-Value="_model.AssigneeId"
+                       Label="Assignee (Optional)"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       Clearable="true">
+                <MudSelectItem T="Guid?" Value="@((Guid?)null)">— Unassigned —</MudSelectItem>
+                @foreach (var user in _users)
+                {
+                    <MudSelectItem T="Guid?" Value="@((Guid?)user.Id)">@user.Email</MudSelectItem>
+                }
+            </MudSelect>
         </MudForm>
     </DialogContent>
     <DialogActions>
@@ -36,8 +51,28 @@
 @code {
     [CascadingParameter] public IMudDialogInstance? MudDialog { get; set; }
 
+    [Parameter] public Guid? WorkspaceId { get; set; }
+
+    [Inject] private IWorkspaceStore WorkspaceStore { get; set; } = null!;
+
     private MudForm? _form;
     private TaskFormModel _model = new();
+    private List<UserDto> _users = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (WorkspaceId.HasValue)
+        {
+            try
+            {
+                _users = await WorkspaceStore.GetWorkspaceUsersAsync(WorkspaceId.Value);
+            }
+            catch
+            {
+                _users = [];
+            }
+        }
+    }
 
     private void Cancel() => MudDialog?.Cancel();
 
@@ -53,7 +88,7 @@
                     Title: _model.Title,
                     Description: string.IsNullOrWhiteSpace(_model.Description) ? null : _model.Description,
                     DueDate: null,
-                    AssigneeId: null
+                    AssigneeId: _model.AssigneeId
                 );
 
                 MudDialog?.Close(DialogResult.Ok(request));
@@ -68,6 +103,7 @@
         public string Title { get; set; } = string.Empty;
 
         [MaxLength(500)] public string? Description { get; set; }
-    }
 
+        public Guid? AssigneeId { get; set; }
+    }
 }

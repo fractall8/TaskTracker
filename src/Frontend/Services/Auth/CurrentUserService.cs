@@ -3,7 +3,7 @@ using Services.Abstractions.Auth;
 
 namespace Services.Auth;
 
-public class CurrentUserService(IAuthApiService authApiService) : ICurrentUserService
+public class CurrentUserService(IProfileStore profileStore, IAuthApiService authApiService) : ICurrentUserService
 {
     public UserDto? User { get; private set; }
     private bool _isInitialized;
@@ -17,7 +17,7 @@ public class CurrentUserService(IAuthApiService authApiService) : ICurrentUserSe
 
         try
         {
-            User = await authApiService.GetCurrentUserAsync();
+            await profileStore.EnsureLoadedAsync();
             _isInitialized = true;
         }
         catch

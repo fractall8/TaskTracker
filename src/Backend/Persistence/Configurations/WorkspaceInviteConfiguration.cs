@@ -13,7 +13,6 @@ public class WorkspaceInviteConfiguration : IEntityTypeConfiguration<WorkspaceIn
         builder.HasKey(e => e.Id);
 
         builder.Property(e => e.Email)
-            .IsRequired()
             .HasMaxLength(WorkspaceConstants.MaxEmailLength);
 
         builder.Property(e => e.Token)

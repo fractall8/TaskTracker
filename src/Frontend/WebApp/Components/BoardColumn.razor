@@ -1,4 +1,4 @@
-﻿@using Contracts.DTOs
+@using Contracts.DTOs
 @using Contracts.Requests
 @using WebApp.Shared.Dialogs
 @inject IBoardDetailsStore Store
@@ -64,6 +64,8 @@
 @code {
     [Parameter, EditorRequired] public ColumnDto Column { get; set; } = null!;
 
+    [Parameter] public Guid? WorkspaceId { get; set; }
+
     [Parameter] public bool IsDragged { get; set; }
     [Parameter] public bool IsDropTarget { get; set; }
     [Parameter] public EventCallback<ColumnDto> OnColumnDragStart { get; set; }
@@ -126,8 +128,9 @@
 
     private async Task OpenCreateTaskDialog()
     {
+        var parameters = new DialogParameters<TaskDialog> { { x => x.WorkspaceId, WorkspaceId } };
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
-        var dialog = await DialogService.ShowAsync<TaskDialog>("Create Task", options);
+        var dialog = await DialogService.ShowAsync<TaskDialog>("Create Task", parameters, options);
         var result = await dialog.Result;
 
         if (!result!.Canceled)

@@ -1,66 +1,180 @@
-﻿@page "/dashboard"
+@page "/dashboard"
 @attribute [Authorize]
 @implements IDisposable
-@inject IProfileStore ProfileStore
+@inject IWorkspaceStore WorkspaceStore
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 @inject NavigationManager Navigation
+@using Contracts.DTOs
+@using Contracts.Enums
+@using Contracts.Requests
+@using WebApp.Shared.Dialogs
+@using Services.Abstractions.Workspaces
 
-<PageTitle>Dashboard - TaskTracker</PageTitle>
+<PageTitle>My Workspaces - TaskTracker</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8">
-    @if (ProfileStore.IsLoading)
+<MudContainer MaxWidth="MaxWidth.Large" Class="pt-6 pb-8 px-4">
+    <div class="d-flex flex-column flex-md-row justify-space-between align-center mb-6 gap-4">
+        <MudText Typo="Typo.h4" Class="fw-bold" Style="color: var(--mud-palette-text-primary);">My Workspaces</MudText>
+    </div>
+
+    @if (WorkspaceStore.IsLoading)
     {
-        <div class="d-flex justify-center align-center" style="height: 50vh;">
-            <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large"/>
+        <div class="d-flex justify-center mt-10">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large"/>
         </div>
     }
-    else if (ProfileStore.IsLoaded && ProfileStore.Profile is { } profile)
+    else if (!string.IsNullOrEmpty(WorkspaceStore.ErrorMessage))
     {
-        <MudGrid>
-            <MudItem xs="12" sm="8" md="6" lg="5">
-                <MudPaper Elevation="0" Class="pa-6 rounded-lg"
-                          Style="border: 1px solid var(--mud-palette-lines-default); background-color: var(--mud-palette-surface);">
-
-                    <div class="d-flex align-center">
-                        <MudAvatar Color="Color.Primary" Size="Size.Large" Class="mr-4 elevation-1 font-weight-bold">
-                            @(profile.DisplayName?.FirstOrDefault() ?? profile.Email?.FirstOrDefault() ?? '?')
-                        </MudAvatar>
-
-                        <div>
-                            <MudText Typo="Typo.h5" Class="font-weight-bold"
-                                     Style="color: var(--mud-palette-text-primary);">
-                                Welcome, @(profile.DisplayName ?? "User")
-                            </MudText>
-                            <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">
-                                @profile.Email
-                            </MudText>
-                        </div>
-                    </div>
-                </MudPaper>
-            </MudItem>
-        </MudGrid>
-    }
-    else if (ProfileStore.ErrorMessage is { } error)
-    {
-        <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mt-4 rounded-lg">
-            @error
+        <MudAlert Severity="Severity.Error" Class="mt-4 rounded-lg">
+            @WorkspaceStore.ErrorMessage
         </MudAlert>
     }
+    else if (!WorkspaceStore.Workspaces.Any())
+    {
+        <MudAlert Severity="Severity.Info" Class="mt-4 rounded-lg">
+            You don't have any workspaces yet. Create your first one!
+        </MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            @foreach (var workspace in WorkspaceStore.Workspaces)
+            {
+                <MudItem xs="12" sm="6" md="4" lg="3">
+                    <MudCard Elevation="2" Class="h-100 d-flex flex-column rounded-lg"
+                             Style="border: 1px solid var(--mud-palette-lines-default); background-color: var(--mud-palette-surface); cursor: pointer;"
+                             @onclick="@(() => Navigation.NavigateTo($"/workspaces/{workspace.Id}"))">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6" Class="fw-bold"
+                                         Style="color: var(--mud-palette-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    @workspace.Name
+                                </MudText>
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
+                                         Color="@RoleChipColor(workspace.Role)" Class="mt-1 ml-0" Style="height: 20px; font-size: 11px;">
+                                    @workspace.Role.ToString()
+                                </MudChip>
+                            </CardHeaderContent>
+                            <CardHeaderActions>
+                                @if (workspace.Role is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
+                                {
+                                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true"
+                                             @onclick:stopPropagation="true">
+                                        <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                                                     OnClick="@(() => OpenEditDialog(workspace))">
+                                            Edit
+                                        </MudMenuItem>
+                                        @if (workspace.Role is WorkspaceRoleDto.Owner)
+                                        {
+                                            <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                                         IconColor="Color.Error"
+                                                         OnClick="@(() => DeleteWorkspace(workspace))">
+                                                Delete
+                                            </MudMenuItem>
+                                        }
+                                    </MudMenu>
+                                }
+                            </CardHeaderActions>
+                        </MudCardHeader>
+
+                        <MudCardContent Class="flex-grow-1 overflow-hidden pt-0">
+                            <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">
+                                @(string.IsNullOrWhiteSpace(workspace.Description) ? "No description provided." : workspace.Description)
+                            </MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+
+    <MudFab Color="Color.Primary"
+            StartIcon="@Icons.Material.Filled.Add"
+            Style="position: fixed; bottom: 32px; right: 32px;"
+            OnClick="OpenCreateDialog"/>
 </MudContainer>
 
 @code {
-
     protected override void OnInitialized() =>
-        ProfileStore.StateChanged += OnStoreStateChanged;
+        WorkspaceStore.StateChanged += OnStoreStateChanged;
 
-    protected override async Task OnInitializedAsync()
-    {
-        await ProfileStore.EnsureLoadedAsync();
+    protected override async Task OnInitializedAsync() =>
+        await WorkspaceStore.LoadUserWorkspacesAsync();
 
-        if (ProfileStore.RequiresLogin)
-            Navigation.NavigateTo("/login");
-    }
-
-    public void Dispose() => ProfileStore.StateChanged -= OnStoreStateChanged;
+    public void Dispose() =>
+        WorkspaceStore.StateChanged -= OnStoreStateChanged;
 
     private void OnStoreStateChanged() => InvokeAsync(StateHasChanged);
+
+    private Color RoleChipColor(WorkspaceRoleDto role) => role switch
+    {
+        WorkspaceRoleDto.Owner => Color.Warning,
+        WorkspaceRoleDto.Admin => Color.Info,
+        _ => Color.Default
+    };
+
+    private async Task OpenCreateDialog()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<WorkspaceDialog>("Create Workspace", options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: CreateWorkspaceRequest request })
+        {
+            try
+            {
+                await WorkspaceStore.CreateWorkspaceAsync(request);
+                Snackbar.Add("Workspace created successfully.", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to create workspace: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenEditDialog(WorkspaceDto workspace)
+    {
+        var parameters = new DialogParameters<WorkspaceDialog> { { x => x.Workspace, workspace } };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<WorkspaceDialog>("Edit Workspace", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: CreateWorkspaceRequest request })
+        {
+            try
+            {
+                await WorkspaceStore.UpdateWorkspaceAsync(workspace.Id, new UpdateWorkspaceRequest(request.Name, request.Description));
+                Snackbar.Add("Workspace updated successfully.", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to update workspace: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteWorkspace(WorkspaceDto workspace)
+    {
+        var safeName = workspace.Name.Length > 40 ? workspace.Name[..40] + "..." : workspace.Name;
+
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            "Delete Confirmation",
+            $"Are you sure you want to delete '{safeName}'? All boards, columns and tasks inside will be permanently removed.",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (confirmed == true)
+        {
+            try
+            {
+                await WorkspaceStore.DeleteWorkspaceAsync(workspace.Id);
+                Snackbar.Add("Workspace deleted.", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to delete workspace: {ex.Message}", Severity.Error);
+            }
+        }
+    }
 }

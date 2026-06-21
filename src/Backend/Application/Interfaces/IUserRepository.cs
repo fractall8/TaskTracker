@@ -16,4 +16,6 @@ public interface IUserRepository : IRepository<User, Guid>
     Task<User?> GetByEmailAsync(string email, CancellationToken ct = default);
 
     Task<List<UserDto>> SearchWorkspaceUsersAsync(Guid workspaceId, string? searchTerm, CancellationToken ct = default);
+
+    Task<List<UserSearchDto>> SearchUsersNotInWorkspaceAsync(Guid workspaceId, string? searchTerm, CancellationToken ct = default);
 }

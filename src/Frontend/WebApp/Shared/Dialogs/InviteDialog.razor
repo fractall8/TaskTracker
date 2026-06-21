@@ -1,0 +1,97 @@
+@using Contracts.DTOs
+@using Contracts.Requests
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-primary);">
+            <MudIcon Icon="@Icons.Material.Filled.PersonAdd" Class="mr-2 mb-n1"/>
+            Invite to Workspace
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTabs Elevation="0" Rounded="true" PanelClass="pt-4">
+
+            <MudTabPanel Text="Search User" Icon="@Icons.Material.Filled.Search">
+                <MudAutocomplete T="UserSearchDto"
+                                 @bind-Value="_selectedUser"
+                                 Label="Search by name"
+                                 SearchFunc="SearchUsersAsync"
+                                 ToStringFunc="@(u => u?.DisplayName ?? "Unknown User")" 
+                                 Variant="Variant.Outlined"
+                                 Margin="Margin.Dense"
+                                 MinCharacters="2"
+                                 ShowProgressIndicator="true"
+                                 ResetValueOnEmptyText="true"
+                                 AdornmentIcon="@Icons.Material.Filled.PersonSearch"
+                                 Adornment="Adornment.End"/>
+
+                <div class="d-flex justify-end mt-4">
+                    <MudButton OnClick="Cancel" Class="mr-2">Cancel</MudButton>
+                    <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                               Disabled="@(_selectedUser is null)"
+                               OnClick="SubmitUserInvite">
+                        Send Invite
+                    </MudButton>
+                </div>
+            </MudTabPanel>
+
+            <MudTabPanel Text="Share Link" Icon="@Icons.Material.Filled.Link">
+                <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);" Class="mb-4">
+                    Generate a shareable invite link. Anyone with this link can join the workspace.
+                </MudText>
+
+                <div class="d-flex justify-end gap-2 mt-2">
+                    <MudButton OnClick="Cancel">Cancel</MudButton>
+                    <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                               StartIcon="@Icons.Material.Filled.Link"
+                               OnClick="GenerateLink">
+                        Generate Link
+                    </MudButton>
+                </div>
+            </MudTabPanel>
+
+        </MudTabs>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter] public IMudDialogInstance? MudDialog { get; set; }
+
+    [Parameter] public Guid WorkspaceId { get; set; }
+
+    [Inject] private IWorkspaceStore WorkspaceStore { get; set; } = null!;
+
+    private UserSearchDto? _selectedUser;
+
+    private void Cancel() => MudDialog?.Cancel();
+
+    private async Task<IEnumerable<UserSearchDto>> SearchUsersAsync(string searchTerm, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            return [];
+        }
+
+        try
+        {
+            return await WorkspaceStore.SearchUsersNotInWorkspaceAsync(WorkspaceId, searchTerm, ct);
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    private void SubmitUserInvite()
+    {
+        if (_selectedUser is not null)
+        {
+            MudDialog?.Close(DialogResult.Ok(new InviteUserRequest(null)));
+        }
+    }
+
+    private void GenerateLink()
+    {
+        MudDialog?.Close(DialogResult.Ok(new InviteUserRequest(null)));
+    }
+}

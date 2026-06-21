@@ -1,6 +1,7 @@
-﻿@using System.ComponentModel.DataAnnotations
+@using System.ComponentModel.DataAnnotations
 @using Contracts.DTOs
 @using Contracts.Requests
+@using Services.Abstractions.Workspaces
 
 <MudDialog>
     <TitleContent>
@@ -27,7 +28,21 @@
                           Lines="5"
                           Variant="Variant.Outlined"
                           Margin="Margin.Dense"
-                          MaxLength="500"/>
+                          MaxLength="500"
+                          Class="mb-3"/>
+
+            <MudSelect T="Guid?"
+                       @bind-Value="_model.AssigneeId"
+                       Label="Assignee (Optional)"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       Clearable="true">
+                <MudSelectItem T="Guid?" Value="@((Guid?)null)">— Unassigned —</MudSelectItem>
+                @foreach (var user in _users)
+                {
+                    <MudSelectItem T="Guid?" Value="@((Guid?)user.Id)">@user.Email</MudSelectItem>
+                }
+            </MudSelect>
         </MudForm>
     </DialogContent>
     <DialogActions>
@@ -38,15 +53,34 @@
 
 @code {
     [CascadingParameter] public IMudDialogInstance? MudDialog { get; set; }
+
     [Parameter] public TaskDto Task { get; set; } = null!;
+
+    [Parameter] public Guid? WorkspaceId { get; set; }
+
+    [Inject] private IWorkspaceStore WorkspaceStore { get; set; } = null!;
 
     private MudForm? _form;
     private TaskFormModel _model = new();
+    private List<UserDto> _users = [];
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         _model.Title = Task.Title;
         _model.Description = Task.Description;
+        _model.AssigneeId = Task.AssigneeId;
+
+        if (WorkspaceId.HasValue)
+        {
+            try
+            {
+                _users = await WorkspaceStore.GetWorkspaceUsersAsync(WorkspaceId.Value);
+            }
+            catch
+            {
+                _users = [];
+            }
+        }
     }
 
     private void Cancel() => MudDialog?.Cancel();
@@ -64,7 +98,7 @@
                     Title: _model.Title,
                     Description: string.IsNullOrWhiteSpace(_model.Description) ? null : _model.Description,
                     DueDate: Task.DueDate,
-                    AssigneeId: Task.AssigneeId,
+                    AssigneeId: _model.AssigneeId,
                     ColumnId: Task.ColumnId
                 );
 
@@ -78,6 +112,7 @@
         [Required] [MaxLength(100)] public string Title { get; set; } = string.Empty;
 
         [MaxLength(500)] public string? Description { get; set; }
-    }
 
+        public Guid? AssigneeId { get; set; }
+    }
 }

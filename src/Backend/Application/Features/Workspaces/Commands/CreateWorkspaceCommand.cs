@@ -46,7 +46,7 @@ public class CreateWorkspaceCommandHandler(
         await workspaceRepository.AddAsync(workspace, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return new WorkspaceDto(workspace.Id, workspace.Name, workspace.Description);
+        return new WorkspaceDto(workspace.Id, workspace.Name, workspace.Description, Contracts.Enums.WorkspaceRoleDto.Owner);
     }
 }
 

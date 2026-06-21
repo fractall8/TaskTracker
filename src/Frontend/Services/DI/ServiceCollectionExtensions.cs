@@ -5,6 +5,7 @@ using Services.Abstractions.Auth;
 using Services.Abstractions.Boards;
 using Services.Abstractions.Columns;
 using Services.Abstractions.Tasks;
+using Services.Abstractions.Workspaces;
 using Services.Api;
 using Services.Auth;
 using Services.Auth.Stores;
@@ -13,6 +14,7 @@ using Services.Boards.Stores;
 using Services.Columns;
 using Services.Configuration;
 using Services.Tasks;
+using Services.Workspaces.Stores;
 
 namespace Services.DI;
 
@@ -41,6 +43,18 @@ public static class ServiceCollectionExtensions
             .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
             .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
 
+        services.AddRefitClient<IWorkspaceApi>()
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
+            .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
+
+        services.AddRefitClient<IWorkspaceMembersApi>()
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
+            .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
+
+        services.AddRefitClient<IWorkspaceInvitesApi>()
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
+            .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
+
         services.AddScoped<IAuthApiService, AuthApiService>();
         services.AddScoped<IProfileStore, ProfileStore>();
 
@@ -52,6 +66,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBoardDetailsStore, BoardDetailsStore>();
 
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+        services.AddScoped<IWorkspaceStore, WorkspaceStore>();
 
         return services;
     }

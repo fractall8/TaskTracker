@@ -4,7 +4,7 @@ public class WorkspaceInvite : BaseEntity<Guid>
 {
     public required Guid WorkspaceId { get; init; }
 
-    public required string Email { get; set; }
+    public string? Email { get; set; }
 
     public required string Token { get; set; }
 

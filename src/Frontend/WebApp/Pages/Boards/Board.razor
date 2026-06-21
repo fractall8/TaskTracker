@@ -1,4 +1,4 @@
-﻿@page "/boards/{BoardId:guid}"
+@page "/boards/{BoardId:guid}"
 @implements IDisposable
 @using Contracts.DTOs
 @using WebApp.Shared.Dialogs
@@ -53,8 +53,8 @@
         <MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
                    Color="Color.Default"
                    Variant="Variant.Text"
-                   OnClick="@(() => Navigation.NavigateTo("/boards"))">
-            Back to Boards
+                   OnClick="NavigateBack">
+            Back to Workspace's Boards
         </MudButton>
     </div>
 
@@ -113,6 +113,7 @@
                     @foreach (var column in Store.Board.Columns)
                     {
                         <BoardColumn Column="column"
+                                     WorkspaceId="@Store.Board.WorkspaceId"
                                      IsDragged="_draggedColumn?.Id == column.Id"
                                      IsDropTarget="_targetColumn?.Id == column.Id"
                                      OnColumnDragStart="HandleDragStart"
@@ -133,7 +134,7 @@
             </ChildContent>
 
             <ItemRenderer>
-                <TaskCard Task="context"/>
+                <TaskCard Task="context" WorkspaceId="@Store.Board?.WorkspaceId"/>
             </ItemRenderer>
 
         </MudDropContainer>
@@ -249,6 +250,18 @@
             {
                 Snackbar.Add(ex.Message, Severity.Error);
             }
+        }
+    }
+    
+    private void NavigateBack()
+    {
+        if (Store.Board != null)
+        {
+            Navigation.NavigateTo($"/workspaces/{Store.Board.WorkspaceId}");
+        }
+        else
+        {
+            Navigation.NavigateTo("/dashboard");
         }
     }
 
