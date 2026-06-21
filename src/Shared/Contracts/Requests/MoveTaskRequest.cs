@@ -1,4 +1,4 @@
-namespace Contracts.Requests;
+﻿namespace Contracts.Requests;
 
 public record MoveTaskRequest(
     Guid TargetColumnId,

@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using Contracts.DTOs;
 using Domain.Entities;
 
 namespace Application.Interfaces;
@@ -11,4 +12,8 @@ public interface IUserRepository : IRepository<User, Guid>
         CancellationToken ct = default);
 
     Task<List<User>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken ct = default);
+
+    Task<User?> GetByEmailAsync(string email, CancellationToken ct = default);
+
+    Task<List<UserDto>> SearchWorkspaceUsersAsync(Guid workspaceId, string? searchTerm, CancellationToken ct = default);
 }
