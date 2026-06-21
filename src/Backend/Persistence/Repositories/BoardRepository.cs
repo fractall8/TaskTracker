@@ -94,4 +94,10 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
             .Select(m => (BoardRole?)m.Role)
             .FirstOrDefaultAsync(ct);
     }
+
+    public async Task<List<Board>> GetBoardsByWorkspaceIdAsync(Guid workspaceId, CancellationToken ct = default) =>
+        await DbSet
+            .Where(b => b.WorkspaceId == workspaceId)
+            .OrderByDescending(b => b.CreatedAt)
+            .ToListAsync(ct);
 }

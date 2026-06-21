@@ -25,7 +25,7 @@ public class InviteUserToWorkspaceCommandHandler(
 {
     public async Task<InviteResultDto> Handle(InviteUserToWorkspaceCommand request, CancellationToken ct)
     {
-        await workspaceAccessService.EnsureIsAdminAsync(request.WorkspaceId, ct);
+        await workspaceAccessService.EnsureCanInviteUsersAsync(request.WorkspaceId, ct);
 
         var existingUser = await userRepository.GetByEmailAsync(request.Email, ct);
 
@@ -52,7 +52,7 @@ public class InviteUserToWorkspaceCommandHandler(
             .TrimEnd('=');
 
         var options = workspaceSettings.Value;
-        
+
         var invite = new WorkspaceInvite
         {
             Id = Guid.NewGuid(),

@@ -10,38 +10,41 @@ namespace Presentation.Controllers;
 
 [Authorize]
 [ApiController]
-[Route("[controller]")]
+[Route("workspaces")]
 public class WorkspacesController(ISender sender) : ControllerBase
 {
-    [HttpGet("{workspaceId:guid}/users")]
-    public async Task<ActionResult<List<UserDto>>> GetWorkspaceUsers(
-        Guid workspaceId,
-        [FromQuery] string? searchTerm,
-        CancellationToken ct)
+    [HttpGet]
+    public async Task<ActionResult<List<WorkspaceDto>>> GetUserWorkspaces(CancellationToken ct)
     {
-        var result = await sender.Send(new GetWorkspaceUsersQuery(workspaceId, searchTerm), ct);
-
+        var result = await sender.Send(new GetUserWorkspacesQuery(), ct);
         return Ok(result);
     }
 
-    [HttpPost("{workspaceId:guid}/invites")]
-    public async Task<ActionResult<InviteResultDto>> InviteUser(
-        Guid workspaceId,
-        [FromBody] InviteUserRequest request,
-        CancellationToken ct)
+    [HttpPost]
+    public async Task<ActionResult<WorkspaceDto>> CreateWorkspace([FromBody] CreateWorkspaceRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(new InviteUserToWorkspaceCommand(workspaceId, request.Email), ct);
-
-        return Ok(result);
-    }
-
-    [HttpPost("invites/accept")]
-    public async Task<IActionResult> AcceptInvite(
-        [FromBody] AcceptInviteRequest request,
-        CancellationToken ct)
-    {
-        await sender.Send(new AcceptWorkspaceInviteCommand(request.Token), ct);
-
+        var result = await sender.Send(new CreateWorkspaceCommand(request.Name, request.Description), ct);
         return Ok();
+    }
+
+    [HttpPut("{workspaceId:guid}")]
+    public async Task<IActionResult> UpdateWorkspace(Guid workspaceId, [FromBody] UpdateWorkspaceRequest request, CancellationToken ct)
+    {
+        await sender.Send(new UpdateWorkspaceCommand(workspaceId, request.Name, request.Description), ct);
+        return NoContent();
+    }
+
+    [HttpDelete("{workspaceId:guid}")]
+    public async Task<IActionResult> DeleteWorkspace(Guid workspaceId, CancellationToken ct)
+    {
+        await sender.Send(new DeleteWorkspaceCommand(workspaceId), ct);
+        return NoContent();
+    }
+
+    [HttpGet("{workspaceId:guid}/boards")]
+    public async Task<ActionResult<List<BoardPreviewDto>>> GetWorkspaceBoards(Guid workspaceId, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetWorkspaceBoardsQuery(workspaceId), ct);
+        return Ok(result);
     }
 }

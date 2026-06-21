@@ -16,4 +16,11 @@ public class WorkspaceRepository(TaskTrackerDbContext dbContext) : Repository<Wo
             .Where(m => m.WorkspaceId == workspaceId && m.UserId == userId)
             .Select(m => (WorkspaceRole?)m.Role)
             .FirstOrDefaultAsync(ct);
+
+    public async Task<List<Workspace>> GetUserWorkspacesAsync(Guid userId, CancellationToken ct = default) =>
+        await DbContext.Set<WorkspaceMember>()
+            .Where(m => m.UserId == userId)
+            .Include(m => m.Workspace)
+            .Select(m => m.Workspace!)
+            .ToListAsync(ct);
 }
