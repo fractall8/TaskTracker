@@ -1,8 +1,10 @@
 @page "/boards/{BoardId:guid}"
 @implements IDisposable
 @using Contracts.DTOs
+@using Contracts.Enums
 @using WebApp.Shared.Dialogs
 @inject IBoardDetailsStore Store
+@inject IBoardStore BoardStore
 @inject NavigationManager Navigation
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
@@ -104,6 +106,7 @@
                           Items="Store.Tasks"
                           ItemsSelector="@((item, dropzone) => item.ColumnId.ToString() == dropzone)"
                           ItemDropped="TaskUpdated"
+                          ItemDisabled="@((item) => !CanMoveTasks)"
                           Class="d-flex flex-column flex-grow-1 overflow-hidden w-100">
 
             <ChildContent>
@@ -116,25 +119,33 @@
                                      WorkspaceId="@Store.Board.WorkspaceId"
                                      IsDragged="_draggedColumn?.Id == column.Id"
                                      IsDropTarget="_targetColumn?.Id == column.Id"
+                                     CanManageColumns="CanManageColumns"
+                                     CanManageTasks="CanManageTasks"
                                      OnColumnDragStart="HandleDragStart"
                                      OnColumnDragEnter="HandleDragEnter"
                                      OnColumnDrop="HandleDrop"
                                      OnColumnDragEnd="HandleDragEnd"/>
                     }
 
-                    <MudButton Variant="Variant.Outlined"
-                               StartIcon="@Icons.Material.Filled.Add"
-                               OnClick="OpenCreateColumnDialog"
-                               Class="rounded-lg px-4 flex-shrink-0"
-                               Style="width: 320px; height: 50px; border: 2px dashed var(--mud-palette-lines-default); background-color: transparent; color: var(--mud-palette-text-secondary); justify-content: flex-start; text-transform: none; font-weight: 500;">
-                        @(Store.Board.Columns.Any() ? "Add another column" : "Add a column")
-                    </MudButton>
+                    @if (CanManageColumns)
+                    {
+                        <MudButton Variant="Variant.Outlined"
+                                   StartIcon="@Icons.Material.Filled.Add"
+                                   OnClick="OpenCreateColumnDialog"
+                                   Class="rounded-lg px-4 flex-shrink-0"
+                                   Style="width: 320px; height: 50px; border: 2px dashed var(--mud-palette-lines-default); background-color: transparent; color: var(--mud-palette-text-secondary); justify-content: flex-start; text-transform: none; font-weight: 500;">
+                            @(Store.Board.Columns.Any() ? "Add another column" : "Add a column")
+                        </MudButton>
+                    }
 
                 </div>
             </ChildContent>
 
             <ItemRenderer>
-                <TaskCard Task="context" WorkspaceId="@Store.Board?.WorkspaceId"/>
+                <TaskCard Task="context" 
+                          WorkspaceId="@Store.Board?.WorkspaceId" 
+                          CanManageTasks="CanManageTasks" 
+                          CanMoveTasks="CanMoveTasks" />
             </ItemRenderer>
 
         </MudDropContainer>
@@ -150,6 +161,12 @@
 
     private MudDropContainer<TaskDto>? _dropContainer;
 
+    private BoardRoleDto? _boardRole;
+
+    private bool CanManageColumns => _boardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
+    private bool CanManageTasks => _boardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
+    private bool CanMoveTasks => _boardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster or BoardRoleDto.User;
+
     private async Task OnSearchChanged(string newValue)
     {
         _searchQuery = newValue;
@@ -161,6 +178,18 @@
     {
         Store.StateChanged += HandleStoreStateChanged;
         await Store.LoadAsync(BoardId);
+        await ResolveBoardRoleAsync();
+    }
+
+    private async Task ResolveBoardRoleAsync()
+    {
+        _boardRole = BoardStore.GetCachedRole(BoardId);
+
+        if (_boardRole == null && !BoardStore.IsLoaded)
+        {
+            await BoardStore.LoadAsync(1);
+            _boardRole = BoardStore.GetCachedRole(BoardId);
+        }
     }
 
     public void Dispose() => Store.StateChanged -= HandleStoreStateChanged;
@@ -173,6 +202,8 @@
 
     private async Task TaskUpdated(MudItemDropInfo<TaskDto> dropItem)
     {
+        if (!CanMoveTasks) return;
+
         var task = dropItem.Item;
         var targetColumnId = Guid.Parse(dropItem.DropzoneIdentifier);
         var newPosition = dropItem.IndexInZone;
@@ -187,16 +218,19 @@
         }
     }
 
-    private void HandleDragStart(ColumnDto column) => _draggedColumn = column;
+    private void HandleDragStart(ColumnDto column)
+    {
+        if (CanManageColumns) _draggedColumn = column;
+    }
 
     private void HandleDragEnter(ColumnDto column)
     {
-        if (_draggedColumn != null && _draggedColumn.Id != column.Id) _targetColumn = column;
+        if (CanManageColumns && _draggedColumn != null && _draggedColumn.Id != column.Id) _targetColumn = column;
     }
 
     private async Task HandleDrop(ColumnDto column)
     {
-        if (_draggedColumn == null || _targetColumn == null || _draggedColumn.Id == _targetColumn.Id)
+        if (!CanManageColumns || _draggedColumn == null || _targetColumn == null || _draggedColumn.Id == _targetColumn.Id)
         {
             HandleDragEnd();
             return;
@@ -252,7 +286,7 @@
             }
         }
     }
-    
+
     private void NavigateBack()
     {
         if (Store.Board != null)

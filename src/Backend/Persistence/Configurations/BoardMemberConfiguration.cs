@@ -18,7 +18,7 @@ public class BoardMemberConfiguration : IEntityTypeConfiguration<BoardMember>
             .IsRequired()
             .HasConversion<int>();
 
-        builder.HasIndex(m => new { m.BoardId, m.UserId }) // so user can not be added twice to the same board 
+        builder.HasIndex(m => new { m.BoardId, m.UserId }) // so user can not be added twice to the same board
             .IsUnique();
 
         builder.HasOne(m => m.User)

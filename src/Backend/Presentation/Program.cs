@@ -15,7 +15,12 @@ builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddApplication(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
 
-builder.Services.AddControllers(options => options.Conventions.Add(new PrefixConventionConfigurator("api")));
+builder.Services.AddControllers(options => options.Conventions.Add(new PrefixConventionConfigurator("api")))
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -24,7 +29,6 @@ builder.Services.AddGlobalErrorHandling();
 
 builder.Host.UseSerilog((context, services, configuration) => configuration
     .Destructure.With<SensitiveDataDestructuringPolicy>()
-
     .ReadFrom.Configuration(context.Configuration)
     .ReadFrom.Services(services)
     .Enrich.FromLogContext());
@@ -34,15 +38,9 @@ if (fileSettings != null)
 {
     var maxAllowedBytes = (fileSettings.Attachments.MaxSizeMb * 1024 * 1024) + (1 * 1024 * 1024);
 
-    builder.Services.Configure<FormOptions>(options =>
-    {
-        options.MultipartBodyLengthLimit = maxAllowedBytes;
-    });
+    builder.Services.Configure<FormOptions>(options => { options.MultipartBodyLengthLimit = maxAllowedBytes; });
 
-    builder.WebHost.ConfigureKestrel(serverOptions =>
-    {
-        serverOptions.Limits.MaxRequestBodySize = maxAllowedBytes;
-    });
+    builder.WebHost.ConfigureKestrel(serverOptions => { serverOptions.Limits.MaxRequestBodySize = maxAllowedBytes; });
 }
 
 var app = builder.Build();

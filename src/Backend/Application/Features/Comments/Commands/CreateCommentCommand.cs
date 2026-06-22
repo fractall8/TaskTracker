@@ -21,7 +21,7 @@ public class CreateCommentCommandHandler(
 {
     public async Task<CommentDto> Handle(CreateCommentCommand request, CancellationToken ct)
     {
-        await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, ct);
+        await boardAccessService.EnsureCanManageCommentsAsync(request.BoardId, ct);
 
         var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, ct);
         if (task == null || task.Column?.BoardId != request.BoardId)

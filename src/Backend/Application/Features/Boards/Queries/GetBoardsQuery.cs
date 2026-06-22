@@ -38,7 +38,7 @@ public class GetBoardsQueryHandler(
             Name: board.Name,
             Description: board.Description,
             CreatedAt: board.CreatedAt,
-            Role: (Contracts.Enums.BoardRoleDto)board.Members.First().Role
+            BoardRole: (Contracts.Enums.BoardRoleDto)board.Members.First().Role
         )).ToList();
 
         return new PagedList<BoardPreviewDto>

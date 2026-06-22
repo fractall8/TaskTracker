@@ -21,4 +21,7 @@ public static class BoardRolePermissions
 
     public static bool CanManageMembers(BoardRole role) =>
         role is BoardRole.Admin;
+
+    public static bool CanManageComments(BoardRole role) =>
+        role is BoardRole.Admin or BoardRole.ScrumMaster or BoardRole.User;
 }

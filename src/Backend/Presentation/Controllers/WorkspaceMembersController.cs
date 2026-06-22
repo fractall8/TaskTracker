@@ -36,9 +36,9 @@ public class WorkspaceMembersController(ISender sender) : ControllerBase
     }
 
     [HttpPut("members/{userId:guid}/role")]
-    public async Task<IActionResult> ChangeMemberRole(Guid workspaceId, Guid userId, [FromBody] ChangeMemberRoleRequest request, CancellationToken ct)
+    public async Task<IActionResult> ChangeMemberRole(Guid workspaceId, Guid userId, [FromBody] ChangeMemberRoleRequest payload, CancellationToken ct)
     {
-        await sender.Send(new ChangeWorkspaceMemberRoleCommand(workspaceId, userId, (WorkspaceRole)request.Role), ct);
+        await sender.Send(new ChangeWorkspaceMemberRoleCommand(workspaceId, userId, (WorkspaceRole)payload.Role), ct);
         return NoContent();
     }
 }

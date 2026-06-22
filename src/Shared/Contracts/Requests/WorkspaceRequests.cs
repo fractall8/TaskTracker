@@ -10,4 +10,7 @@ public record CreateWorkspaceRequest(string Name, string? Description);
 
 public record UpdateWorkspaceRequest(string Name, string? Description);
 
-public record ChangeMemberRoleRequest(WorkspaceRoleDto Role);
+public class ChangeMemberRoleRequest
+{
+    public WorkspaceRoleDto Role { get; set; }
+}

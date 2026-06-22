@@ -96,7 +96,7 @@ internal sealed class BoardStore(IBoardApiService boardApiService) : IBoardStore
 
             foreach (var board in page.Items)
             {
-                _roleCache[board.Id] = board.Role;
+                _roleCache[board.Id] = board.BoardRole;
             }
         }
         catch (Exception ex)

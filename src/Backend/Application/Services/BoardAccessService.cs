@@ -39,6 +39,9 @@ public class BoardAccessService(
     public Task<BoardAccessContext> EnsureCanManageTasksAsync(Guid boardId, CancellationToken ct = default) =>
         EnsureAccessAsync(boardId, BoardRolePermissions.CanManageTasks, "You don't have permission to manage tasks.", ct);
 
+    public Task<BoardAccessContext> EnsureCanManageCommentsAsync(Guid boardId, CancellationToken ct = default) =>
+        EnsureAccessAsync(boardId, BoardRolePermissions.CanManageComments, "You don't have permission to create comments.", ct);
+
     public Task<BoardAccessContext> EnsureCanViewBoardAsync(Guid boardId, CancellationToken ct = default) =>
         EnsureAccessAsync(boardId, _ => true, "You are not a member of this board.", ct);
 

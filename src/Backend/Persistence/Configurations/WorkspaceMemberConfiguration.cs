@@ -18,8 +18,9 @@ public class WorkspaceMemberConfiguration : IEntityTypeConfiguration<WorkspaceMe
             .IsRequired()
             .HasConversion<int>();
 
-        builder.HasIndex(m => new { m.WorkspaceId, m.UserId })
-            .IsUnique();
+        builder.HasIndex(e => new { e.WorkspaceId, e.UserId })
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false");
 
         builder.HasOne(m => m.User)
             .WithMany()

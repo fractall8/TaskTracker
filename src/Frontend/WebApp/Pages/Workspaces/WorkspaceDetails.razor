@@ -10,9 +10,6 @@
 @using Contracts.DTOs
 @using Contracts.Enums
 @using Contracts.Requests
-@using Services.Abstractions.Auth
-@using Services.Abstractions.Boards
-@using Services.Abstractions.Workspaces
 @using WebApp.Shared.Dialogs
 
 <PageTitle>@(WorkspaceStore.CurrentWorkspace?.Name ?? "Workspace") - TaskTracker</PageTitle>
@@ -26,7 +23,14 @@
 else if (!string.IsNullOrEmpty(WorkspaceStore.ErrorMessage))
 {
     <MudContainer MaxWidth="MaxWidth.Large" Class="pt-6">
-        <MudAlert Severity="Severity.Error" Class="rounded-lg">@WorkspaceStore.ErrorMessage</MudAlert>
+        <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="rounded-lg">
+            @GetSafeErrorMessage(WorkspaceStore.ErrorMessage)
+        </MudAlert>
+        <MudButton Variant="Variant.Text" Color="Color.Primary" Class="mt-4 fw-bold"
+                   StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Navigation.NavigateTo("/dashboard"))">
+            Return to Dashboard
+        </MudButton>
     </MudContainer>
 }
 else if (WorkspaceStore.CurrentWorkspace is { } workspace)
@@ -102,7 +106,7 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
                                             </MudText>
                                             <MudText Typo="Typo.caption"
                                                      Style="color: var(--mud-palette-text-secondary); font-weight: 600; text-transform: uppercase;">
-                                                @board.Role.ToString()
+                                                @board.BoardRole.ToString()
                                             </MudText>
                                         </CardHeaderContent>
                                     </MudCardHeader>
@@ -112,8 +116,20 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
                                         </MudText>
                                     </MudCardContent>
                                     <MudCardActions Class="justify-end px-4 pb-4">
+                                        @if (_currentUserRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner || board.BoardRole.ToString() == "Admin")
+                                        {
+                                            <MudTooltip Text="Edit Board">
+                                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Default"
+                                                               Size="Size.Small"
+                                                               OnClick="@(() => OpenEditBoardDialog(board))"/>
+                                            </MudTooltip>
+                                            <MudTooltip Text="Delete Board">
+                                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                                               Size="Size.Small" OnClick="@(() => DeleteBoard(board))"/>
+                                            </MudTooltip>
+                                        }
                                         <MudButton Href="@($"/boards/{board.Id}")" Variant="Variant.Text"
-                                                   Color="Color.Primary" Class="fw-bold">
+                                                   Color="Color.Primary" Class="ml-2 fw-bold">
                                             Open
                                         </MudButton>
                                     </MudCardActions>
@@ -153,25 +169,28 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
                 {
                     <MudAlert Severity="Severity.Info" Class="mb-6 rounded-lg" ShowCloseIcon="true"
                               CloseIconClicked="@(() => _inviteToken = null)" Variant="Variant.Outlined">
-                        <MudText Typo="Typo.subtitle2" Class="fw-bold mb-2" Style="color: var(--mud-palette-secondary);">
+                        <MudText Typo="Typo.subtitle2" Class="fw-bold mb-2"
+                                 Style="color: var(--mud-palette-secondary);">
                             Invite link generated
                         </MudText>
                         <MudText Typo="Typo.body2" Class="mb-3" Style="color: var(--mud-palette-text-secondary);">
-                            Share this link with user to join the workspace. Anyone with this link can accept the invitation.
+                            Share this link with user to join the workspace. Anyone with this link can accept the
+                            invitation.
                         </MudText>
-                        
-                        <div class="d-flex align-center gap-3 pa-2 rounded" 
+
+                        <div class="d-flex align-center gap-3 pa-2 rounded"
                              Style="background-color: var(--mud-palette-drawer-background); border: 1px solid var(--mud-palette-lines-default);">
-                            <MudPaper Elevation="0" Class="flex-grow-1 px-3 py-2 rounded-sm" 
+                            <MudPaper Elevation="0" Class="flex-grow-1 px-3 py-2 rounded-sm"
                                       Style="background-color: var(--mud-palette-surface); border: 1px solid var(--mud-palette-lines-default); overflow-wrap: break-word; word-wrap: break-word; hyphens: auto; user-select: text; cursor: text;">
-                                <MudText Typo="Typo.body2" Class="font-monospace" Style="color: var(--mud-palette-text-primary);">
+                                <MudText Typo="Typo.body2" Class="font-monospace"
+                                         Style="color: var(--mud-palette-text-primary);">
                                     @GetInviteUrl(_inviteToken)
                                 </MudText>
                             </MudPaper>
-                            
+
                             <MudTooltip Text="Copy link to clipboard">
-                                <MudIconButton Icon="@Icons.Material.Filled.ContentCopy" 
-                                               Color="Color.Info" 
+                                <MudIconButton Icon="@Icons.Material.Filled.ContentCopy"
+                                               Color="Color.Info"
                                                Variant="Variant.Filled"
                                                Size="Size.Small"
                                                OnClick="@(() => CopyToClipboardAsync(GetInviteUrl(_inviteToken)))"/>
@@ -339,6 +358,17 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
         _currentUserRole is WorkspaceRoleDto.Owner ||
         (_currentUserRole is WorkspaceRoleDto.Admin && targetRole is WorkspaceRoleDto.Member);
 
+    private string GetSafeErrorMessage(string error)
+    {
+        var lowerError = error.ToLowerInvariant();
+        if (lowerError.Contains("member") || lowerError.Contains("found") || lowerError.Contains("forbidden") || lowerError.Contains("access"))
+        {
+            return "Workspace not found or you don't have permission to view it.";
+        }
+
+        return error;
+    }
+
     private async Task OpenCreateBoardDialog()
     {
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
@@ -373,7 +403,7 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
             {
                 var inviteResult = await WorkspaceStore.InviteUserAsync(WorkspaceId, request);
 
-                if (!string.IsNullOrEmpty(request.Email)) 
+                if (!string.IsNullOrEmpty(request.Email))
                 {
                     Snackbar.Add("Invite sent successfully. The user will see it in their dashboard.", Severity.Success);
                 }
@@ -430,6 +460,52 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
     {
         await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
         Snackbar.Add("Link copied to clipboard.", Severity.Info);
+    }
+
+    private async Task OpenEditBoardDialog(BoardPreviewDto board)
+    {
+        var parameters = new DialogParameters<BoardDialog> { { x => x.Board, board } };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<BoardDialog>("Edit Board", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: UpdateBoardRequest request })
+        {
+            try
+            {
+                await BoardApiService.UpdateBoardAsync(board.Id, request);
+                Snackbar.Add("Board updated successfully.", Severity.Success);
+                await LoadBoardsAsync();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to update board: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteBoard(BoardPreviewDto board)
+    {
+        var safeBoardName = board.Name.Length > 40 ? board.Name[..40] + "..." : board.Name;
+
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            "Delete Confirmation",
+            $"Are you sure you want to delete the board '{safeBoardName}'? This action cannot be undone.",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            try
+            {
+                await BoardApiService.DeleteBoardAsync(board.Id);
+                Snackbar.Add("Board deleted successfully.", Severity.Success);
+                await LoadBoardsAsync();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to delete board: {ex.Message}", Severity.Error);
+            }
+        }
     }
 
 }

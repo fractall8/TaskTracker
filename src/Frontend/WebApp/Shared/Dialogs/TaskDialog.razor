@@ -5,8 +5,8 @@
 <MudDialog>
     <TitleContent>
         <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-primary);">
-            <MudIcon Icon="@Icons.Material.Filled.Add" Class="mr-2 mb-n1"/>
-            New Task
+            <MudIcon Icon="@(IsEditMode ? Icons.Material.Filled.Edit : Icons.Material.Filled.Add)" Class="mr-2 mb-n1"/>
+            @(IsEditMode ? "Edit Task" : "New Task")
         </MudText>
     </TitleContent>
     <DialogContent>
@@ -14,6 +14,8 @@
             <MudTextField @bind-Value="_model.Title"
                           For="@(() => _model.Title)"
                           Label="Task Title"
+                          Required="true"
+                          RequiredError="Title is required"
                           Variant="Variant.Outlined"
                           Margin="Margin.Dense"
                           MaxLength="100"
@@ -24,7 +26,7 @@
                           Label="Description (Optional)"
                           Variant="Variant.Outlined"
                           Margin="Margin.Dense"
-                          Lines="3"
+                          Lines="@(IsEditMode ? 5 : 3)"
                           MaxLength="500"
                           Class="mb-3"/>
 
@@ -43,8 +45,14 @@
         </MudForm>
     </DialogContent>
     <DialogActions>
+        @if (IsEditMode)
+        {
+            <MudButton Color="Color.Error" Variant="Variant.Text" OnClick="Delete" Class="mr-auto">Delete</MudButton>
+        }
         <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Create</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">
+            @(IsEditMode ? "Save" : "Create")
+        </MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -52,15 +60,25 @@
     [CascadingParameter] public IMudDialogInstance? MudDialog { get; set; }
 
     [Parameter] public Guid? WorkspaceId { get; set; }
+    [Parameter] public TaskDto? Task { get; set; }
 
     [Inject] private IWorkspaceStore WorkspaceStore { get; set; } = null!;
 
     private MudForm? _form;
     private TaskFormModel _model = new();
     private List<UserDto> _users = [];
+    
+    private bool IsEditMode => Task is not null;
 
     protected override async Task OnInitializedAsync()
     {
+        if (IsEditMode)
+        {
+            _model.Title = Task!.Title;
+            _model.Description = Task.Description;
+            _model.AssigneeId = Task.AssigneeId;
+        }
+
         if (WorkspaceId.HasValue)
         {
             try
@@ -75,6 +93,8 @@
     }
 
     private void Cancel() => MudDialog?.Cancel();
+    
+    private void Delete() => MudDialog?.Close(DialogResult.Ok("DELETE"));
 
     private async Task Submit()
     {
@@ -84,14 +104,27 @@
 
             if (_form.IsValid)
             {
-                var request = new CreateTaskRequest(
-                    Title: _model.Title,
-                    Description: string.IsNullOrWhiteSpace(_model.Description) ? null : _model.Description,
-                    DueDate: null,
-                    AssigneeId: _model.AssigneeId
-                );
-
-                MudDialog?.Close(DialogResult.Ok(request));
+                if (IsEditMode)
+                {
+                     var updateRequest = new UpdateTaskRequest(
+                        Title: _model.Title,
+                        Description: string.IsNullOrWhiteSpace(_model.Description) ? null : _model.Description,
+                        DueDate: Task!.DueDate,
+                        AssigneeId: _model.AssigneeId,
+                        ColumnId: Task.ColumnId
+                    );
+                    MudDialog?.Close(DialogResult.Ok(updateRequest));
+                }
+                else
+                {
+                    var createRequest = new CreateTaskRequest(
+                        Title: _model.Title,
+                        Description: string.IsNullOrWhiteSpace(_model.Description) ? null : _model.Description,
+                        DueDate: null,
+                        AssigneeId: _model.AssigneeId
+                    );
+                    MudDialog?.Close(DialogResult.Ok(createRequest));
+                }
             }
         }
     }

@@ -32,7 +32,7 @@ public class WorkspaceAccessService(
 
         if (role == null)
         {
-            throw new UnauthorizedAccessException("You are not a member of this workspace.");
+            throw new UnauthorizedAccessException("Workspace not found or you don't have permission to view it.");
         }
 
         return role.Value;

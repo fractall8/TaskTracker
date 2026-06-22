@@ -35,7 +35,7 @@ public class UpdateBoardCommandHandler(
             Name: board.Name,
             Description: board.Description,
             CreatedAt: board.CreatedAt,
-            Role: (Contracts.Enums.BoardRoleDto)boardAccessContext.Role
+            BoardRole: (Contracts.Enums.BoardRoleDto)boardAccessContext.Role
         );
     }
 }

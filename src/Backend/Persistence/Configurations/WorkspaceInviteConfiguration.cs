@@ -31,5 +31,9 @@ public class WorkspaceInviteConfiguration : IEntityTypeConfiguration<WorkspaceIn
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasQueryFilter(e => !e.IsDeleted);
+
+        builder.HasIndex(x => new { x.WorkspaceId, x.Email })
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false AND \"Email\" IS NOT NULL");
     }
 }

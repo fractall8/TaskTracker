@@ -118,7 +118,8 @@ public class WorkspaceStore(IWorkspaceApi workspaceApi, IWorkspaceMembersApi mem
 
     public async Task ChangeMemberRoleAsync(Guid workspaceId, Guid userId, WorkspaceRoleDto newRole, CancellationToken ct = default)
     {
-        var response = await membersApi.ChangeMemberRoleAsync(workspaceId, userId, new ChangeMemberRoleRequest(newRole), ct);
+        var request = new ChangeMemberRoleRequest { Role = newRole };
+        var response = await membersApi.ChangeMemberRoleAsync(workspaceId, userId, request, ct);
         await response.HandleResponseAsync();
         await LoadWorkspaceDetailsAsync(workspaceId, ct);
     }
