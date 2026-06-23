@@ -2,6 +2,8 @@ using Application.Interfaces;
 using Application.Interfaces.Services;
 using Domain.Entities;
 using Domain.Enums;
+using FluentValidation;
+using FluentValidation.Results;
 using MediatR;
 
 namespace Application.Features.Workspaces.Commands;
@@ -9,6 +11,7 @@ namespace Application.Features.Workspaces.Commands;
 public record AcceptWorkspaceInviteCommand(string Token) : IRequest<Unit>;
 
 public class AcceptWorkspaceInviteCommandHandler(
+    IWorkspaceRepository workspaceRepository,
     IWorkspaceAccessService workspaceAccessService,
     IWorkspaceInviteRepository workspaceInviteRepository,
     IRepository<WorkspaceMember, Guid> workspaceMemberRepository,
@@ -21,10 +24,17 @@ public class AcceptWorkspaceInviteCommandHandler(
 
         if (invite == null || invite.ExpiresAt < DateTimeOffset.UtcNow)
         {
-            throw new InvalidOperationException("Invite token is invalid or has expired.");
+            throw new ValidationException([new ValidationFailure("Token", "Invite link is invalid or has expired.")]);
         }
 
         var userInfo = await workspaceAccessService.GetCurrentUserInfoAsync(ct);
+
+        var existingRole = await workspaceRepository.GetUserRoleAsync(invite.WorkspaceId, userInfo.Id, ct);
+
+        if (existingRole != null)
+        {
+            throw new ValidationException([new ValidationFailure("Token", "You are already a member of this workspace.")]);
+        }
 
         var member = new WorkspaceMember
         {
@@ -36,8 +46,6 @@ public class AcceptWorkspaceInviteCommandHandler(
         };
 
         await workspaceMemberRepository.AddAsync(member, ct);
-
-        workspaceInviteRepository.Delete(invite);
 
         await unitOfWork.SaveChangesAsync(ct);
 

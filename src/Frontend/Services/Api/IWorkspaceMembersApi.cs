@@ -9,9 +9,6 @@ public interface IWorkspaceMembersApi
     [Get("/api/workspaces/{workspaceId}/users")]
     Task<IApiResponse<List<UserDto>>> GetWorkspaceUsersAsync(Guid workspaceId, [Query] string? searchTerm = null, CancellationToken ct = default);
 
-    [Get("/api/workspaces/{workspaceId}/users/search-all")]
-    Task<IApiResponse<List<UserSearchDto>>> SearchUsersNotInWorkspaceAsync(Guid workspaceId, [Query] string? searchTerm = null, CancellationToken ct = default);
-
     [Delete("/api/workspaces/{workspaceId}/members/{userId}")]
     Task<IApiResponse> RemoveMemberAsync(Guid workspaceId, Guid userId, CancellationToken ct = default);
 

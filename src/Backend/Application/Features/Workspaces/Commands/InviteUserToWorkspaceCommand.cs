@@ -3,7 +3,6 @@ using Application.Interfaces;
 using Application.Interfaces.Services;
 using Application.Settings;
 using Contracts.DTOs;
-using Domain.Constants;
 using Domain.Entities;
 using FluentValidation;
 using MediatR;
@@ -11,7 +10,7 @@ using Microsoft.Extensions.Options;
 
 namespace Application.Features.Workspaces.Commands;
 
-public record InviteUserToWorkspaceCommand(Guid WorkspaceId, string? Email) : IRequest<InviteResultDto>;
+public record InviteUserToWorkspaceCommand(Guid WorkspaceId) : IRequest<InviteResultDto>;
 
 public class InviteUserToWorkspaceCommandHandler(
     IWorkspaceAccessService workspaceAccessService,
@@ -35,7 +34,6 @@ public class InviteUserToWorkspaceCommandHandler(
         {
             Id = Guid.NewGuid(),
             WorkspaceId = request.WorkspaceId,
-            Email = request.Email,
             Token = token,
             ExpiresAt = DateTimeOffset.UtcNow.AddDays(options.InviteExpiryDays)
         };
@@ -53,13 +51,5 @@ public class InviteUserToWorkspaceCommandValidator : AbstractValidator<InviteUse
     {
         RuleFor(v => v.WorkspaceId)
             .NotEmpty().WithMessage("WorkspaceId is required.");
-
-        When(v => v.Email is not null, () =>
-        {
-            RuleFor(v => v.Email!)
-                .EmailAddress().WithMessage("A valid email address is required.")
-                .MaximumLength(WorkspaceConstants.MaxEmailLength)
-                .WithMessage($"Email must not exceed {WorkspaceConstants.MaxEmailLength} characters.");
-        });
     }
 }

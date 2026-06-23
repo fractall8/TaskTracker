@@ -52,26 +52,4 @@ public class UserRepository(TaskTrackerDbContext context) : Repository<User, Gui
             .Select(u => new UserDto(u.Id, u.Email, u.DisplayName))
             .ToListAsync(ct);
     }
-
-    public async Task<List<UserSearchDto>> SearchUsersNotInWorkspaceAsync(Guid workspaceId, string? searchTerm, CancellationToken ct = default)
-    {
-        var memberIds = DbContext.Set<WorkspaceMember>()
-            .Where(m => m.WorkspaceId == workspaceId)
-            .Select(m => m.UserId);
-
-        var query = DbSet.AsNoTracking().Where(u => !memberIds.Contains(u.Id));
-
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            var lower = searchTerm.ToLower();
-            query = query.Where(u =>
-                u.Email.ToLower().Contains(lower) ||
-                (u.DisplayName != null && u.DisplayName.ToLower().Contains(lower)));
-        }
-
-        return await query
-            .Select(u => new UserSearchDto(u.Id, u.DisplayName))
-            .Take(20)
-            .ToListAsync(ct);
-    }
 }

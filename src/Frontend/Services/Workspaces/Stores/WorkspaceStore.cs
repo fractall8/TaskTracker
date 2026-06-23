@@ -142,12 +142,6 @@ public class WorkspaceStore(IWorkspaceApi workspaceApi, IWorkspaceMembersApi mem
         return await response.HandleResponseAsync();
     }
 
-    public async Task<List<UserSearchDto>> SearchUsersNotInWorkspaceAsync(Guid workspaceId, string? searchTerm = null, CancellationToken ct = default)
-    {
-        var response = await membersApi.SearchUsersNotInWorkspaceAsync(workspaceId, searchTerm, ct);
-        return await response.HandleResponseAsync();
-    }
-
     public async Task<PagedList<BoardPreviewDto>> GetWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1, int pageSize = 24, string? searchTerm = null, CancellationToken ct = default)
     {
         var response = await workspaceApi.GetWorkspaceBoardsAsync(workspaceId, pageNumber, pageSize, searchTerm, ct);

@@ -12,9 +12,6 @@ public class WorkspaceInviteConfiguration : IEntityTypeConfiguration<WorkspaceIn
         builder.ToTable("WorkspaceInvites");
         builder.HasKey(e => e.Id);
 
-        builder.Property(e => e.Email)
-            .HasMaxLength(WorkspaceConstants.MaxEmailLength);
-
         builder.Property(e => e.Token)
             .IsRequired()
             .HasMaxLength(WorkspaceConstants.InviteTokenLength);
@@ -31,9 +28,5 @@ public class WorkspaceInviteConfiguration : IEntityTypeConfiguration<WorkspaceIn
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasQueryFilter(e => !e.IsDeleted);
-
-        builder.HasIndex(x => new { x.WorkspaceId, x.Email })
-            .IsUnique()
-            .HasFilter("\"IsDeleted\" = false AND \"Email\" IS NOT NULL");
     }
 }

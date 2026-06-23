@@ -161,9 +161,9 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
                     @if (_currentUserRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
                     {
                         <MudButton Variant="Variant.Outlined" Color="Color.Primary"
-                                   StartIcon="@Icons.Material.Filled.PersonAdd"
-                                   OnClick="OpenInviteDialog">
-                            Invite
+                                   StartIcon="@Icons.Material.Filled.Link"
+                                   OnClick="GenerateInviteLink">
+                            Generate Invite Link
                         </MudButton>
                     }
                 </div>
@@ -393,32 +393,22 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
         }
     }
 
-    private async Task OpenInviteDialog()
+    private async Task GenerateInviteLink()
     {
-        var parameters = new DialogParameters<InviteDialog> { { x => x.WorkspaceId, WorkspaceId } };
-        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<InviteDialog>("Invite to Workspace", parameters, options);
-        var result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: InviteUserRequest request })
+        try
         {
-            try
-            {
-                var inviteResult = await WorkspaceStore.InviteUserAsync(WorkspaceId, request);
+            var request = new InviteUserRequest(string.Empty);
+            var inviteResult = await WorkspaceStore.InviteUserAsync(WorkspaceId, request);
 
-                if (!string.IsNullOrEmpty(request.Email))
-                {
-                    Snackbar.Add("Invite sent successfully. The user will see it in their dashboard.", Severity.Success);
-                }
-                else if (inviteResult?.InviteToken is not null)
-                {
-                    _inviteToken = inviteResult.InviteToken;
-                }
-            }
-            catch (Exception ex)
+            if (inviteResult?.InviteToken is not null)
             {
-                Snackbar.Add($"Failed to invite user: {ex.Message}", Severity.Error);
+                _inviteToken = inviteResult.InviteToken;
+                Snackbar.Add("Invite link generated successfully.", Severity.Success);
             }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to generate invite link: {ex.Message}", Severity.Error);
         }
     }
 

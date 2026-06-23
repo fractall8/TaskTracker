@@ -21,13 +21,6 @@ public class WorkspaceMembersController(ISender sender) : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("users/search-all")]
-    public async Task<ActionResult<List<UserSearchDto>>> SearchUsersNotInWorkspace(Guid workspaceId, [FromQuery] string? searchTerm, CancellationToken ct)
-    {
-        var result = await sender.Send(new SearchUsersNotInWorkspaceQuery(workspaceId, searchTerm), ct);
-        return Ok(result);
-    }
-
     [HttpDelete("members/{userId:guid}")]
     public async Task<IActionResult> RemoveMember(Guid workspaceId, Guid userId, CancellationToken ct)
     {

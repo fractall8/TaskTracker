@@ -15,7 +15,7 @@ public class WorkspaceInvitesController(ISender sender) : ControllerBase
     [HttpPost("{workspaceId:guid}/invites")]
     public async Task<ActionResult<InviteResultDto>> InviteUser(Guid workspaceId, [FromBody] InviteUserRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(new InviteUserToWorkspaceCommand(workspaceId, request.Email), ct);
+        var result = await sender.Send(new InviteUserToWorkspaceCommand(workspaceId), ct);
         return Ok(result);
     }
 

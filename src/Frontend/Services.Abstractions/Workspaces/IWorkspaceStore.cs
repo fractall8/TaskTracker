@@ -36,7 +36,5 @@ public interface IWorkspaceStore
 
     Task<List<UserDto>> GetWorkspaceUsersAsync(Guid workspaceId, string? searchTerm = null, CancellationToken ct = default);
 
-    Task<List<UserSearchDto>> SearchUsersNotInWorkspaceAsync(Guid workspaceId, string? searchTerm = null, CancellationToken ct = default);
-
     Task<PagedList<BoardPreviewDto>> GetWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1, int pageSize = 24, string? searchTerm = null, CancellationToken ct = default);
 }
