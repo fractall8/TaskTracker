@@ -24,13 +24,13 @@ public class AcceptWorkspaceInviteCommandHandler(
             throw new InvalidOperationException("Invite token is invalid or has expired.");
         }
 
-        var userId = await workspaceAccessService.GetCurrentUserIdAsync(ct);
+        var userInfo = await workspaceAccessService.GetCurrentUserInfoAsync(ct);
 
         var member = new WorkspaceMember
         {
             Id = Guid.NewGuid(),
             WorkspaceId = invite.WorkspaceId,
-            UserId = userId,
+            UserId = userInfo.Id,
             Role = WorkspaceRole.Member,
             JoinedAt = DateTimeOffset.UtcNow
         };

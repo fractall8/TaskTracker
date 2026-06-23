@@ -16,7 +16,7 @@ public class UpdateWorkspaceCommandHandler(
 {
     public async Task Handle(UpdateWorkspaceCommand request, CancellationToken cancellationToken)
     {
-        await workspaceAccessService.EnsureCanEditWorkspaceAsync(request.WorkspaceId, cancellationToken);
+        await workspaceAccessService.EnsureCanManageWorkspaceAsync(request.WorkspaceId, cancellationToken);
 
         var workspace = await workspaceRepository.GetByIdAsync(request.WorkspaceId, cancellationToken)
                         ?? throw new KeyNotFoundException("Workspace not found.");

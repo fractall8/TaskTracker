@@ -10,7 +10,8 @@ using Microsoft.Extensions.Options;
 
 namespace Application.Features.Workspaces.Queries;
 
-public record GetWorkspaceBoardsQuery(Guid WorkspaceId, int PageNumber, int PageSize, string? SearchTerm) : IRequest<PagedList<BoardPreviewDto>>;
+public record GetWorkspaceBoardsQuery(Guid WorkspaceId, int PageNumber, int PageSize, string? SearchTerm)
+    : IRequest<PagedList<BoardPreviewDto>>;
 
 public class GetWorkspaceBoardsQueryHandler(
     IBoardRepository boardRepository,
@@ -20,12 +21,15 @@ public class GetWorkspaceBoardsQueryHandler(
     public async Task<PagedList<BoardPreviewDto>> Handle(GetWorkspaceBoardsQuery request, CancellationToken ct)
     {
         var workspaceRole = await workspaceAccessService.EnsureIsMemberAsync(request.WorkspaceId, ct);
-        var currentUserId = await workspaceAccessService.GetCurrentUserIdAsync(ct);
+        var userInfo = await workspaceAccessService.GetCurrentUserInfoAsync(ct);
 
-        var totalCount = await boardRepository.CountBoardsByWorkspaceIdAsync(request.WorkspaceId, request.SearchTerm, ct);
+        var totalCount =
+            await boardRepository.CountBoardsByWorkspaceIdAsync(request.WorkspaceId, userInfo.Id, request.SearchTerm,
+                ct);
 
         var boards = await boardRepository.GetBoardsByWorkspaceIdPaginatedAsync(
             request.WorkspaceId,
+            userInfo.Id,
             request.PageNumber,
             request.PageSize,
             request.SearchTerm,
@@ -43,7 +47,7 @@ public class GetWorkspaceBoardsQueryHandler(
             }
             else
             {
-                var specificBoardRole = await boardRepository.GetUserRoleAsync(board.Id, currentUserId, ct);
+                var specificBoardRole = await boardRepository.GetUserRoleAsync(board.Id, userInfo.Id, ct);
                 if (specificBoardRole.HasValue)
                 {
                     boardRole = specificBoardRole.Value;

@@ -70,11 +70,14 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
                             <MudSelectItem Value="24">24</MudSelectItem>
                             <MudSelectItem Value="48">48</MudSelectItem>
                         </MudSelect>
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                   StartIcon="@Icons.Material.Filled.Add"
-                                   OnClick="OpenCreateBoardDialog">
-                            New Board
-                        </MudButton>
+                        @if (_currentUserRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
+                        {
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Add"
+                                       OnClick="OpenCreateBoardDialog">
+                                New Board
+                            </MudButton>
+                        }
                     </div>
                 </div>
 

@@ -17,7 +17,7 @@ public interface IBoardRepository : IRepository<Board, Guid>
 
     Task<List<Board>> GetBoardsByWorkspaceIdAsync(Guid workspaceId, CancellationToken ct = default);
 
-    Task<int> CountBoardsByWorkspaceIdAsync(Guid workspaceId, string? searchTerm = null, CancellationToken ct = default);
+    Task<int> CountBoardsByWorkspaceIdAsync(Guid workspaceId, Guid userId, string? searchTerm = null, CancellationToken ct = default);
 
-    Task<List<Board>> GetBoardsByWorkspaceIdPaginatedAsync(Guid workspaceId, int pageNumber, int pageSize, string? searchTerm = null, CancellationToken ct = default);
+    Task<List<Board>> GetBoardsByWorkspaceIdPaginatedAsync(Guid workspaceId, Guid userId, int pageNumber, int pageSize, string? searchTerm = null, CancellationToken ct = default);
 }

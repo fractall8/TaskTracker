@@ -101,9 +101,9 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync(ct);
 
-    public async Task<int> CountBoardsByWorkspaceIdAsync(Guid workspaceId, string? searchTerm = null, CancellationToken ct = default)
+    public async Task<int> CountBoardsByWorkspaceIdAsync(Guid workspaceId, Guid userId, string? searchTerm = null, CancellationToken ct = default)
     {
-        var query = DbSet.Where(b => b.WorkspaceId == workspaceId);
+        var query = DbSet.Where(b => b.WorkspaceId == workspaceId && b.Members.Any(m => m.UserId == userId));
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
@@ -114,9 +114,11 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
         return await query.CountAsync(ct);
     }
 
-    public async Task<List<Board>> GetBoardsByWorkspaceIdPaginatedAsync(Guid workspaceId, int pageNumber, int pageSize, string? searchTerm = null, CancellationToken ct = default)
+    public async Task<List<Board>> GetBoardsByWorkspaceIdPaginatedAsync(Guid workspaceId, Guid userId, int pageNumber, int pageSize, string? searchTerm = null, CancellationToken ct = default)
     {
-        var query = DbSet.AsNoTracking().Where(b => b.WorkspaceId == workspaceId);
+        var query = DbSet.AsNoTracking()
+            .Include(b => b.Members.Where(m => m.UserId == userId))
+            .Where(b => b.WorkspaceId == workspaceId && b.Members.Any(m => m.UserId == userId));
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {

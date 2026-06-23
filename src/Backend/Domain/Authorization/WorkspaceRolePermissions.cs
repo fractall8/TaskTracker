@@ -17,5 +17,5 @@ public static class WorkspaceRolePermissions
         role is WorkspaceRole.Owner;
 
     public static bool CanInviteUsers(WorkspaceRole role) =>
-        role is WorkspaceRole.Admin or WorkspaceRole.Owner;
+        role is WorkspaceRole.Owner;
 }

@@ -10,25 +10,25 @@ public class WorkspaceAccessService(
     IUserRepository userRepository,
     IWorkspaceRepository workspaceRepository) : IWorkspaceAccessService
 {
-    public async Task<Guid> GetCurrentUserIdAsync(CancellationToken ct = default)
+    public async Task<(Guid Id, string Email)> GetCurrentUserInfoAsync(CancellationToken ct = default)
     {
         var userInfo = await userRepository.GetUserByAzureAdIdAsync(
             currentUserAccessor.AzureAdObjectId,
-            u => new { Id = (Guid?)u.Id },
+            u => new { Id = (Guid?)u.Id, u.Email },
             ct);
 
-        if (userInfo?.Id == null)
+        if (userInfo == null || userInfo.Id == null)
         {
             throw new UnauthorizedAccessException("User is not authenticated.");
         }
 
-        return userInfo.Id.Value;
+        return (userInfo.Id.Value, userInfo.Email);
     }
 
     public async Task<WorkspaceRole> EnsureIsMemberAsync(Guid workspaceId, CancellationToken ct = default)
     {
-        var userId = await GetCurrentUserIdAsync(ct);
-        var role = await workspaceRepository.GetUserRoleAsync(workspaceId, userId, ct);
+        var userInfo = await GetCurrentUserInfoAsync(ct);
+        var role = await workspaceRepository.GetUserRoleAsync(workspaceId, userInfo.Id, ct);
 
         if (role == null)
         {
@@ -38,25 +38,42 @@ public class WorkspaceAccessService(
         return role.Value;
     }
 
-    public Task EnsureCanEditWorkspaceAsync(Guid workspaceId, CancellationToken ct = default) =>
-        EnsureAccessAsync(workspaceId, WorkspaceRolePermissions.CanEditWorkspace, "You must be a Workspace Admin or Owner to edit this workspace.", ct);
-
-    public Task EnsureCanManageMembersAsync(Guid workspaceId, CancellationToken ct = default) =>
-        EnsureAccessAsync(workspaceId, WorkspaceRolePermissions.CanManageMembers, "You must be a Workspace Admin or Owner to manage members.", ct);
-
-    public Task EnsureCanChangeMemberRoleAsync(Guid workspaceId, CancellationToken ct = default) =>
-        EnsureAccessAsync(workspaceId, WorkspaceRolePermissions.CanChangeMemberRole, "Only the Owner can change member roles.", ct);
-
-    public Task EnsureCanDeleteWorkspaceAsync(Guid workspaceId, CancellationToken ct = default) =>
-        EnsureAccessAsync(workspaceId, WorkspaceRolePermissions.CanDeleteWorkspace, "Only the Owner can delete the workspace.", ct);
-
-    public Task EnsureCanInviteUsersAsync(Guid workspaceId, CancellationToken ct = default) =>
-        EnsureAccessAsync(workspaceId, WorkspaceRolePermissions.CanInviteUsers, "You must be a Workspace Admin or Owner to invite users.", ct);
-
-    private async Task EnsureAccessAsync(Guid workspaceId, Func<WorkspaceRole, bool> permissionCheck, string errorMessage, CancellationToken ct)
+    public async Task<(Guid Id, string Email)> EnsureCanManageWorkspaceAsync(Guid workspaceId,
+        CancellationToken ct = default)
     {
-        var userId = await GetCurrentUserIdAsync(ct);
-        var userRole = await workspaceRepository.GetUserRoleAsync(workspaceId, userId, ct);
+        return await EnsureAccessAsync(workspaceId, WorkspaceRolePermissions.CanEditWorkspace,
+            "You don't have permission to edit this workspace.", ct);
+    }
+
+    public async Task EnsureCanManageMembersAsync(Guid workspaceId, CancellationToken ct = default)
+    {
+        await EnsureAccessAsync(workspaceId, WorkspaceRolePermissions.CanManageMembers,
+            "You don't have permission to manage members.", ct);
+    }
+
+    public async Task EnsureCanChangeMemberRoleAsync(Guid workspaceId, CancellationToken ct = default)
+    {
+        await EnsureAccessAsync(workspaceId, WorkspaceRolePermissions.CanChangeMemberRole,
+            "You don't have permission to change member roles.", ct);
+    }
+
+    public async Task EnsureCanDeleteWorkspaceAsync(Guid workspaceId, CancellationToken ct = default)
+    {
+        await EnsureAccessAsync(workspaceId, WorkspaceRolePermissions.CanDeleteWorkspace,
+            "You don't have permission to delete this workspace.", ct);
+    }
+
+    public async Task EnsureCanInviteUsersAsync(Guid workspaceId, CancellationToken ct = default)
+    {
+        await EnsureAccessAsync(workspaceId, WorkspaceRolePermissions.CanInviteUsers,
+            "You don't have permission to invite users.", ct);
+    }
+
+    private async Task<(Guid Id, string Email)> EnsureAccessAsync(Guid workspaceId,
+        Func<WorkspaceRole, bool> permissionCheck, string errorMessage, CancellationToken ct)
+    {
+        var userInfo = await GetCurrentUserInfoAsync(ct);
+        var userRole = await workspaceRepository.GetUserRoleAsync(workspaceId, userInfo.Id, ct);
 
         if (userRole == null)
         {
@@ -67,5 +84,7 @@ public class WorkspaceAccessService(
         {
             throw new UnauthorizedAccessException(errorMessage);
         }
+
+        return userInfo;
     }
 }

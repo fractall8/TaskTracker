@@ -4,6 +4,7 @@ using Contracts.DTOs;
 using Domain.Constants;
 using Domain.Entities;
 using FluentValidation;
+using FluentValidation.Results;
 using MediatR;
 
 namespace Application.Features.Columns.Commands;
@@ -34,7 +35,11 @@ public class CreateColumnCommandHandler(
         if (existingNames.Any(existingName =>
                 string.Equals(existingName, request.Name, StringComparison.OrdinalIgnoreCase)))
         {
-            throw new InvalidOperationException("Column name already exists");
+            if (existingNames.Any(existingName =>
+                    string.Equals(existingName, request.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new ValidationException([new ValidationFailure("Name", "A column with this name already exists on the board.")]);
+            }
         }
 
         var column = new Column
