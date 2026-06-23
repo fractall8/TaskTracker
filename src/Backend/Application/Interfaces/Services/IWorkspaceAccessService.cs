@@ -10,5 +10,5 @@ public interface IWorkspaceAccessService
     Task EnsureCanManageMembersAsync(Guid workspaceId, CancellationToken ct = default);
     Task EnsureCanChangeMemberRoleAsync(Guid workspaceId, CancellationToken ct = default);
     Task EnsureCanDeleteWorkspaceAsync(Guid workspaceId, CancellationToken ct = default);
-    Task EnsureCanInviteUsersAsync(Guid workspaceId, CancellationToken ct = default);
+    Task EnsureCanManageInvitesAsync(Guid workspaceId, CancellationToken ct = default);
 }

@@ -21,7 +21,7 @@ public class InviteUserToWorkspaceCommandHandler(
 {
     public async Task<InviteResultDto> Handle(InviteUserToWorkspaceCommand request, CancellationToken ct)
     {
-        await workspaceAccessService.EnsureCanInviteUsersAsync(request.WorkspaceId, ct);
+        await workspaceAccessService.EnsureCanManageInvitesAsync(request.WorkspaceId, ct);
 
         var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48))
             .Replace("+", "-")

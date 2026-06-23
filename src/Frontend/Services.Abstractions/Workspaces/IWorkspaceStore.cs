@@ -34,7 +34,16 @@ public interface IWorkspaceStore
 
     Task AcceptInviteAsync(string token, CancellationToken ct = default);
 
-    Task<List<UserDto>> GetWorkspaceUsersAsync(Guid workspaceId, string? searchTerm = null, CancellationToken ct = default);
+    Task<List<UserDto>> GetWorkspaceUsersAsync(Guid workspaceId, string? searchTerm = null,
+        CancellationToken ct = default);
 
-    Task<PagedList<BoardPreviewDto>> GetWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1, int pageSize = 24, string? searchTerm = null, CancellationToken ct = default);
+    Task<PagedList<BoardPreviewDto>> GetWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1, int pageSize = 24,
+        string? searchTerm = null, CancellationToken ct = default);
+
+    Task<List<WorkspaceInviteDto>> GetWorkspaceInvitesAsync(Guid workspaceId, CancellationToken ct = default);
+
+    Task UpdateInviteExpirationAsync(Guid workspaceId, Guid inviteId, UpdateInviteExpirationRequest request,
+        CancellationToken ct = default);
+
+    Task RevokeInviteAsync(Guid workspaceId, Guid inviteId, CancellationToken ct = default);
 }

@@ -63,9 +63,9 @@ public class WorkspaceAccessService(
             "You don't have permission to delete this workspace.", ct);
     }
 
-    public async Task EnsureCanInviteUsersAsync(Guid workspaceId, CancellationToken ct = default)
+    public async Task EnsureCanManageInvitesAsync(Guid workspaceId, CancellationToken ct = default)
     {
-        await EnsureAccessAsync(workspaceId, WorkspaceRolePermissions.CanInviteUsers,
+        await EnsureAccessAsync(workspaceId, WorkspaceRolePermissions.CanManageInvites,
             "You don't have permission to invite users.", ct);
     }
 

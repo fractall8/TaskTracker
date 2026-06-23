@@ -16,6 +16,6 @@ public static class WorkspaceRolePermissions
     public static bool CanDeleteWorkspace(WorkspaceRole role) =>
         role is WorkspaceRole.Owner;
 
-    public static bool CanInviteUsers(WorkspaceRole role) =>
+    public static bool CanManageInvites(WorkspaceRole role) =>
         role is WorkspaceRole.Owner;
 }

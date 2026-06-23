@@ -9,4 +9,12 @@ public class WorkspaceInviteRepository(TaskTrackerDbContext dbContext) : Reposit
 {
     public async Task<WorkspaceInvite?> GetByTokenAsync(string token, CancellationToken ct = default) =>
         await DbSet.FirstOrDefaultAsync(i => i.Token == token, ct);
+
+    public async Task<List<WorkspaceInvite>> GetByWorkspaceIdAsync(Guid workspaceId, CancellationToken ct = default)
+    {
+        return await DbSet
+            .Where(x => x.WorkspaceId == workspaceId)
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync(ct);
+    }
 }

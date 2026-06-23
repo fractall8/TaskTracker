@@ -2,13 +2,10 @@ using Contracts.DTOs;
 using Contracts.Enums;
 using Contracts.Requests;
 using Services.Abstractions.Workspaces;
-using Services.Api;
-using Services.Extensions;
 
 namespace Services.Workspaces.Stores;
 
-public class WorkspaceStore(IWorkspaceApi workspaceApi, IWorkspaceMembersApi membersApi, IWorkspaceInvitesApi invitesApi)
-    : IWorkspaceStore
+public class WorkspaceStore(IWorkspaceApiService workspaceApiService) : IWorkspaceStore
 {
     public List<WorkspaceDto> Workspaces { get; private set; } = [];
 
@@ -30,8 +27,7 @@ public class WorkspaceStore(IWorkspaceApi workspaceApi, IWorkspaceMembersApi mem
 
         try
         {
-            var response = await workspaceApi.GetUserWorkspacesAsync(ct);
-            Workspaces = await response.HandleResponseAsync();
+            Workspaces = await workspaceApiService.GetUserWorkspacesAsync(ct);
         }
         catch (Exception ex)
         {
@@ -52,8 +48,7 @@ public class WorkspaceStore(IWorkspaceApi workspaceApi, IWorkspaceMembersApi mem
 
         try
         {
-            var response = await workspaceApi.GetWorkspaceByIdAsync(workspaceId, ct);
-            CurrentWorkspace = await response.HandleResponseAsync();
+            CurrentWorkspace = await workspaceApiService.GetWorkspaceByIdAsync(workspaceId, ct);
         }
         catch (Exception ex)
         {
@@ -66,19 +61,19 @@ public class WorkspaceStore(IWorkspaceApi workspaceApi, IWorkspaceMembersApi mem
         }
     }
 
-    public async Task<WorkspaceDto?> CreateWorkspaceAsync(CreateWorkspaceRequest request, CancellationToken ct = default)
+    public async Task<WorkspaceDto?> CreateWorkspaceAsync(CreateWorkspaceRequest request,
+        CancellationToken ct = default)
     {
-        var response = await workspaceApi.CreateWorkspaceAsync(request, ct);
-        var created = await response.HandleResponseAsync();
+        var created = await workspaceApiService.CreateWorkspaceAsync(request, ct);
         Workspaces.Add(created);
         NotifyStateChanged();
         return created;
     }
 
-    public async Task UpdateWorkspaceAsync(Guid workspaceId, UpdateWorkspaceRequest request, CancellationToken ct = default)
+    public async Task UpdateWorkspaceAsync(Guid workspaceId, UpdateWorkspaceRequest request,
+        CancellationToken ct = default)
     {
-        var response = await workspaceApi.UpdateWorkspaceAsync(workspaceId, request, ct);
-        await response.HandleResponseAsync();
+        await workspaceApiService.UpdateWorkspaceAsync(workspaceId, request, ct);
 
         var index = Workspaces.FindIndex(w => w.Id == workspaceId);
         if (index >= 0)
@@ -96,8 +91,7 @@ public class WorkspaceStore(IWorkspaceApi workspaceApi, IWorkspaceMembersApi mem
 
     public async Task DeleteWorkspaceAsync(Guid workspaceId, CancellationToken ct = default)
     {
-        var response = await workspaceApi.DeleteWorkspaceAsync(workspaceId, ct);
-        await response.HandleResponseAsync();
+        await workspaceApiService.DeleteWorkspaceAsync(workspaceId, ct);
 
         Workspaces.RemoveAll(w => w.Id == workspaceId);
 
@@ -111,40 +105,55 @@ public class WorkspaceStore(IWorkspaceApi workspaceApi, IWorkspaceMembersApi mem
 
     public async Task RemoveMemberAsync(Guid workspaceId, Guid userId, CancellationToken ct = default)
     {
-        var response = await membersApi.RemoveMemberAsync(workspaceId, userId, ct);
-        await response.HandleResponseAsync();
+        await workspaceApiService.RemoveMemberAsync(workspaceId, userId, ct);
         await LoadWorkspaceDetailsAsync(workspaceId, ct);
     }
 
-    public async Task ChangeMemberRoleAsync(Guid workspaceId, Guid userId, WorkspaceRoleDto newRole, CancellationToken ct = default)
+    public async Task ChangeMemberRoleAsync(Guid workspaceId, Guid userId, WorkspaceRoleDto newRole,
+        CancellationToken ct = default)
     {
         var request = new ChangeMemberRoleRequest { Role = newRole };
-        var response = await membersApi.ChangeMemberRoleAsync(workspaceId, userId, request, ct);
-        await response.HandleResponseAsync();
+        await workspaceApiService.ChangeMemberRoleAsync(workspaceId, userId, request, ct);
         await LoadWorkspaceDetailsAsync(workspaceId, ct);
     }
 
-    public async Task<InviteResultDto?> InviteUserAsync(Guid workspaceId, InviteUserRequest request, CancellationToken ct = default)
+    public async Task<List<UserDto>> GetWorkspaceUsersAsync(Guid workspaceId, string? searchTerm = null,
+        CancellationToken ct = default)
     {
-        var response = await invitesApi.InviteUserAsync(workspaceId, request, ct);
-        return await response.HandleResponseAsync();
+        return await workspaceApiService.GetWorkspaceUsersAsync(workspaceId, searchTerm, ct);
+    }
+
+    public async Task<PagedList<BoardPreviewDto>> GetWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1,
+        int pageSize = 24, string? searchTerm = null, CancellationToken ct = default)
+    {
+        return await workspaceApiService.GetWorkspaceBoardsAsync(workspaceId, pageNumber, pageSize, searchTerm, ct);
+    }
+
+    public async Task<List<WorkspaceInviteDto>> GetWorkspaceInvitesAsync(Guid workspaceId,
+        CancellationToken ct = default)
+    {
+        return await workspaceApiService.GetWorkspaceInvitesAsync(workspaceId, ct);
+    }
+
+    public async Task<InviteResultDto?> InviteUserAsync(Guid workspaceId, InviteUserRequest request,
+        CancellationToken ct = default)
+    {
+        return await workspaceApiService.InviteUserAsync(workspaceId, request, ct);
+    }
+
+    public async Task UpdateInviteExpirationAsync(Guid workspaceId, Guid inviteId,
+        UpdateInviteExpirationRequest request, CancellationToken ct = default)
+    {
+        await workspaceApiService.UpdateInviteExpirationAsync(workspaceId, inviteId, request, ct);
+    }
+
+    public async Task RevokeInviteAsync(Guid workspaceId, Guid inviteId, CancellationToken ct = default)
+    {
+        await workspaceApiService.RevokeInviteAsync(workspaceId, inviteId, ct);
     }
 
     public async Task AcceptInviteAsync(string token, CancellationToken ct = default)
     {
-        var response = await invitesApi.AcceptInviteAsync(new AcceptInviteRequest(token), ct);
-        await response.HandleResponseAsync();
-    }
-
-    public async Task<List<UserDto>> GetWorkspaceUsersAsync(Guid workspaceId, string? searchTerm = null, CancellationToken ct = default)
-    {
-        var response = await membersApi.GetWorkspaceUsersAsync(workspaceId, searchTerm, ct);
-        return await response.HandleResponseAsync();
-    }
-
-    public async Task<PagedList<BoardPreviewDto>> GetWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1, int pageSize = 24, string? searchTerm = null, CancellationToken ct = default)
-    {
-        var response = await workspaceApi.GetWorkspaceBoardsAsync(workspaceId, pageNumber, pageSize, searchTerm, ct);
-        return await response.HandleResponseAsync();
+        await workspaceApiService.AcceptInviteAsync(new AcceptInviteRequest(token), ct);
     }
 }

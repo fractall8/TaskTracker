@@ -15,6 +15,7 @@ using Services.Boards.Stores;
 using Services.Columns;
 using Services.Configuration;
 using Services.Tasks;
+using Services.Workspaces;
 using Services.Workspaces.Stores;
 
 namespace Services.DI;
@@ -76,6 +77,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICurrentUserService, CurrentUserService>();
 
         services.AddScoped<IWorkspaceStore, WorkspaceStore>();
+        services.AddScoped<IWorkspaceApiService, WorkspaceApiService>();
 
         return services;
     }
