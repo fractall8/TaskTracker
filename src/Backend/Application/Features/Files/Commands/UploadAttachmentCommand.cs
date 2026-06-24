@@ -38,14 +38,17 @@ public class UploadAttachmentCommandHandler(
             throw new KeyNotFoundException("Task not found on this board.");
         }
 
+        // for default blob container is private
         var fileUrl = await fileService.UploadFileAsync(
-            request.FileStream,
-            request.FileName,
-            request.ContentType,
-            BlobContainerNames.Attachments,
-            cancellationToken);
+            fileStream: request.FileStream,
+            fileName: request.FileName,
+            contentType: request.ContentType,
+            containerName: BlobContainerNames.Attachments,
+            cancellationToken: cancellationToken);
 
-        var currentUserId = await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => u.Id, cancellationToken);
+        var currentUserId =
+            await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => u.Id,
+                cancellationToken);
 
         var attachment = new Attachment
         {

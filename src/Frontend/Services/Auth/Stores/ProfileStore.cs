@@ -1,11 +1,13 @@
 using System.Net;
 using Contracts.DTOs;
+using Contracts.Requests;
 using Refit;
 using Services.Abstractions.Auth;
+using Services.Abstractions.Profile;
 
 namespace Services.Auth.Stores;
 
-internal sealed class ProfileStore(IAuthApiService authApiService) : IProfileStore, IDisposable
+internal sealed class ProfileStore(IAuthApiService authApiService, IProfileApiService profileApiService) : IProfileStore, IDisposable
 {
     private readonly SemaphoreSlim _sync = new(1, 1);
 
@@ -36,6 +38,39 @@ internal sealed class ProfileStore(IAuthApiService authApiService) : IProfileSto
     }
 
     public void Dispose() => _sync.Dispose();
+
+    public async Task UpdateDisplayNameAsync(string displayName, CancellationToken ct = default)
+    {
+        await profileApiService.UpdateProfileAsync(new UpdateProfileRequest(displayName), ct);
+
+        if (Profile != null)
+        {
+            Profile = Profile with { DisplayName = displayName };
+            NotifyStateChanged();
+        }
+    }
+
+    public async Task UploadAvatarAsync(StreamPart fileStream, CancellationToken ct = default)
+    {
+        var newUrl = await profileApiService.UploadAvatarAsync(fileStream, ct);
+
+        if (Profile != null)
+        {
+            Profile = Profile with { AvatarUrl = newUrl };
+            NotifyStateChanged();
+        }
+    }
+
+    public async Task DeleteAvatarAsync(CancellationToken ct = default)
+    {
+        await profileApiService.DeleteAvatarAsync(ct);
+
+        if (Profile != null)
+        {
+            Profile = Profile with { AvatarUrl = null };
+            NotifyStateChanged();
+        }
+    }
 
     private async Task EnsureLoadedInternalAsync(bool forceRefresh, CancellationToken ct)
     {

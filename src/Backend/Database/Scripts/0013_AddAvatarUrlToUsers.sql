@@ -1,0 +1,6 @@
+﻿BEGIN;
+
+ALTER TABLE "Users"
+    ADD COLUMN "AvatarUrl" VARCHAR(2048) NULL;
+
+COMMIT;

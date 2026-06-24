@@ -5,6 +5,7 @@ using Refit;
 using Services.Abstractions.Auth;
 using Services.Abstractions.Boards;
 using Services.Abstractions.Columns;
+using Services.Abstractions.Profile;
 using Services.Abstractions.Tasks;
 using Services.Abstractions.Workspaces;
 using Services.Api;
@@ -14,6 +15,7 @@ using Services.Boards;
 using Services.Boards.Stores;
 using Services.Columns;
 using Services.Configuration;
+using Services.Profile;
 using Services.Tasks;
 using Services.Workspaces;
 using Services.Workspaces.Stores;
@@ -49,6 +51,10 @@ public static class ServiceCollectionExtensions
             .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
             .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
 
+        services.AddRefitClient<IProfileApi>()
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
+            .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
+
         var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
 
         var refitSettings = new RefitSettings
@@ -66,6 +72,7 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IAuthApiService, AuthApiService>();
         services.AddScoped<IProfileStore, ProfileStore>();
+        services.AddScoped<IProfileApiService, ProfileApiService>();
 
         services.AddScoped<IBoardApiService, BoardApiService>();
         services.AddScoped<IBoardStore, BoardStore>();

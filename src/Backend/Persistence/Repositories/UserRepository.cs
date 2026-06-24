@@ -49,7 +49,7 @@ public class UserRepository(TaskTrackerDbContext context) : Repository<User, Gui
         }
 
         return await query
-            .Select(u => new UserDto(u.Id, u.Email, u.DisplayName))
+            .Select(u => new UserDto(u.Id, u.Email, u.DisplayName, u.AvatarUrl))
             .ToListAsync(ct);
     }
 }

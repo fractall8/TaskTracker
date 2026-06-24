@@ -92,8 +92,12 @@
     container_name: azurite
     ports:
       - "10000:10000"
-    command: "azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --skipApiVersionCheck"
+    command: "azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --location /data --skipApiVersionCheck"
+    volumes:
+      - azurite-data:/data
 
 volumes:
   postgres-data:
     name: tasktracker-postgres-data
+  azurite-data:
+    name: tasktracker-azurite-data

@@ -29,7 +29,8 @@ public class LoginCommandHandler(
         return new UserDto(
             user.Id,
             user.Email,
-            user.DisplayName
+            user.DisplayName,
+            user.AvatarUrl
         );
     }
 

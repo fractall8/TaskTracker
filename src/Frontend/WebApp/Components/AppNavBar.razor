@@ -1,4 +1,5 @@
-﻿@inject NavigationManager NavigationManager
+﻿@implements IDisposable
+@inject NavigationManager NavigationManager
 @inject IProfileStore ProfileStore
 
 <MudAppBar Elevation="1" Color="Color.Surface" Fixed="true">
@@ -7,7 +8,7 @@
             <MudIcon Icon="@Icons.Material.Filled.TaskAlt" Color="Color.Primary" Size="Size.Large" Class="mr-2"/>
             <MudText Typo="Typo.h5" Color="Color.Primary" Class="font-weight-bold">TaskTracker</MudText>
         </MudLink>
-        
+
         <MudSpacer/>
 
         <MudIconButton Icon="@(IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
@@ -15,24 +16,46 @@
                        OnClick="OnThemeToggled"
                        Class="mr-4"/>
 
-        <AuthorizeView>
+        <AuthorizeView Context="authState">
             <Authorized>
-                @if (ProfileStore.IsLoading)
+                @if (ProfileStore.IsLoading || ProfileStore.Profile == null)
                 {
                     <MudProgressCircular Color="Color.Primary" Size="Size.Small" Indeterminate="true" Class="mr-4"/>
                 }
-                else if (ProfileStore.Profile != null)
+                else
                 {
-                    <MudText Color="Color.Inherit" Class="mr-4 font-weight-medium">
-                        Hi, @ProfileStore.Profile.DisplayName</MudText>
+                    <div class="d-flex align-center">
+                        <MudTooltip Text="Profile Settings">
+                            <div @onclick="@(() => NavigationManager.NavigateTo("/profile"))"
+                                 class="d-flex align-center cursor-pointer mr-4"
+                                 style="cursor: pointer;">
+                                <MudAvatar Size="Size.Small" Color="Color.Primary" Style="height: 32px; width: 32px;">
+                                    @if (!string.IsNullOrEmpty(ProfileStore.Profile.AvatarUrl))
+                                    {
+                                        <MudImage Src="@ProfileStore.Profile.AvatarUrl" Alt="User Avatar"
+                                                  ObjectFit="ObjectFit.Cover"/>
+                                    }
+                                    else
+                                    {
+                                        @(ProfileStore.Profile.DisplayName?.FirstOrDefault() ?? ProfileStore.Profile.Email.FirstOrDefault())
+                                    }
+                                </MudAvatar>
+                                <MudText Color="Color.Inherit" Class="ml-2 font-weight-medium">
+                                    @TruncateName(ProfileStore.Profile.DisplayName)
+                                </MudText>
+                            </div>
+                        </MudTooltip>
+
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Inherit"
+                                   OnClick="BeginSignOut"
+                                   StartIcon="@Icons.Material.Filled.Logout"
+                                   Size="Size.Small">
+                            Log out
+                        </MudButton>
+                    </div>
                 }
-
-                <MudButton Variant="Variant.Outlined" Color="Color.Inherit" OnClick="BeginSignOut"
-                           StartIcon="@Icons.Material.Filled.Logout">
-                    Log out
-                </MudButton>
             </Authorized>
-
             <NotAuthorized>
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="BeginSignIn"
                            StartIcon="@Icons.Material.Filled.Login" Class="font-weight-bold px-6">
@@ -47,6 +70,44 @@
 @code {
     [Parameter] public bool IsDarkMode { get; set; }
     [Parameter] public EventCallback OnThemeToggled { get; set; }
+
+    [CascadingParameter] public Task<AuthenticationState> AuthStateTask { get; set; } = null!;
+
+    private string TruncateName(string? name, int maxLength = 20)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "User";
+        return name.Length > maxLength ? name.Substring(0, maxLength) + "..." : name;
+    }
+    
+    protected override void OnInitialized()
+    {
+        ProfileStore.StateChanged += StateHasChanged;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (AuthStateTask != null)
+        {
+            var authState = await AuthStateTask;
+
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                if (ProfileStore.Profile == null && !ProfileStore.IsLoading)
+                {
+                    await ProfileStore.EnsureLoadedAsync();
+                }
+            }
+            else
+            {
+                ProfileStore.Reset();
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        ProfileStore.StateChanged -= StateHasChanged;
+    }
 
     private void BeginSignIn()
     {
