@@ -1,4 +1,4 @@
-using Application.Interfaces;
+﻿using Application.Interfaces;
 using Application.Interfaces.Services;
 using FluentValidation;
 using MediatR;
@@ -14,18 +14,18 @@ public class MoveColumnCommandHandler(
     IUnitOfWork unitOfWork)
     : IRequestHandler<MoveColumnCommand>
 {
-    public async Task Handle(MoveColumnCommand request, CancellationToken cancellationToken)
+    public async Task Handle(MoveColumnCommand request, CancellationToken ct)
     {
-        await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, cancellationToken);
+        await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, ct);
 
-        var board = await boardRepository.GetByIdAsync(request.BoardId, cancellationToken);
+        var board = await boardRepository.GetByIdAsync(request.BoardId, ct);
 
         if (board is null)
         {
             throw new KeyNotFoundException($"Board {request.BoardId} does not exist");
         }
 
-        var column = await columnRepository.GetByIdAsync(request.ColumnId, cancellationToken);
+        var column = await columnRepository.GetByIdAsync(request.ColumnId, ct);
 
         if (column is null || column.BoardId != request.BoardId)
         {
@@ -38,12 +38,12 @@ public class MoveColumnCommandHandler(
         }
 
         var oldPosition = column.Position;
-        await columnRepository.UpdatePositionsOnMoveAsync(request.BoardId, oldPosition, request.NewPosition, cancellationToken);
+        await columnRepository.UpdatePositionsOnMoveAsync(request.BoardId, oldPosition, request.NewPosition, ct);
 
         column.Position = request.NewPosition;
         columnRepository.Update(column);
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.SaveChangesAsync(ct);
     }
 }
 

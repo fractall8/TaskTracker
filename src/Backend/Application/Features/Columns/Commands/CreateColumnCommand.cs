@@ -1,9 +1,10 @@
-using Application.Interfaces;
+﻿using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
 using Domain.Constants;
 using Domain.Entities;
 using FluentValidation;
+using FluentValidation.Results;
 using MediatR;
 
 namespace Application.Features.Columns.Commands;
@@ -17,24 +18,28 @@ public class CreateColumnCommandHandler(
     IUnitOfWork unitOfWork)
     : IRequestHandler<CreateColumnCommand, ColumnDto>
 {
-    public async Task<ColumnDto> Handle(CreateColumnCommand request, CancellationToken cancellationToken)
+    public async Task<ColumnDto> Handle(CreateColumnCommand request, CancellationToken ct)
     {
-        await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, cancellationToken);
+        await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, ct);
 
-        var board = await boardRepository.GetByIdAsync(request.BoardId, cancellationToken);
+        var board = await boardRepository.GetByIdAsync(request.BoardId, ct);
 
         if (board is null)
         {
             throw new KeyNotFoundException($"Board {request.BoardId} does not exist");
         }
 
-        var existingNamesEnumerable = await columnRepository.GetNameListByBoardIdAsync(request.BoardId, cancellationToken);
+        var existingNamesEnumerable = await columnRepository.GetNameListByBoardIdAsync(request.BoardId, ct);
         var existingNames = existingNamesEnumerable.ToList();
 
         if (existingNames.Any(existingName =>
                 string.Equals(existingName, request.Name, StringComparison.OrdinalIgnoreCase)))
         {
-            throw new InvalidOperationException("Column name already exists");
+            if (existingNames.Any(existingName =>
+                    string.Equals(existingName, request.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new ValidationException([new ValidationFailure("Name", "A column with this name already exists on the board.")]);
+            }
         }
 
         var column = new Column
@@ -44,9 +49,9 @@ public class CreateColumnCommandHandler(
             Position = existingNames.Count
         };
 
-        await columnRepository.AddAsync(column, cancellationToken);
+        await columnRepository.AddAsync(column, ct);
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.SaveChangesAsync(ct);
 
         return new ColumnDto(
             column.Id,

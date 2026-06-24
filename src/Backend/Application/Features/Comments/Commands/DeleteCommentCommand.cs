@@ -1,4 +1,4 @@
-using Application.Interfaces;
+﻿using Application.Interfaces;
 using Application.Interfaces.Services;
 using FluentValidation;
 using MediatR;
@@ -16,23 +16,23 @@ public class DeleteCommentCommandHandler(
     IUnitOfWork unitOfWork)
     : IRequestHandler<DeleteCommentCommand>
 {
-    public async Task Handle(DeleteCommentCommand request, CancellationToken cancellationToken)
+    public async Task Handle(DeleteCommentCommand request, CancellationToken ct)
     {
-        await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, cancellationToken);
+        await boardAccessService.EnsureCanManageCommentsAsync(request.BoardId, ct);
 
-        var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, cancellationToken);
+        var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, ct);
         if (task == null || task.Column?.BoardId != request.BoardId)
         {
             throw new KeyNotFoundException("Task not found on this board.");
         }
 
-        var comment = await commentRepository.GetByIdAsync(request.CommentId, cancellationToken);
+        var comment = await commentRepository.GetByIdAsync(request.CommentId, ct);
         if (comment == null || comment.TaskId != request.TaskId)
         {
             throw new KeyNotFoundException("Comment not found.");
         }
 
-        var currentUserId = await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => u.Id, cancellationToken);
+        var currentUserId = await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => u.Id, ct);
 
         if (comment.CreatedById != currentUserId)
         {
@@ -40,7 +40,7 @@ public class DeleteCommentCommandHandler(
         }
 
         commentRepository.Delete(comment);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.SaveChangesAsync(ct);
     }
 }
 

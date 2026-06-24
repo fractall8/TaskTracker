@@ -1,4 +1,4 @@
-using Application.Interfaces;
+﻿using Application.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
 using FluentValidation;
@@ -15,17 +15,17 @@ public class GetCommentsByTaskIdQueryHandler(
     IUserRepository userRepository)
     : IRequestHandler<GetCommentsByTaskIdQuery, List<CommentDto>>
 {
-    public async Task<List<CommentDto>> Handle(GetCommentsByTaskIdQuery request, CancellationToken cancellationToken)
+    public async Task<List<CommentDto>> Handle(GetCommentsByTaskIdQuery request, CancellationToken ct)
     {
-        await boardAccessService.EnsureCanViewBoardAsync(request.BoardId, cancellationToken);
+        await boardAccessService.EnsureCanViewBoardAsync(request.BoardId, ct);
 
-        var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, cancellationToken);
+        var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, ct);
         if (task == null || task.Column?.BoardId != request.BoardId)
         {
             throw new KeyNotFoundException("Task not found on this board.");
         }
 
-        var comments = await commentRepository.GetByTaskIdAsync(request.TaskId, cancellationToken);
+        var comments = await commentRepository.GetByTaskIdAsync(request.TaskId, ct);
         if (!comments.Any())
         {
             return new List<CommentDto>();
@@ -37,7 +37,7 @@ public class GetCommentsByTaskIdQueryHandler(
             .Distinct()
             .ToList();
 
-        var authors = await userRepository.GetByIdsAsync(authorIds, cancellationToken);
+        var authors = await userRepository.GetByIdsAsync(authorIds, ct);
         var authorDictionary = authors.ToDictionary(a => a.Id, a => a);
 
         var commentsDtos = new List<CommentDto>();

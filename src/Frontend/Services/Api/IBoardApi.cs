@@ -13,9 +13,10 @@ public interface IBoardApi
         [Query] string? searchTerm = null,
         CancellationToken ct = default);
 
-    [Post("/api/boards")]
+    [Post("/api/workspaces/{workspaceId}/boards")]
     Task<IApiResponse<BoardPreviewDto>> CreateBoardAsync(
-        [Body] UpdateBoardRequest request,
+        Guid workspaceId,
+        [Body] CreateBoardRequest request,
         CancellationToken ct = default);
 
     [Put("/api/boards/{id}")]

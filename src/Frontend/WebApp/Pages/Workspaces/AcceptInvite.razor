@@ -1,0 +1,75 @@
+@page "/accept-invite"
+@attribute [Authorize]
+@inject IWorkspaceStore WorkspaceStore
+@inject NavigationManager Navigation
+
+<PageTitle>Accept Invite - TaskTracker</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex justify-center align-center" Style="min-height: 80vh;">
+    <MudPaper Elevation="4" Class="pa-8 rounded-lg text-center"
+              Style="width: 100%; border: 1px solid var(--mud-palette-lines-default);">
+        @if (_loading)
+        {
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" Class="mb-4"/>
+            <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-secondary);">
+                Accepting invite...
+            </MudText>
+        }
+        else if (_success)
+        {
+            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success"
+                     Style="font-size: 4rem;" Class="mb-4"/>
+            <MudText Typo="Typo.h5" Class="mb-2" Style="color: var(--mud-palette-text-primary);">
+                You're in!
+            </MudText>
+            <MudText Typo="Typo.body1" Class="mb-6" Style="color: var(--mud-palette-text-secondary);">
+                You have successfully joined the workspace.
+            </MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Dashboard"
+                       OnClick="@(() => Navigation.NavigateTo("/dashboard"))">
+                Go to Dashboard
+            </MudButton>
+        }
+        else if (_error is not null)
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mb-4 text-left rounded-lg">@_error</MudAlert>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                       OnClick="@(() => Navigation.NavigateTo("/dashboard"))">
+                Go to Dashboard
+            </MudButton>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [SupplyParameterFromQuery] public string? Token { get; set; }
+
+    private bool _loading = true;
+    private bool _success;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Token))
+        {
+            _error = "No invite token provided.";
+            _loading = false;
+            return;
+        }
+
+        try
+        {
+            await WorkspaceStore.AcceptInviteAsync(Token);
+            _success = true;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

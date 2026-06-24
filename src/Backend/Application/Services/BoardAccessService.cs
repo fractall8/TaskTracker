@@ -9,7 +9,8 @@ namespace Application.Services;
 public class BoardAccessService(
     ICurrentUserAccessor currentUserAccessor,
     IUserRepository userRepository,
-    IBoardRepository boardRepository) : IBoardAccessService
+    IBoardRepository boardRepository,
+    IWorkspaceRepository workspaceRepository) : IBoardAccessService
 {
     public async Task<(Guid UserId, string Email)> GetCurrentUserAsync(CancellationToken ct = default)
     {
@@ -38,6 +39,9 @@ public class BoardAccessService(
     public Task<BoardAccessContext> EnsureCanManageTasksAsync(Guid boardId, CancellationToken ct = default) =>
         EnsureAccessAsync(boardId, BoardRolePermissions.CanManageTasks, "You don't have permission to manage tasks.", ct);
 
+    public Task<BoardAccessContext> EnsureCanManageCommentsAsync(Guid boardId, CancellationToken ct = default) =>
+        EnsureAccessAsync(boardId, BoardRolePermissions.CanManageComments, "You don't have permission to create comments.", ct);
+
     public Task<BoardAccessContext> EnsureCanViewBoardAsync(Guid boardId, CancellationToken ct = default) =>
         EnsureAccessAsync(boardId, _ => true, "You are not a member of this board.", ct);
 
@@ -45,18 +49,37 @@ public class BoardAccessService(
     {
         var (userId, _) = await GetCurrentUserAsync(ct);
 
-        var userRole = await boardRepository.GetUserRoleAsync(boardId, userId, ct);
+        var explicitBoardRole = await boardRepository.GetUserRoleAsync(boardId, userId, ct);
 
-        if (userRole == null)
+        if (explicitBoardRole != null)
+        {
+            if (!permissionCheck(explicitBoardRole.Value))
+            {
+                throw new UnauthorizedAccessException(errorMessage);
+            }
+
+            return new BoardAccessContext(userId, explicitBoardRole.Value);
+        }
+
+        var board = await boardRepository.GetByIdAsync(boardId, ct)
+                    ?? throw new UnauthorizedAccessException("You are not a member of this board.");
+
+        var workspaceRole = await workspaceRepository.GetUserRoleAsync(board.WorkspaceId, userId, ct);
+
+        if (workspaceRole == null)
         {
             throw new UnauthorizedAccessException("You are not a member of this board.");
         }
 
-        if (!permissionCheck(userRole.Value))
+        var inheritedBoardRole = workspaceRole.Value is WorkspaceRole.Owner or WorkspaceRole.Admin
+            ? BoardRole.Admin
+            : BoardRole.User;
+
+        if (!permissionCheck(inheritedBoardRole))
         {
             throw new UnauthorizedAccessException(errorMessage);
         }
 
-        return new BoardAccessContext(userId, userRole.Value);
+        return new BoardAccessContext(userId, inheritedBoardRole);
     }
 }

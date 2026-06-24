@@ -1,0 +1,59 @@
+﻿@using Contracts.Requests
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <div class="d-flex flex-column gap-4">
+            <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">
+                Select a new expiration date and time for this invite link.
+            </MudText>
+            
+            <MudDatePicker Label="Expiration Date" 
+                           @bind-Date="_date" 
+                           MinDate="DateTime.Today" 
+                           Variant="Variant.Outlined" />
+                           
+            <MudTimePicker Label="Expiration Time" 
+                           @bind-Time="_time" 
+                           Variant="Variant.Outlined" />
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public DateTimeOffset CurrentExpiration { get; set; }
+
+    private DateTime? _date;
+    private TimeSpan? _time;
+
+    protected override void OnInitialized()
+    {
+        var localTime = CurrentExpiration.ToLocalTime();
+        _date = localTime.DateTime;
+        _time = localTime.TimeOfDay;
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Submit()
+    {
+        if (_date.HasValue && _time.HasValue)
+        {
+            var newDateTime = _date.Value.Date + _time.Value;
+            var newOffset = new DateTimeOffset(newDateTime, DateTimeOffset.Now.Offset).ToUniversalTime();
+            
+            if (newOffset <= DateTimeOffset.UtcNow)
+            {
+                Snackbar.Add("Expiration date must be in the future.", Severity.Warning);
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(new UpdateInviteExpirationRequest(newOffset)));
+        }
+    }
+}

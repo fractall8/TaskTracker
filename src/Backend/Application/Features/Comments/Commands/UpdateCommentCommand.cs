@@ -10,13 +10,17 @@ namespace Application.Features.Comments.Commands;
 public record UpdateCommentCommand(Guid BoardId, Guid TaskId, Guid CommentId, string Text) : IRequest<CommentDto>;
 
 public class UpdateCommentCommandHandler(
+    IBoardAccessService boardAccessService,
     ICurrentUserAccessor currentUserAccessor,
     IUserRepository userRepository,
     ICommentRepository commentRepository,
+
     IUnitOfWork unitOfWork) : IRequestHandler<UpdateCommentCommand, CommentDto>
 {
     public async Task<CommentDto> Handle(UpdateCommentCommand request, CancellationToken cancellationToken)
     {
+        await boardAccessService.EnsureCanManageCommentsAsync(request.BoardId, cancellationToken);
+
         var comment = await commentRepository.GetCommentWithDetailsAsync(request.CommentId, cancellationToken);
 
         if (comment == null || comment.Task?.Id != request.TaskId || comment.Task?.Column?.BoardId != request.BoardId)

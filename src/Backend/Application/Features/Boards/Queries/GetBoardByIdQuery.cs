@@ -15,11 +15,11 @@ public class GetBoardByIdQueryHandler(
     IBoardRepository boardRepository)
     : IRequestHandler<GetBoardByIdQuery, BoardWithColumnsDto>
 {
-    public async Task<BoardWithColumnsDto> Handle(GetBoardByIdQuery request, CancellationToken cancellationToken)
+    public async Task<BoardWithColumnsDto> Handle(GetBoardByIdQuery request, CancellationToken ct)
     {
-        await boardAccessService.EnsureCanViewBoardAsync(request.BoardId, cancellationToken);
+        await boardAccessService.EnsureCanViewBoardAsync(request.BoardId, ct);
 
-        var board = await boardRepository.GetBoardWithHierarchyAsync(request.BoardId, request.SearchTerm, cancellationToken);
+        var board = await boardRepository.GetBoardWithHierarchyAsync(request.BoardId, request.SearchTerm, ct);
 
         if (board is null)
         {
@@ -52,6 +52,7 @@ public class GetBoardByIdQueryHandler(
             Id: board.Id,
             Name: board.Name,
             Description: board.Description,
+            WorkspaceId: board.WorkspaceId,
             Columns: columnDtos
         );
     }

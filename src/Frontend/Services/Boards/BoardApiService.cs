@@ -20,9 +20,9 @@ public class BoardApiService(IBoardApi boardApi) : IBoardApiService
         return await response.HandleResponseAsync();
     }
 
-    public async Task<BoardPreviewDto?> CreateBoardAsync(UpdateBoardRequest request, CancellationToken ct = default)
+    public async Task<BoardPreviewDto?> CreateBoardAsync(Guid workspaceId, CreateBoardRequest request, CancellationToken ct = default)
     {
-        var response = await boardApi.CreateBoardAsync(request, ct);
+        var response = await boardApi.CreateBoardAsync(workspaceId, request, ct);
         return await response.HandleResponseAsync();
     }
 

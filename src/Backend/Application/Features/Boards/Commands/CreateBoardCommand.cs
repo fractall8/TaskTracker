@@ -9,30 +9,22 @@ using MediatR;
 
 namespace Application.Features.Boards.Commands;
 
-public record CreateBoardCommand(string Name, string? Description) : IRequest<BoardDto>;
+public record CreateBoardCommand(Guid WorkspaceId, string Name, string? Description) : IRequest<BoardDto>;
 
 public class CreateBoardCommandHandler(
-    ICurrentUserAccessor currentUserAccessor,
-    IUserRepository userRepository,
+    IWorkspaceAccessService workspaceAccessService,
     IBoardRepository boardRepository,
     IUnitOfWork unitOfWork)
     : IRequestHandler<CreateBoardCommand, BoardDto>
 {
-    public async Task<BoardDto> Handle(CreateBoardCommand request, CancellationToken cancellationToken)
+    public async Task<BoardDto> Handle(CreateBoardCommand request, CancellationToken ct)
     {
-        var userInfo = await userRepository.GetUserByAzureAdIdAsync(
-                           currentUserAccessor.AzureAdObjectId,
-                           u => new { Id = (Guid?)u.Id, u.Email },
-                           cancellationToken);
-
-        if (userInfo == null || userInfo.Id == null)
-        {
-            throw new UnauthorizedAccessException("User is not authenticated");
-        }
+        var userInfo = await workspaceAccessService.EnsureCanManageWorkspaceAsync(request.WorkspaceId, ct);
 
         var board = new Board
         {
             Id = Guid.NewGuid(),
+            WorkspaceId = request.WorkspaceId,
             Name = request.Name,
             Description = request.Description
         };
@@ -41,15 +33,15 @@ public class CreateBoardCommandHandler(
         {
             Id = Guid.NewGuid(),
             BoardId = board.Id,
-            UserId = userInfo.Id.Value,
+            UserId = userInfo.Id,
             Role = BoardRole.Admin
         };
 
         board.Members.Add(admin);
 
-        await boardRepository.AddAsync(board, cancellationToken);
+        await boardRepository.AddAsync(board, ct);
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.SaveChangesAsync(ct);
 
         return new BoardDto(
             Id: board.Id,
@@ -57,7 +49,7 @@ public class CreateBoardCommandHandler(
             Description: board.Description,
             CreatedAt: board.CreatedAt,
             UserRole: (Contracts.Enums.BoardRoleDto)admin.Role,
-            Members: [new UserWithRoleDto(userInfo.Id.Value, userInfo.Email, null, (Contracts.Enums.BoardRoleDto)admin.Role)],
+            Members: [new UserWithRoleDto(userInfo.Id, userInfo.Email, null, (Contracts.Enums.BoardRoleDto)admin.Role)],
             Columns: []
         );
     }

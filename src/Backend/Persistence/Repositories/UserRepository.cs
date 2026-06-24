@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using Application.Interfaces;
+using Contracts.DTOs;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Persistence.Contexts;
@@ -26,6 +27,29 @@ public class UserRepository(TaskTrackerDbContext context) : Repository<User, Gui
 
         return await DbContext.Set<User>()
             .Where(u => ids.Contains(u.Id))
+            .ToListAsync(ct);
+    }
+
+    public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default) =>
+        await DbSet.FirstOrDefaultAsync(u => u.Email == email, ct);
+
+    public async Task<List<UserDto>> SearchWorkspaceUsersAsync(Guid workspaceId, string? searchTerm, CancellationToken ct = default)
+    {
+        var query = DbContext.Set<WorkspaceMember>()
+            .AsNoTracking()
+            .Where(m => m.WorkspaceId == workspaceId)
+            .Select(m => m.User!);
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var lower = searchTerm.ToLower();
+            query = query.Where(u =>
+                u.Email.ToLower().Contains(lower) ||
+                (u.DisplayName != null && u.DisplayName.ToLower().Contains(lower)));
+        }
+
+        return await query
+            .Select(u => new UserDto(u.Id, u.Email, u.DisplayName))
             .ToListAsync(ct);
     }
 }

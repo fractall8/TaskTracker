@@ -17,6 +17,7 @@ public static class ApplicationServiceCollectionExtensions
         var executingAssembly = Assembly.GetExecutingAssembly();
 
         services.Configure<FileSettings>(configuration.GetSection("FileSettings"));
+        services.Configure<WorkspaceSettings>(configuration.GetSection("WorkspaceSettings"));
 
         services.AddMediatR(config =>
         {
@@ -29,6 +30,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddValidatorsFromAssembly(executingAssembly);
 
         services.AddScoped<IBoardAccessService, BoardAccessService>();
+        services.AddScoped<IWorkspaceAccessService, WorkspaceAccessService>();
 
         return services;
     }

@@ -4,11 +4,11 @@
 @inject ITaskApiService TaskApi
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
-@inject ICurrentUserService CurrentUserService
+@inject IProfileStore ProfileStore
 
 <div class="d-flex gap-3 mb-6">
     <MudAvatar Color="Color.Primary" Size="Size.Medium">
-        @(CurrentUserService.User?.DisplayName?.FirstOrDefault().ToString()?.ToUpper() ?? "U")
+        @(ProfileStore.Profile?.DisplayName?.FirstOrDefault().ToString()?.ToUpper() ?? "U")
     </MudAvatar>
     <MudPaper Elevation="0" Class="pa-0 flex-grow-1"
               Style="border: 1px solid var(--mud-palette-lines-default); overflow: hidden; border-radius: 8px; background-color: var(--mud-palette-surface);">
@@ -63,7 +63,7 @@ else if (_comments != null)
 
                         <MudSpacer/>
 
-                        @if (_editingCommentId != comment.Id && CurrentUserService.User?.Id == comment.AuthorId)
+                        @if (_editingCommentId != comment.Id && ProfileStore.Profile?.Id == comment.AuthorId)
                         {
                             <MudIconButton Icon="@Icons.Material.Outlined.Edit"
                                            Size="Size.Small"
@@ -135,6 +135,7 @@ else if (_comments != null)
 
     protected override async Task OnInitializedAsync()
     {
+        await ProfileStore.EnsureLoadedAsync();
         await LoadCommentsAsync();
     }
 
@@ -246,5 +247,4 @@ else if (_comments != null)
             }
         }
     }
-
 }

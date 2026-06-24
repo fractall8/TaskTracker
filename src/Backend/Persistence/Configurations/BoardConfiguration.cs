@@ -11,6 +11,10 @@ public class BoardConfiguration : IEntityTypeConfiguration<Board>
     {
         builder.ToTable("Boards");
         builder.HasKey(e => e.Id);
+
+        builder.Property(e => e.WorkspaceId)
+            .IsRequired();
+
         builder.Property(e => e.Name).IsRequired().HasMaxLength(BoardConstants.MaxNameLength);
 
         builder.HasQueryFilter(e => !e.IsDeleted);

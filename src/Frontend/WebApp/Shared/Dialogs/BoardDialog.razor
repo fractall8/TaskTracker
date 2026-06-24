@@ -64,8 +64,16 @@
 
             if (_form.IsValid)
             {
-                var resultData = new UpdateBoardRequest(_model.Name, _model.Description);
-                MudDialog?.Close(DialogResult.Ok(resultData));
+                if (Board is null)
+                {
+                    var createRequest = new CreateBoardRequest(_model.Name, _model.Description);
+                    MudDialog?.Close(DialogResult.Ok(createRequest));
+                }
+                else
+                {
+                    var updateRequest = new UpdateBoardRequest(_model.Name, _model.Description);
+                    MudDialog?.Close(DialogResult.Ok(updateRequest));
+                }
             }
         }
     }
