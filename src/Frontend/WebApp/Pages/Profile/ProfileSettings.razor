@@ -1,0 +1,221 @@
+﻿@page "/profile"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject IProfileStore ProfileStore
+@inject ISnackbar Snackbar
+@using Refit
+
+<PageTitle>Profile Settings - TaskTracker</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="pt-8">
+    <MudText Typo="Typo.h4" Class="fw-bold mb-6">Profile Settings</MudText>
+
+    @if (ProfileStore.Profile is null)
+    {
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+    }
+    else
+    {
+        <MudGrid>
+            <MudItem xs="12" md="4">
+                <MudPaper Elevation="2" Class="pa-6 d-flex flex-column align-center rounded-lg h-100" Style="border: 1px solid var(--mud-palette-lines-default);">
+                    
+                    <MudAvatar Style="height: 120px; width: 120px; font-size: 3rem;" 
+                               Color="Color.Primary" Class="mb-6">
+                        @if (!string.IsNullOrEmpty(ProfileStore.Profile.AvatarUrl))
+                        {
+                            <MudImage Src="@ProfileStore.Profile.AvatarUrl" Alt="User Avatar" ObjectFit="ObjectFit.Cover" />
+                        }
+                        else
+                        {
+                            @(ProfileStore.Profile.DisplayName?.FirstOrDefault() ?? ProfileStore.Profile.Email.FirstOrDefault())
+                        }
+                    </MudAvatar>
+
+                    <div class="d-flex align-center gap-2">
+                        <MudFileUpload T="IBrowserFile" Accept=".png, .jpg, .jpeg" FilesChanged="UploadAvatar" MaximumFileCount="1">
+                            <CustomContent>
+                                <MudButton Variant="Variant.Text" 
+                                           Color="Color.Primary" 
+                                           Disabled="_isUploading"
+                                           OnClick="@(() => context.OpenFilePickerAsync())"
+                                           Class="text-transform-none font-weight-bold">
+                                    Change Avatar
+                                </MudButton>
+                            </CustomContent>
+                            <SelectedTemplate>
+                            </SelectedTemplate>
+                        </MudFileUpload>
+
+                        @if (!string.IsNullOrEmpty(ProfileStore.Profile.AvatarUrl))
+                        {
+                            <MudTooltip Text="Remove Avatar">
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                               Color="Color.Error" 
+                                               Size="Size.Small"
+                                               Disabled="_isUploading"
+                                               OnClick="DeleteAvatar" />
+                            </MudTooltip>
+                        }
+                    </div>
+                    
+                    @if (_isUploading)
+                    {
+                        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mt-4 w-100" />
+                    }
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" md="8">
+                <MudPaper Elevation="2" Class="pa-6 rounded-lg h-100" Style="border: 1px solid var(--mud-palette-lines-default);">
+                    <MudText Typo="Typo.h6" Class="mb-6">Personal Information</MudText>
+
+                    <div class="mb-6">
+                        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary); font-weight: 500;">Display Name</MudText>
+                        
+                        <div class="d-flex align-center mt-1" style="min-height: 40px;">
+                            @if (_isEditingName)
+                            {
+                                <MudTextField @bind-Value="_displayName" 
+                                              Variant="Variant.Outlined" 
+                                              Margin="Margin.Dense"
+                                              MaxLength="100"
+                                              Class="flex-grow-1"
+                                              Adornment="Adornment.End"
+                                              AdornmentIcon="@Icons.Material.Filled.Check"
+                                              AdornmentColor="Color.Success"
+                                              OnAdornmentClick="SaveDisplayNameAsync"
+                                              OnBlur="SaveDisplayNameAsync"
+                                              OnKeyDown="HandleKeyDown"
+                                              Immediate="true"
+                                              Disabled="_isSaving"
+                                              AutoFocus="true" />
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.body1" Class="flex-grow-1">@ProfileStore.Profile.DisplayName</MudText>
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" 
+                                               Size="Size.Small" 
+                                               Color="Color.Default"
+                                               OnClick="EnableEditing" />
+                            }
+                        </div>
+                    </div>
+
+                    <div>
+                        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary); font-weight: 500;">Email Address</MudText>
+                        <MudText Typo="Typo.body1" Class="mt-1">@ProfileStore.Profile.Email</MudText>
+                    </div>
+
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    private string? _displayName;
+    private bool _isUploading;
+    private bool _isSaving;
+    private bool _isEditingName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ProfileStore.StateChanged += StateHasChanged;
+        await ProfileStore.EnsureLoadedAsync();
+        
+        _displayName = ProfileStore.Profile?.DisplayName;
+    }
+
+    public void Dispose() => ProfileStore.StateChanged -= StateHasChanged;
+
+    private void EnableEditing()
+    {
+        _displayName = ProfileStore.Profile?.DisplayName;
+        _isEditingName = true;
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SaveDisplayNameAsync();
+        }
+        else if (e.Key == "Escape")
+        {
+            _isEditingName = false;
+            _displayName = ProfileStore.Profile?.DisplayName;
+        }
+    }
+
+    private async Task SaveDisplayNameAsync()
+    {
+        if (_isSaving) return;
+        
+        if (string.IsNullOrWhiteSpace(_displayName) || _displayName == ProfileStore.Profile?.DisplayName)
+        {
+            _displayName = ProfileStore.Profile?.DisplayName;
+            _isEditingName = false;
+            return;
+        }
+
+        _isSaving = true;
+        try
+        {
+            await ProfileStore.UpdateDisplayNameAsync(_displayName);
+            Snackbar.Add("Profile updated successfully.", Severity.Success);
+            _isEditingName = false;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to update profile: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task UploadAvatar(IBrowserFile? file)
+    {
+        if (file is null) return;
+
+        var maxFileSize = 5 * 1024 * 1024; 
+
+        _isUploading = true;
+        try
+        {
+            await using var stream = file.OpenReadStream(maxAllowedSize: maxFileSize);
+            var streamPart = new StreamPart(stream, file.Name, file.ContentType);
+            
+            await ProfileStore.UploadAvatarAsync(streamPart);
+            Snackbar.Add("Avatar uploaded successfully.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to upload avatar: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isUploading = false;
+        }
+    }
+
+    private async Task DeleteAvatar()
+    {
+        _isUploading = true;
+        try
+        {
+            await ProfileStore.DeleteAvatarAsync();
+            Snackbar.Add("Avatar removed.", Severity.Info);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to remove avatar: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isUploading = false;
+        }
+    }
+}

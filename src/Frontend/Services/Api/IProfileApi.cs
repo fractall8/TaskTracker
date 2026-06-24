@@ -12,7 +12,7 @@ public interface IProfileApi
 
     [Multipart]
     [Post("/api/profile/avatar")]
-    Task<IApiResponse<UploadAvatarResponse>> UploadAvatarAsync(StreamPart stream, CancellationToken ct = default);
+    Task<IApiResponse<UploadAvatarResponse>> UploadAvatarAsync(StreamPart file, CancellationToken ct = default);
 
     [Delete("/api/profile/avatar")]
     Task<IApiResponse> DeleteAvatarAsync(CancellationToken ct = default);

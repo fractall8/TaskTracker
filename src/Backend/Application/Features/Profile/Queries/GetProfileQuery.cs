@@ -5,18 +5,18 @@ using MediatR;
 
 namespace Application.Features.Profile.Queries;
 
-public record GetProfileQuery : IRequest<UserProfileDto>;
+public record GetProfileQuery : IRequest<UserDto>;
 
 public class GetProfileQueryHandler(
     IUserRepository userRepository,
     ICurrentUserAccessor currentUserAccessor)
-    : IRequestHandler<GetProfileQuery, UserProfileDto>
+    : IRequestHandler<GetProfileQuery, UserDto>
 {
-    public async Task<UserProfileDto> Handle(GetProfileQuery request, CancellationToken ct)
+    public async Task<UserDto> Handle(GetProfileQuery request, CancellationToken ct)
     {
         var user = await userRepository.GetUserByAzureAdIdAsync(
             currentUserAccessor.AzureAdObjectId,
-            u => new UserProfileDto(u.Id, u.Email, u.DisplayName, u.AvatarUrl),
+            u => new UserDto(u.Id, u.Email, u.DisplayName, u.AvatarUrl),
             ct);
 
         if (user == null)

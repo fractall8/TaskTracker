@@ -1,4 +1,5 @@
 using Contracts.DTOs;
+using Refit;
 
 namespace Services.Abstractions.Auth;
 
@@ -34,4 +35,10 @@ public interface IProfileStore
     /// Clears all cached profile state. Call on logout before MSAL redirect.
     /// </summary>
     void Reset();
+
+    Task UpdateDisplayNameAsync(string displayName, CancellationToken ct = default);
+
+    Task UploadAvatarAsync(StreamPart fileStream, CancellationToken ct = default);
+
+    Task DeleteAvatarAsync(CancellationToken ct = default);
 }

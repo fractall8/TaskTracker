@@ -16,7 +16,7 @@ public class GetCurrentUserQueryHandler(
     {
         var userDto = await userRepository.GetUserByAzureAdIdAsync(
             currentUser.AzureAdObjectId,
-            u => new UserDto(u.Id, u.Email, u.DisplayName),
+            u => new UserDto(u.Id, u.Email, u.DisplayName, u.AvatarUrl),
             cancellationToken);
 
         if (userDto == null)
@@ -27,7 +27,8 @@ public class GetCurrentUserQueryHandler(
         var userWithRoles = new UserDto(
             userDto.Id,
             userDto.Email,
-            userDto.DisplayName
+            userDto.DisplayName,
+            userDto.AvatarUrl
         );
 
         return userWithRoles;

@@ -14,7 +14,7 @@ namespace Presentation.Controllers;
 public class ProfileController(ISender sender) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<UserProfileDto>> GetProfile(CancellationToken ct)
+    public async Task<ActionResult<UserDto>> GetProfile(CancellationToken ct)
     {
         var result = await sender.Send(new GetProfileQuery(), ct);
         return Ok(result);
