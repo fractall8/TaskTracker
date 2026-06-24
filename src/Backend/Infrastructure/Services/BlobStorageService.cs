@@ -8,11 +8,13 @@ namespace Infrastructure.Services;
 public class BlobStorageService(BlobServiceClient blobServiceClient) : IFileService
 {
     public async Task<string> UploadFileAsync(Stream fileStream, string fileName, string contentType,
-        string containerName, CancellationToken cancellationToken = default)
+        string containerName, bool isPublic = false, CancellationToken cancellationToken = default)
     {
         var containerClient = blobServiceClient.GetBlobContainerClient(containerName);
 
-        await containerClient.CreateIfNotExistsAsync(PublicAccessType.Blob, cancellationToken: cancellationToken);
+        var accessType = isPublic ? PublicAccessType.Blob : PublicAccessType.None;
+
+        await containerClient.CreateIfNotExistsAsync(accessType, cancellationToken: cancellationToken);
 
         var uniqueFileName = $"{Guid.NewGuid()}_{fileName}";
         var blobClient = containerClient.GetBlobClient(uniqueFileName);
@@ -33,7 +35,7 @@ public class BlobStorageService(BlobServiceClient blobServiceClient) : IFileServ
 
         var fileUrl = blobClient.Uri.ToString();
 
-        // This is only for local Docker development (Azurite). 
+        // This is only for local Docker development (Azurite).
         // In production, the URL won't contain "azurite", so this replace is safely ignored.
         return fileUrl.Replace("azurite", "localhost");
     }

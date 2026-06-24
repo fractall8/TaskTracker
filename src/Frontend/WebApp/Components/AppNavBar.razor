@@ -41,7 +41,7 @@
                                     }
                                 </MudAvatar>
                                 <MudText Color="Color.Inherit" Class="ml-2 font-weight-medium">
-                                    @ProfileStore.Profile.DisplayName
+                                    @TruncateName(ProfileStore.Profile.DisplayName)
                                 </MudText>
                             </div>
                         </MudTooltip>
@@ -73,6 +73,12 @@
 
     [CascadingParameter] public Task<AuthenticationState> AuthStateTask { get; set; } = null!;
 
+    private string TruncateName(string? name, int maxLength = 20)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "User";
+        return name.Length > maxLength ? name.Substring(0, maxLength) + "..." : name;
+    }
+    
     protected override void OnInitialized()
     {
         ProfileStore.StateChanged += StateHasChanged;

@@ -78,7 +78,7 @@
                                 <MudTextField @bind-Value="_displayName" 
                                               Variant="Variant.Outlined" 
                                               Margin="Margin.Dense"
-                                              MaxLength="100"
+                                              MaxLength="50"
                                               Class="flex-grow-1"
                                               Adornment="Adornment.End"
                                               AdornmentIcon="@Icons.Material.Filled.Check"
@@ -180,8 +180,17 @@
     {
         if (file is null) return;
 
-        var maxFileSize = 5 * 1024 * 1024; 
+        var maxFileSize = 2 * 1024 * 1024; 
 
+        if (file.Size > maxFileSize)
+        {
+            var actualSizeMb = file.Size / (1024.0 * 1024.0);
+            var maxSizeMb = maxFileSize / (1024 * 1024);
+            
+            Snackbar.Add($"Failed to upload avatar: Supplied file with size {actualSizeMb:F2} MB exceeds the maximum of {maxSizeMb} MB.", Severity.Error);
+            return;
+        }
+        
         _isUploading = true;
         try
         {

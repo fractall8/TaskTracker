@@ -33,6 +33,7 @@ public class UploadAvatarCommandHandler(
             request.FileName,
             request.ContentType,
             BlobContainerNames.Avatars,
+            true, // make container public for avatars
             ct);
 
         user.AvatarUrl = newFileUrl;

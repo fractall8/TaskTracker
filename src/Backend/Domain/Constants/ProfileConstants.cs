@@ -2,5 +2,5 @@
 
 public static class ProfileConstants
 {
-    public const int MaxDisplayNameLength = 100;
+    public const int MaxDisplayNameLength = 50;
 }
