@@ -2,7 +2,7 @@ using Application.Features.Boards.Commands;
 using Application.Features.Boards.Queries;
 using Application.Options;
 using Contracts.DTOs;
-using Contracts.Requests;
+using Contracts.Requests.Boards;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

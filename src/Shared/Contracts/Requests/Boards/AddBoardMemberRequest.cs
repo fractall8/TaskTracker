@@ -1,6 +1,6 @@
 ﻿using Contracts.Enums;
 
-namespace Contracts.DTOs;
+namespace Contracts.Requests.Boards;
 
 public record AddBoardMemberRequest(
     Guid WorkspaceMemberId,

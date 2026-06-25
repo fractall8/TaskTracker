@@ -1,7 +1,7 @@
 using Application.Features.Profile.Commands;
 using Application.Features.Profile.Queries;
 using Contracts.DTOs;
-using Contracts.Requests;
+using Contracts.Requests.Profile;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

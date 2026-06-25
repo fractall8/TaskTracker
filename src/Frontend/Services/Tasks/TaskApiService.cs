@@ -1,5 +1,6 @@
 using Contracts.DTOs;
-using Contracts.Requests;
+using Contracts.Requests.Comments;
+using Contracts.Requests.Tasks;
 using Refit;
 using Services.Abstractions.Tasks;
 using Services.Api;

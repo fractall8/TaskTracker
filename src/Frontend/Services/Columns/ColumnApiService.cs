@@ -1,5 +1,5 @@
 using Contracts.DTOs;
-using Contracts.Requests;
+using Contracts.Requests.Columns;
 using Services.Abstractions.Columns;
 using Services.Api;
 using Services.Extensions;

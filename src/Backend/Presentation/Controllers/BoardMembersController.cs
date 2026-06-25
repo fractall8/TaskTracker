@@ -1,6 +1,6 @@
 ﻿using Application.Features.Boards.Commands;
 using Application.Features.Boards.Queries;
-using Contracts.DTOs;
+using Contracts.Requests.Boards;
 using Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;

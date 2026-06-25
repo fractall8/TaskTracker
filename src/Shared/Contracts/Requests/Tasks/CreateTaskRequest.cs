@@ -1,4 +1,4 @@
-﻿namespace Contracts.Requests;
+﻿namespace Contracts.Requests.Tasks;
 
 public record CreateTaskRequest(
     string Title,

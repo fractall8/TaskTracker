@@ -1,5 +1,5 @@
 using Contracts.DTOs;
-using Contracts.Requests;
+using Contracts.Requests.Columns;
 using Refit;
 
 namespace Services.Api;

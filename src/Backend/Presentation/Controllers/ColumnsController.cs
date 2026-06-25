@@ -1,7 +1,7 @@
 using Application.Features.Boards.Queries;
 using Application.Features.Columns.Commands;
 using Contracts.DTOs;
-using Contracts.Requests;
+using Contracts.Requests.Columns;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

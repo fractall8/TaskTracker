@@ -1,5 +1,5 @@
 @using Contracts.DTOs
-@using Contracts.Requests
+@using Contracts.Requests.Tasks
 @using WebApp.Shared.Dialogs
 @inject IBoardDetailsStore Store
 @inject IDialogService DialogService
@@ -118,8 +118,7 @@
         }
     }
 
-    private async Task DeleteColumn()
-    {
+    private async Task DeleteColumn() {
         bool? result = await _deleteColumnBox!.ShowAsync();
 
         if (result == true)

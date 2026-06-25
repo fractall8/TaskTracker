@@ -1,3 +1,3 @@
-﻿namespace Contracts.Requests;
+﻿namespace Contracts.Requests.Workspaces;
 
 public record UpdateInviteExpirationRequest(DateTimeOffset NewExpirationDate);

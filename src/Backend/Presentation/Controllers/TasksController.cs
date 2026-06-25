@@ -2,7 +2,7 @@ using Application.Features.Files.Commands;
 using Application.Features.Tasks.Commands;
 using Application.Features.Tasks.Queries;
 using Contracts.DTOs;
-using Contracts.Requests;
+using Contracts.Requests.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

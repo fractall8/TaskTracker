@@ -1,5 +1,5 @@
 using Contracts.DTOs;
-using Contracts.Requests;
+using Contracts.Requests.Tasks;
 
 namespace Services.Abstractions.Boards;
 

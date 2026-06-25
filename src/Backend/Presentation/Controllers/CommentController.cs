@@ -1,7 +1,7 @@
 using Application.Features.Comments.Commands;
 using Application.Features.Comments.Queries;
 using Contracts.DTOs;
-using Contracts.Requests;
+using Contracts.Requests.Comments;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

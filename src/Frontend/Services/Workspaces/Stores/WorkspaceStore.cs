@@ -1,6 +1,6 @@
 using Contracts.DTOs;
 using Contracts.Enums;
-using Contracts.Requests;
+using Contracts.Requests.Workspaces;
 using Services.Abstractions.Workspaces;
 
 namespace Services.Workspaces.Stores;
