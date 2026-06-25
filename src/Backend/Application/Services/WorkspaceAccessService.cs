@@ -69,6 +69,12 @@ public class WorkspaceAccessService(
             "You don't have permission to invite users.", ct);
     }
 
+    public async Task EnsureCanManageBoardRolesAsync(Guid workspaceId, CancellationToken ct = default)
+    {
+        await EnsureAccessAsync(workspaceId, WorkspaceRolePermissions.CanManageMembers,
+            "You don't have permission to manage board roles.", ct);
+    }
+
     private async Task<(Guid Id, string Email)> EnsureAccessAsync(Guid workspaceId,
         Func<WorkspaceRole, bool> permissionCheck, string errorMessage, CancellationToken ct)
     {

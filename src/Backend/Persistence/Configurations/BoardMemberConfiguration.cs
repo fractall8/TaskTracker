@@ -18,12 +18,17 @@ public class BoardMemberConfiguration : IEntityTypeConfiguration<BoardMember>
             .IsRequired()
             .HasConversion<int>();
 
-        builder.HasIndex(m => new { m.BoardId, m.UserId }) // so user can not be added twice to the same board
+        builder.HasIndex(m => new { m.BoardId, m.WorkspaceMemberId })
             .IsUnique();
 
-        builder.HasOne(m => m.User)
+        builder.HasOne(m => m.WorkspaceMember)
             .WithMany()
-            .HasForeignKey(m => m.UserId)
+            .HasForeignKey(m => m.WorkspaceMemberId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(m => m.Board)
+            .WithMany(b => b.Members)
+            .HasForeignKey(m => m.BoardId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasQueryFilter(e => !e.IsDeleted);
