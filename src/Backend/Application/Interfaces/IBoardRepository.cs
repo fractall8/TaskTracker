@@ -1,3 +1,4 @@
+using Contracts.DTOs;
 using Domain.Entities;
 using Domain.Enums;
 
@@ -20,4 +21,6 @@ public interface IBoardRepository : IRepository<Board, Guid>
     Task<int> CountBoardsByWorkspaceIdAsync(Guid workspaceId, Guid userId, string? searchTerm = null, CancellationToken ct = default);
 
     Task<List<Board>> GetBoardsByWorkspaceIdPaginatedAsync(Guid workspaceId, Guid userId, int pageNumber, int pageSize, string? searchTerm = null, CancellationToken ct = default);
+
+    Task<List<BoardMemberDto>> GetBoardMembersAsync(Guid boardId, CancellationToken ct = default);
 }

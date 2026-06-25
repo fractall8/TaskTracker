@@ -1,4 +1,6 @@
 using Application.Interfaces;
+using Contracts.DTOs;
+using Contracts.Enums;
 using Domain.Entities;
 using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -111,6 +113,22 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
             .OrderByDescending(b => b.CreatedAt)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
+            .ToListAsync(ct);
+    }
+
+    public async Task<List<BoardMemberDto>> GetBoardMembersAsync(Guid boardId, CancellationToken ct = default)
+    {
+        return await DbContext.Set<BoardMember>()
+            .AsNoTracking()
+            .Where(bm => bm.BoardId == boardId)
+            .Select(bm => new BoardMemberDto(
+                bm.WorkspaceMemberId,
+                bm.WorkspaceMember!.User!.Email,
+                bm.WorkspaceMember.User.DisplayName,
+                bm.WorkspaceMember.User.AvatarUrl,
+                (BoardRoleDto)bm.Role,
+                bm.JoinedAt
+            ))
             .ToListAsync(ct);
     }
 

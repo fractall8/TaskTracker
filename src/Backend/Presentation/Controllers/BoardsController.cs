@@ -21,7 +21,7 @@ public class BoardsController(ISender sender) : ControllerBase
         [FromQuery] int? pageSize = null,
         [FromQuery] string? searchTerm = null)
     {
-        int resolvedPageSize = pageSize ?? paginationOptions.Value.DefaultPageSize;
+        var resolvedPageSize = pageSize ?? paginationOptions.Value.DefaultPageSize;
 
         var result = await sender.Send(new GetBoardsQuery(pageNumber, resolvedPageSize, searchTerm), ct);
 
