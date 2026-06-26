@@ -1,11 +1,9 @@
 @page "/boards/{BoardId:guid}"
 @implements IDisposable
-@using System.Security.Claims
 @using Contracts.DTOs
 @using Contracts.Enums
 @using WebApp.Shared.Dialogs
-@inject IBoardDetailsStore Store
-@inject IBoardStore BoardStore
+@inject IBoardDetailsStore BoardDetailsStore
 @inject IWorkspaceStore WorkspaceStore
 @inject IProfileStore ProfileStore
 @inject NavigationManager Navigation
@@ -66,7 +64,7 @@
     <div class="d-flex align-center mb-4 w-100 flex-shrink-0">
         <MudText Typo="Typo.h4" Class="fw-bold text-truncate"
                  Style="max-width: 500px; color: var(--mud-palette-text-primary);">
-            @(Store.Board?.Name ?? "Loading Board...")
+            @(BoardDetailsStore.Board?.Name ?? "Loading Board...")
         </MudText>
 
         <MudSpacer/>
@@ -96,28 +94,28 @@
                           Immediate="true"
                           DebounceInterval="500"
                           Style="background-color: var(--mud-palette-surface);"
-                          Disabled="@(Store.Board == null)"/>
+                          Disabled="@(BoardDetailsStore.Board == null)"/>
         </div>
     </div>
 
-    @if (!string.IsNullOrEmpty(Store.ErrorMessage))
+    @if (!string.IsNullOrEmpty(BoardDetailsStore.ErrorMessage))
     {
         <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mb-4 flex-shrink-0 rounded-lg">
-            @Store.ErrorMessage
+            @BoardDetailsStore.ErrorMessage
         </MudAlert>
     }
 
-    @if (Store.IsLoading && Store.Board == null)
+    @if (BoardDetailsStore.IsLoading && BoardDetailsStore.Board == null)
     {
         <div class="d-flex justify-center align-center flex-grow-1">
             <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large"/>
         </div>
     }
-    else if (Store.Board != null)
+    else if (BoardDetailsStore.Board != null)
     {
         <MudDropContainer @ref="_dropContainer"
                           T="TaskDto"
-                          Items="Store.Tasks"
+                          Items="BoardDetailsStore.Tasks"
                           ItemsSelector="@((item, dropzone) => item.ColumnId.ToString() == dropzone)"
                           ItemDropped="TaskUpdated"
                           ItemDisabled="@((item) => !CanMoveTasks)"
@@ -127,10 +125,10 @@
                 <div class="d-flex flex-row gap-4 overflow-x-auto flex-grow-1 pb-2 board-horizontal-scroll"
                      style="align-items: flex-start; flex-wrap: nowrap;">
 
-                    @foreach (var column in Store.Board.Columns)
+                    @foreach (var column in BoardDetailsStore.Board.Columns)
                     {
                         <BoardColumn Column="column"
-                                     WorkspaceId="@Store.Board.WorkspaceId"
+                                     WorkspaceId="@BoardDetailsStore.Board.WorkspaceId"
                                      IsDragged="_draggedColumn?.Id == column.Id"
                                      IsDropTarget="_targetColumn?.Id == column.Id"
                                      CanManageColumns="CanManageColumns"
@@ -148,7 +146,7 @@
                                    OnClick="OpenCreateColumnDialog"
                                    Class="rounded-lg px-4 flex-shrink-0"
                                    Style="width: 320px; height: 50px; border: 2px dashed var(--mud-palette-lines-default); background-color: transparent; color: var(--mud-palette-text-secondary); justify-content: flex-start; text-transform: none; font-weight: 500;">
-                            @(Store.Board.Columns.Any() ? "Add another column" : "Add a column")
+                            @(BoardDetailsStore.Board.Columns.Any() ? "Add another column" : "Add a column")
                         </MudButton>
                     }
 
@@ -157,7 +155,7 @@
 
             <ItemRenderer>
                 <TaskCard Task="context" 
-                          WorkspaceId="@Store.Board?.WorkspaceId" 
+                          WorkspaceId="@BoardDetailsStore.Board?.WorkspaceId" 
                           CanManageTasks="CanManageTasks" 
                           CanMoveTasks="CanMoveTasks" />
             </ItemRenderer>
@@ -175,7 +173,7 @@
 
     private MudDropContainer<TaskDto>? _dropContainer;
 
-    private BoardRoleDto? _boardRole;
+    private BoardRoleDto? _boardRole => BoardDetailsStore.Board?.BoardRole;
     private WorkspaceRoleDto? _workspaceRole;
 
     private bool CanManageColumns => _boardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
@@ -185,40 +183,32 @@
     private async Task OnSearchChanged(string newValue)
     {
         _searchQuery = newValue;
-        await Store.LoadAsync(BoardId, _searchQuery);
+        await BoardDetailsStore.LoadAsync(BoardId, _searchQuery);
         _dropContainer?.Refresh();
     }
 
     protected override async Task OnInitializedAsync()
     {
-        Store.StateChanged += HandleStoreStateChanged;
-        await Store.LoadAsync(BoardId);
+        BoardDetailsStore.StateChanged += HandleStoreStateChanged;
+        await BoardDetailsStore.LoadAsync(BoardId);
         await ResolveRolesAsync();
     }
 
     private async Task ResolveRolesAsync()
     {
-        _boardRole = BoardStore.GetCachedRole(BoardId);
-
-        if (_boardRole == null && !BoardStore.IsLoaded)
+        if (BoardDetailsStore.Board != null)
         {
-            await BoardStore.LoadAsync(1);
-            _boardRole = BoardStore.GetCachedRole(BoardId);
-        }
-
-        if (Store.Board != null)
-        {
-            _workspaceRole = WorkspaceStore.GetCachedRole(Store.Board.WorkspaceId);
+            _workspaceRole = WorkspaceStore.GetCachedRole(BoardDetailsStore.Board.WorkspaceId);
             
             if (_workspaceRole == null)
             {
-                await WorkspaceStore.LoadWorkspaceDetailsAsync(Store.Board.WorkspaceId);
-                _workspaceRole = WorkspaceStore.GetCachedRole(Store.Board.WorkspaceId);
+                await WorkspaceStore.LoadWorkspaceDetailsAsync(BoardDetailsStore.Board.WorkspaceId);
+                _workspaceRole = WorkspaceStore.GetCachedRole(BoardDetailsStore.Board.WorkspaceId);
             }
         }
     }
 
-    public void Dispose() => Store.StateChanged -= HandleStoreStateChanged;
+    public void Dispose() => BoardDetailsStore.StateChanged -= HandleStoreStateChanged;
 
     private void HandleStoreStateChanged()
     {
@@ -236,7 +226,7 @@
 
         try
         {
-            await Store.MoveTaskAsync(task.Id, targetColumnId, newPosition);
+            await BoardDetailsStore.MoveTaskAsync(task.Id, targetColumnId, newPosition);
         }
         catch (Exception ex)
         {
@@ -268,7 +258,7 @@
 
         try
         {
-            await Store.ReorderColumnsAsync(columnToMoveId, newPosition);
+            await BoardDetailsStore.ReorderColumnsAsync(columnToMoveId, newPosition);
         }
         catch (Exception ex)
         {
@@ -302,7 +292,7 @@
             {
                 var columnName = result.Data?.ToString() ?? string.Empty;
 
-                await Store.CreateColumnAsync(columnName);
+                await BoardDetailsStore.CreateColumnAsync(columnName);
 
                 Snackbar.Add("Column created successfully", Severity.Success);
             }
@@ -319,7 +309,7 @@
         
         var parameters = new DialogParameters 
         { 
-            { nameof(ManageBoardMembersDialog.WorkspaceId), Store.Board!.WorkspaceId }, 
+            { nameof(ManageBoardMembersDialog.WorkspaceId), BoardDetailsStore.Board!.WorkspaceId }, 
             { nameof(ManageBoardMembersDialog.BoardId), BoardId },
             { nameof(ManageBoardMembersDialog.CurrentUserEmail), currentUserEmail }
         };
@@ -337,9 +327,9 @@
 
     private void NavigateBack()
     {
-        if (Store.Board != null)
+        if (BoardDetailsStore.Board != null)
         {
-            Navigation.NavigateTo($"/workspaces/{Store.Board.WorkspaceId}");
+            Navigation.NavigateTo($"/workspaces/{BoardDetailsStore.Board.WorkspaceId}");
         }
         else
         {

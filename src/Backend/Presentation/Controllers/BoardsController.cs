@@ -1,12 +1,10 @@
 using Application.Features.Boards.Commands;
 using Application.Features.Boards.Queries;
-using Application.Options;
 using Contracts.DTOs;
 using Contracts.Requests.Boards;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 namespace Presentation.Controllers;
 
@@ -15,19 +13,6 @@ namespace Presentation.Controllers;
 [Route("[controller]")]
 public class BoardsController(ISender sender) : ControllerBase
 {
-    [HttpGet]
-    public async Task<ActionResult<PagedList<BoardPreviewDto>>> GetBoards([FromServices] IOptions<PaginationOptions> paginationOptions, CancellationToken ct,
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int? pageSize = null,
-        [FromQuery] string? searchTerm = null)
-    {
-        var resolvedPageSize = pageSize ?? paginationOptions.Value.DefaultPageSize;
-
-        var result = await sender.Send(new GetBoardsQuery(pageNumber, resolvedPageSize, searchTerm), ct);
-
-        return Ok(result);
-    }
-
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<BoardWithColumnsDto>> GetBoardById(Guid id, [FromQuery] string? searchTerm, CancellationToken ct)
     {

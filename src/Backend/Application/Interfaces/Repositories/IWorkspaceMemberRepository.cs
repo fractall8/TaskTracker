@@ -1,6 +1,7 @@
-﻿using Application.Interfaces;
-using Contracts.DTOs;
+﻿using Contracts.DTOs;
 using Domain.Entities;
+
+namespace Application.Interfaces.Repositories;
 
 public interface IWorkspaceMemberRepository : IRepository<WorkspaceMember, Guid>
 {

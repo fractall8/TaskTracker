@@ -1,3 +1,5 @@
+using Contracts.Enums;
+
 namespace Contracts.DTOs;
 
 public record BoardWithColumnsDto(
@@ -5,4 +7,5 @@ public record BoardWithColumnsDto(
     string Name,
     string? Description,
     Guid WorkspaceId,
+    BoardRoleDto BoardRole,
     IEnumerable<ColumnDto> Columns);

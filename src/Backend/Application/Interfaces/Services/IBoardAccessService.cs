@@ -1,4 +1,5 @@
 using Application.Common.Models;
+using Contracts.Enums;
 
 namespace Application.Interfaces.Services;
 
@@ -17,4 +18,6 @@ public interface IBoardAccessService
     Task<BoardAccessContext> EnsureCanManageCommentsAsync(Guid boardId, CancellationToken ct = default);
 
     Task<BoardAccessContext> EnsureCanViewBoardAsync(Guid boardId, CancellationToken ct = default);
+
+    Task<BoardRoleDto?> GetEffectiveBoardRoleAsync(Guid boardId, CancellationToken ct = default);
 }

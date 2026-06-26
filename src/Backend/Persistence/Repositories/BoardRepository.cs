@@ -1,4 +1,4 @@
-using Application.Interfaces;
+using Application.Interfaces.Repositories;
 using Contracts.DTOs;
 using Contracts.Enums;
 using Domain.Entities;
@@ -10,6 +10,66 @@ namespace Persistence.Repositories;
 
 public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board, Guid>(dbContext), IBoardRepository
 {
+    public async Task<int> CountMemberWorkspaceBoardsAsync(Guid workspaceId, Guid userId, string? searchTerm = null,
+        CancellationToken ct = default)
+    {
+        var query = DbSet.Where(b =>
+            b.WorkspaceId == workspaceId && b.Members.Any(m => m.WorkspaceMember!.UserId == userId));
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            query = query.Where(b => EF.Functions.ILike(b.Name, $"%{searchTerm}%"));
+        }
+
+        return await query.CountAsync(ct);
+    }
+
+    public async Task<List<Board>> GetMemberWorkspaceBoardsPaginatedAsync(Guid workspaceId, Guid userId, int pageNumber,
+        int pageSize, string? searchTerm = null, CancellationToken ct = default)
+    {
+        var query = DbSet.Where(b =>
+            b.WorkspaceId == workspaceId && b.Members.Any(m => m.WorkspaceMember!.UserId == userId));
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            query = query.Where(b => EF.Functions.ILike(b.Name, $"%{searchTerm}%"));
+        }
+
+        return await query
+            .Include(b => b.Members)
+            .ThenInclude(m => m.WorkspaceMember)
+            .OrderByDescending(b => b.CreatedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+    }
+
+    public async Task<int> CountAllWorkspaceBoardsAsync(Guid workspaceId, string? searchTerm = null,
+        CancellationToken ct = default)
+    {
+        var query = DbSet.Where(b => b.WorkspaceId == workspaceId);
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            query = query.Where(b => EF.Functions.ILike(b.Name, $"%{searchTerm}%"));
+        }
+
+        return await query.CountAsync(ct);
+    }
+
+    public async Task<List<Board>> GetAllWorkspaceBoardsPaginatedAsync(Guid workspaceId, int pageNumber, int pageSize,
+        string? searchTerm = null, CancellationToken ct = default)
+    {
+        var query = DbSet.Where(b => b.WorkspaceId == workspaceId);
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            query = query.Where(b => EF.Functions.ILike(b.Name, $"%{searchTerm}%"));
+        }
+
+        return await query
+            .OrderByDescending(b => b.CreatedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+    }
+
     public async Task<Board?> GetBoardWithHierarchyAsync(Guid boardId, string? searchTerm = null,
         CancellationToken cancellationToken = default)
     {
@@ -94,7 +154,8 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
             .ToListAsync(ct);
     }
 
-    public async Task<int> CountBoardsByWorkspaceIdAsync(Guid workspaceId, Guid userId, string? searchTerm = null, CancellationToken ct = default)
+    public async Task<int> CountBoardsByWorkspaceIdAsync(Guid workspaceId, Guid userId, string? searchTerm = null,
+        CancellationToken ct = default)
     {
         var query = DbSet
             .Where(b => b.WorkspaceId == workspaceId && b.Members.Any(m => m.WorkspaceMember!.UserId == userId));
@@ -102,7 +163,8 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
         return await ApplySearchFilter(query, searchTerm).CountAsync(ct);
     }
 
-    public async Task<List<Board>> GetBoardsByWorkspaceIdPaginatedAsync(Guid workspaceId, Guid userId, int pageNumber, int pageSize, string? searchTerm = null, CancellationToken ct = default)
+    public async Task<List<Board>> GetBoardsByWorkspaceIdPaginatedAsync(Guid workspaceId, Guid userId, int pageNumber,
+        int pageSize, string? searchTerm = null, CancellationToken ct = default)
     {
         var query = DbSet
             .AsNoTracking()

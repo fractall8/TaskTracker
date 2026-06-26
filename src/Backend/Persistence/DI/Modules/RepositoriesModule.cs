@@ -1,4 +1,5 @@
-using Application.Interfaces;
+using Application.Interfaces.Repositories;
+using Application.Interfaces.UOW;
 using Microsoft.Extensions.DependencyInjection;
 using Persistence.Repositories;
 
@@ -10,6 +11,7 @@ internal static class RepositoriesModule
     {
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IBoardRepository, BoardRepository>();
+        services.AddScoped<IBoardMemberRepository, BoardMemberRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IColumnRepository, ColumnRepository>();
         services.AddScoped<ITaskRepository, TaskRepository>();

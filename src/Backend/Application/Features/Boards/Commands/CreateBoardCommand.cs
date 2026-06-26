@@ -1,5 +1,6 @@
-using Application.Interfaces;
+using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
+using Application.Interfaces.UOW;
 using Contracts.DTOs;
 using Domain.Constants;
 using Domain.Entities;
@@ -23,7 +24,7 @@ public class CreateBoardCommandHandler(
         var userInfo = await workspaceAccessService.EnsureCanManageWorkspaceAsync(request.WorkspaceId, ct);
 
         var workspaceMember =
-            await workspaceMemberRepository.GetByWorkspaceAndUserIdAsync(request.WorkspaceId, userInfo.Id, ct);
+            await workspaceMemberRepository.GetByWorkspaceAndUserIdAsync(request.WorkspaceId, userInfo.UserId, ct);
 
         if (workspaceMember == null)
         {
@@ -58,7 +59,7 @@ public class CreateBoardCommandHandler(
             Description: board.Description,
             CreatedAt: board.CreatedAt,
             UserRole: (Contracts.Enums.BoardRoleDto)admin.Role,
-            Members: [new UserWithRoleDto(userInfo.Id, userInfo.Email, null, (Contracts.Enums.BoardRoleDto)admin.Role)],
+            Members: [new UserWithRoleDto(userInfo.UserId, userInfo.Email, null, (Contracts.Enums.BoardRoleDto)admin.Role)],
             Columns: []
         );
     }

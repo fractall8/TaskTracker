@@ -1,5 +1,6 @@
-using Application.Interfaces;
+using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
+using Application.Interfaces.UOW;
 using Domain.Entities;
 using Domain.Enums;
 using FluentValidation;
@@ -29,7 +30,7 @@ public class AcceptWorkspaceInviteCommandHandler(
 
         var userInfo = await workspaceAccessService.GetCurrentUserInfoAsync(ct);
 
-        var existingRole = await workspaceRepository.GetUserRoleAsync(invite.WorkspaceId, userInfo.Id, ct);
+        var existingRole = await workspaceRepository.GetUserRoleAsync(invite.WorkspaceId, userInfo.UserId, ct);
 
         if (existingRole != null)
         {
@@ -40,7 +41,7 @@ public class AcceptWorkspaceInviteCommandHandler(
         {
             Id = Guid.NewGuid(),
             WorkspaceId = invite.WorkspaceId,
-            UserId = userInfo.Id,
+            UserId = userInfo.UserId,
             Role = WorkspaceRole.Member,
             JoinedAt = DateTimeOffset.UtcNow
         };

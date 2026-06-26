@@ -1,7 +1,7 @@
 using System.Linq.Expressions;
 using Domain.Entities;
 
-namespace Application.Interfaces;
+namespace Application.Interfaces.Repositories;
 
 public interface IRepository<TEntity, TId> where TEntity : BaseEntity<TId>
 {

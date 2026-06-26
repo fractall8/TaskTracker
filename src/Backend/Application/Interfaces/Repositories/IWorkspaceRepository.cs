@@ -1,7 +1,7 @@
 using Domain.Entities;
 using Domain.Enums;
 
-namespace Application.Interfaces;
+namespace Application.Interfaces.Repositories;
 
 public interface IWorkspaceRepository : IRepository<Workspace, Guid>
 {

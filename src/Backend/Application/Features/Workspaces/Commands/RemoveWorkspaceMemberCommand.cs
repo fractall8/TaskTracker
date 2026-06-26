@@ -1,5 +1,6 @@
-﻿using Application.Interfaces;
+﻿using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
+using Application.Interfaces.UOW;
 using Domain.Enums;
 using MediatR;
 
@@ -9,6 +10,7 @@ public record RemoveWorkspaceMemberCommand(Guid WorkspaceId, Guid UserIdToRemove
 
 public class RemoveWorkspaceMemberCommandHandler(
     IWorkspaceMemberRepository workspaceMemberRepository,
+    IBoardMemberRepository boardMemberRepository,
     IWorkspaceAccessService workspaceAccessService,
     IUnitOfWork unitOfWork)
     : IRequestHandler<RemoveWorkspaceMemberCommand>
@@ -17,20 +19,30 @@ public class RemoveWorkspaceMemberCommandHandler(
     {
         await workspaceAccessService.EnsureCanManageMembersAsync(request.WorkspaceId, cancellationToken);
 
-        var targetMember = await workspaceMemberRepository.GetByWorkspaceAndUserIdAsync(request.WorkspaceId, request.UserIdToRemove, cancellationToken)
-                           ?? throw new KeyNotFoundException("User is not a member of this workspace.");
+        var targetMember = await workspaceMemberRepository.GetByWorkspaceAndUserIdAsync(
+            request.WorkspaceId, request.UserIdToRemove, cancellationToken)
+            ?? throw new KeyNotFoundException("User is not a member of this workspace.");
 
-        if (request.UserIdToRemove == targetMember.UserId)
+        var currentMember = await workspaceAccessService.GetCurrentUserInfoAsync(cancellationToken);
+
+        if (currentMember.UserId == targetMember.UserId)
         {
-            throw new InvalidOperationException("You cannot remove yourself from the board using this command. Use 'Leave Board' action instead.");
+            throw new InvalidOperationException("You cannot remove yourself from the workspace using this command. Use 'Leave Workspace' instead.");
         }
 
         if (targetMember.Role == WorkspaceRole.Owner)
         {
-            throw new InvalidOperationException("The Owner cannot be removed from the workspace.");
+            throw new InvalidOperationException("The Owner cannot be removed from the workspace. Transfer ownership first.");
+        }
+
+        var userBoardMemberships = await boardMemberRepository.GetByWorkspaceMemberIdAsync(targetMember.Id, cancellationToken);
+        foreach (var membership in userBoardMemberships)
+        {
+            boardMemberRepository.Delete(membership);
         }
 
         workspaceMemberRepository.Delete(targetMember);
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

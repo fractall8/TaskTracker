@@ -1,4 +1,5 @@
-﻿using Contracts.DTOs;
+﻿using Application.Interfaces.Repositories;
+using Contracts.DTOs;
 using Contracts.Enums;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;

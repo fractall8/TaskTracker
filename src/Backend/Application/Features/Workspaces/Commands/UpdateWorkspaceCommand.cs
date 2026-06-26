@@ -1,5 +1,6 @@
-﻿using Application.Interfaces;
+﻿using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
+using Application.Interfaces.UOW;
 using Domain.Constants;
 using FluentValidation;
 using MediatR;

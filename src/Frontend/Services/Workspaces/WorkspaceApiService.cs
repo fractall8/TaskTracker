@@ -28,9 +28,14 @@ public class WorkspaceApiService(
     public async Task DeleteWorkspaceAsync(Guid workspaceId, CancellationToken ct = default) =>
         await (await workspaceApi.DeleteWorkspaceAsync(workspaceId, ct)).HandleResponseAsync();
 
-    public async Task<PagedList<BoardPreviewDto>> GetWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1,
+    public async Task<PagedList<BoardPreviewDto>> GetMyWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1,
         int pageSize = 24, string? searchTerm = null, CancellationToken ct = default) =>
-        await (await workspaceApi.GetWorkspaceBoardsAsync(workspaceId, pageNumber, pageSize, searchTerm, ct))
+        await (await workspaceApi.GetMyWorkspaceBoardsAsync(workspaceId, pageNumber, pageSize, searchTerm, ct))
+            .HandleResponseAsync();
+
+    public async Task<PagedList<BoardPreviewDto>> GetAllWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1,
+        int pageSize = 24, string? searchTerm = null, CancellationToken ct = default) =>
+        await (await workspaceApi.GetAllWorkspaceBoardsAsync(workspaceId, pageNumber, pageSize, searchTerm, ct))
             .HandleResponseAsync();
 
     public async Task<List<WorkspaceMemberDto>> GetWorkspaceUsersAsync(Guid workspaceId, string? searchTerm = null,
