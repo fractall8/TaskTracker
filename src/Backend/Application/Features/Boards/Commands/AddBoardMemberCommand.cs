@@ -28,7 +28,7 @@ public class AddBoardMemberCommandHandler(
             throw new KeyNotFoundException("Board not found.");
         }
 
-        await workspaceAccessService.EnsureCanChangeMemberRoleAsync(board.WorkspaceId, ct);
+        await workspaceAccessService.EnsureCanManageBoardMembersAsync(board.WorkspaceId, ct);
 
         var isAlreadyMember = await boardMemberRepository.AnyAsync(
             m => m.BoardId == request.BoardId && m.WorkspaceMemberId == request.WorkspaceMemberId,

@@ -1,10 +1,13 @@
 @page "/boards/{BoardId:guid}"
 @implements IDisposable
+@using System.Security.Claims
 @using Contracts.DTOs
 @using Contracts.Enums
 @using WebApp.Shared.Dialogs
 @inject IBoardDetailsStore Store
 @inject IBoardStore BoardStore
+@inject IWorkspaceStore WorkspaceStore
+@inject IProfileStore ProfileStore
 @inject NavigationManager Navigation
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
@@ -67,6 +70,17 @@
         </MudText>
 
         <MudSpacer/>
+
+        @if (_workspaceRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
+        {
+            <MudButton Variant="Variant.Outlined" 
+                       Color="Color.Primary" 
+                       StartIcon="@Icons.Material.Filled.Group" 
+                       Class="mr-4 rounded-lg"
+                       OnClick="OpenManageMembersDialog">
+                Manage Members
+            </MudButton>
+        }
 
         <div style="width: 300px;">
             <MudTextField T="string"
@@ -162,6 +176,7 @@
     private MudDropContainer<TaskDto>? _dropContainer;
 
     private BoardRoleDto? _boardRole;
+    private WorkspaceRoleDto? _workspaceRole;
 
     private bool CanManageColumns => _boardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
     private bool CanManageTasks => _boardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
@@ -178,10 +193,10 @@
     {
         Store.StateChanged += HandleStoreStateChanged;
         await Store.LoadAsync(BoardId);
-        await ResolveBoardRoleAsync();
+        await ResolveRolesAsync();
     }
 
-    private async Task ResolveBoardRoleAsync()
+    private async Task ResolveRolesAsync()
     {
         _boardRole = BoardStore.GetCachedRole(BoardId);
 
@@ -189,6 +204,17 @@
         {
             await BoardStore.LoadAsync(1);
             _boardRole = BoardStore.GetCachedRole(BoardId);
+        }
+
+        if (Store.Board != null)
+        {
+            _workspaceRole = WorkspaceStore.GetCachedRole(Store.Board.WorkspaceId);
+            
+            if (_workspaceRole == null)
+            {
+                await WorkspaceStore.LoadWorkspaceDetailsAsync(Store.Board.WorkspaceId);
+                _workspaceRole = WorkspaceStore.GetCachedRole(Store.Board.WorkspaceId);
+            }
         }
     }
 
@@ -286,6 +312,28 @@
             }
         }
     }
+    
+    private async Task OpenManageMembersDialog()
+    {
+        var currentUserEmail = ProfileStore.Profile?.Email ?? string.Empty;
+        
+        var parameters = new DialogParameters 
+        { 
+            { nameof(ManageBoardMembersDialog.WorkspaceId), Store.Board!.WorkspaceId }, 
+            { nameof(ManageBoardMembersDialog.BoardId), BoardId },
+            { nameof(ManageBoardMembersDialog.CurrentUserEmail), currentUserEmail }
+        };
+
+        var options = new DialogOptions 
+        { 
+            CloseButton = true, 
+            MaxWidth = MaxWidth.Medium, 
+            FullWidth = true,
+            CloseOnEscapeKey = true
+        };
+        
+        await DialogService.ShowAsync<ManageBoardMembersDialog>("Manage Board Members", parameters, options);
+    }
 
     private void NavigateBack()
     {
@@ -298,5 +346,4 @@
             Navigation.NavigateTo("/dashboard");
         }
     }
-
 }

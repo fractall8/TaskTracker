@@ -20,6 +20,11 @@ public class RemoveWorkspaceMemberCommandHandler(
         var targetMember = await workspaceMemberRepository.GetByWorkspaceAndUserIdAsync(request.WorkspaceId, request.UserIdToRemove, cancellationToken)
                            ?? throw new KeyNotFoundException("User is not a member of this workspace.");
 
+        if (request.UserIdToRemove == targetMember.UserId)
+        {
+            throw new InvalidOperationException("You cannot remove yourself from the board using this command. Use 'Leave Board' action instead.");
+        }
+
         if (targetMember.Role == WorkspaceRole.Owner)
         {
             throw new InvalidOperationException("The Owner cannot be removed from the workspace.");

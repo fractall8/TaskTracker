@@ -33,7 +33,7 @@ public class WorkspaceApiService(
         await (await workspaceApi.GetWorkspaceBoardsAsync(workspaceId, pageNumber, pageSize, searchTerm, ct))
             .HandleResponseAsync();
 
-    public async Task<List<UserDto>> GetWorkspaceUsersAsync(Guid workspaceId, string? searchTerm = null,
+    public async Task<List<WorkspaceMemberDto>> GetWorkspaceUsersAsync(Guid workspaceId, string? searchTerm = null,
         CancellationToken ct = default) =>
         await (await membersApi.GetWorkspaceUsersAsync(workspaceId, searchTerm, ct)).HandleResponseAsync();
 

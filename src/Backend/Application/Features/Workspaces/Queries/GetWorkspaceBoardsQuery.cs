@@ -20,8 +20,7 @@ public class GetWorkspaceBoardsQueryHandler(
 {
     public async Task<PagedList<BoardPreviewDto>> Handle(GetWorkspaceBoardsQuery request, CancellationToken ct)
     {
-        var workspaceRole = await workspaceAccessService.EnsureIsMemberAsync(request.WorkspaceId, ct);
-        var userInfo = await workspaceAccessService.GetCurrentUserInfoAsync(ct);
+        var userInfo = await workspaceAccessService.EnsureIsMemberAsync(request.WorkspaceId, ct);
 
         var totalCount =
             await boardRepository.CountBoardsByWorkspaceIdAsync(request.WorkspaceId, userInfo.Id, request.SearchTerm,
@@ -41,7 +40,7 @@ public class GetWorkspaceBoardsQueryHandler(
         {
             var boardRole = BoardRole.User;
 
-            if (workspaceRole is WorkspaceRole.Owner or WorkspaceRole.Admin)
+            if (userInfo.Role is WorkspaceRole.Owner or WorkspaceRole.Admin)
             {
                 boardRole = BoardRole.Admin;
             }

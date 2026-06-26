@@ -1,0 +1,233 @@
+﻿@implements IDisposable
+@using Contracts.DTOs
+@using Contracts.Enums
+@inject IBoardMembersStore Store
+@inject IWorkspaceStore WorkspaceStore
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        @if (!string.IsNullOrEmpty(Store.ErrorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-3">@Store.ErrorMessage</MudAlert>
+        }
+
+        <div class="d-flex align-center gap-3 mb-6">
+            <MudAutocomplete T="WorkspaceMemberDto"
+                             Label="Search workspace members..."
+                             Value="@_selectedUser"
+                             ValueChanged="@(u => _selectedUser = u)"
+                             SearchFunc="SearchWorkspaceUsers"
+                             ToStringFunc="@(u => u == null ? string.Empty : (string.IsNullOrEmpty(u.DisplayName) ? u.Email : $"{u.DisplayName} ({u.Email})"))"
+                             Variant="Variant.Outlined"
+                             Margin="Margin.Dense"
+                             Clearable="true"
+                             ShowDropDownIcon="false"
+                             Disabled="Store.IsProcessing"
+                             ShowProgressIndicator="true"
+                             DebounceInterval="500"
+                             Class="flex-grow-1">
+
+                <ItemTemplate Context="user">
+                    <div class="d-flex align-center gap-2">
+                        <MudAvatar Size="Size.Small" Color="Color.Primary">
+                            @if (!string.IsNullOrEmpty(user.AvatarUrl))
+                            {
+                                <MudImage Src="@user.AvatarUrl"/>
+                            }
+                            else
+                            {
+                                @(user.DisplayName?.FirstOrDefault() ?? user.Email.FirstOrDefault())
+                            }
+                        </MudAvatar>
+                        <div>
+                            <MudText Typo="Typo.body2">@(user.DisplayName ?? user.Email)</MudText>
+                            @if (!string.IsNullOrEmpty(user.DisplayName))
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@user.Email</MudText>
+                            }
+                        </div>
+                    </div>
+                </ItemTemplate>
+            </MudAutocomplete>
+
+            <MudSelect T="BoardRoleDto"
+                       @bind-Value="_selectedRole"
+                       Margin="Margin.Dense"
+                       Variant="Variant.Outlined"
+                       Style="width: 150px; flex-shrink: 0;"
+                       Disabled="Store.IsProcessing">
+                @foreach (var role in Enum.GetValues<BoardRoleDto>())
+                {
+                    <MudSelectItem Value="@role">@role.ToString()</MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="AddNewMember"
+                       Disabled="@(_selectedUser == null || Store.IsProcessing)"
+                       Style="height: 40px; flex-shrink: 0;">
+                Add
+            </MudButton>
+        </div>
+
+        <MudDivider Class="mb-4"/>
+
+        @if (Store.IsLoading)
+        {
+            <div class="d-flex justify-center my-4">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+            </div>
+        }
+        else
+        {
+            <MudTable Items="@Store.Members" Dense="true" Hover="true" Elevation="0" Class="mb-4">
+                <HeaderContent>
+                    <MudTh>User</MudTh>
+                    <MudTh>Role</MudTh>
+                    <MudTh Style="width: 50px;"></MudTh>
+                </HeaderContent>
+
+                <RowTemplate Context="member">
+                    <MudTd DataLabel="User">
+                        <div class="d-flex align-center gap-3">
+                            <MudAvatar Size="Size.Small" Color="Color.Primary">
+                                @if (!string.IsNullOrEmpty(member.AvatarUrl))
+                                {
+                                    <MudImage Src="@member.AvatarUrl"/>
+                                }
+                                else
+                                {
+                                    @(member.DisplayName?.FirstOrDefault() ?? member.Email.FirstOrDefault())
+                                }
+                            </MudAvatar>
+                            <div>
+                                <MudText Typo="Typo.body2" Class="font-weight-bold">
+                                    @(member.DisplayName ?? member.Email)
+                                </MudText>
+                                @if (!string.IsNullOrEmpty(member.DisplayName))
+                                {
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@member.Email</MudText>
+                                }
+                            </div>
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="Role">
+                        <MudSelect T="BoardRoleDto"
+                                   Value="@member.Role"
+                                   ValueChanged="@(role => OnRoleChanged(member, role))"
+                                   Margin="Margin.Dense"
+                                   Variant="Variant.Outlined"
+                                   Disabled="@(Store.IsProcessing || member.Email == CurrentUserEmail)">
+                            @foreach (var role in Enum.GetValues<BoardRoleDto>())
+                            {
+                                <MudSelectItem Value="@role">@role.ToString()</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudTd>
+                    <MudTd DataLabel="Actions">
+                        @if (member.Email != CurrentUserEmail)
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.RemoveCircleOutline"
+                                           Color="Color.Error"
+                                           Size="Size.Small"
+                                           Disabled="Store.IsProcessing"
+                                           OnClick="@(() => RemoveMember(member))"/>
+                        }
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close" Disabled="Store.IsProcessing">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public Guid WorkspaceId { get; set; }
+    [Parameter] public Guid BoardId { get; set; }
+    [Parameter] public string CurrentUserEmail { get; set; } = string.Empty;
+
+    private WorkspaceMemberDto? _selectedUser;
+    private BoardRoleDto _selectedRole = BoardRoleDto.User;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Store.StateChanged += StateHasChanged;
+        await Store.LoadAsync(BoardId);
+    }
+
+    public void Dispose()
+    {
+        Store.StateChanged -= StateHasChanged;
+        Store.Reset();
+    }
+
+    private async Task<IEnumerable<WorkspaceMemberDto>> SearchWorkspaceUsers(string value, CancellationToken ct)
+    {
+        try
+        {
+            var users = await WorkspaceStore.GetWorkspaceUsersAsync(WorkspaceId, value, ct);
+
+            var existingMemberIds = Store.Members.Select(m => m.WorkspaceMemberId).ToHashSet();
+
+            var filteredUsers = users.Where(u => !existingMemberIds.Contains(u.Id)).ToList();
+
+            return filteredUsers;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Search failed: {ex.Message}", Severity.Error);
+            return Array.Empty<WorkspaceMemberDto>();
+        }
+    }
+
+    private async Task AddNewMember()
+    {
+        if (_selectedUser == null) return;
+
+        try
+        {
+            await Store.AddMemberAsync(BoardId, _selectedUser.Id, _selectedRole);
+            _selectedUser = null;
+            _selectedRole = BoardRoleDto.User;
+            Snackbar.Add("Member added successfully.", Severity.Success);
+        }
+        catch
+        {
+            // skip
+        }
+    }
+
+    private async Task OnRoleChanged(BoardMemberDto member, BoardRoleDto newRole)
+    {
+        try
+        {
+            await Store.UpdateRoleAsync(BoardId, member.WorkspaceMemberId, newRole);
+            Snackbar.Add("Role updated successfully.", Severity.Success);
+        }
+        catch
+        {
+            // skip
+        }
+    }
+
+    private async Task RemoveMember(BoardMemberDto member)
+    {
+        try
+        {
+            await Store.RemoveMemberAsync(BoardId, member.WorkspaceMemberId);
+            Snackbar.Add("Member removed from board.", Severity.Info);
+        }
+        catch
+        {
+            // skip
+        }
+    }
+
+    private void Close() => MudDialog.Close();
+}

@@ -16,6 +16,8 @@ public interface IWorkspaceStore
 
     event Action? StateChanged;
 
+    WorkspaceRoleDto? GetCachedRole(Guid workspaceId);
+
     Task LoadUserWorkspacesAsync(CancellationToken ct = default);
 
     Task LoadWorkspaceDetailsAsync(Guid workspaceId, CancellationToken ct = default);
@@ -34,7 +36,7 @@ public interface IWorkspaceStore
 
     Task AcceptInviteAsync(string token, CancellationToken ct = default);
 
-    Task<List<UserDto>> GetWorkspaceUsersAsync(Guid workspaceId, string? searchTerm = null,
+    Task<List<WorkspaceMemberDto>> GetWorkspaceUsersAsync(Guid workspaceId, string? searchTerm = null,
         CancellationToken ct = default);
 
     Task<PagedList<BoardPreviewDto>> GetWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1, int pageSize = 24,

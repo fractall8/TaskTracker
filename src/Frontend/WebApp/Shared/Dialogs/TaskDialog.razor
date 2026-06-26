@@ -39,7 +39,7 @@
                 <MudSelectItem T="Guid?" Value="@((Guid?)null)">— Unassigned —</MudSelectItem>
                 @foreach (var user in _users)
                 {
-                    <MudSelectItem T="Guid?" Value="@((Guid?)user.Id)">@user.Email</MudSelectItem>
+                    <MudSelectItem T="Guid?" Value="@((Guid?)user.UserId)">@user.Email</MudSelectItem>
                 }
             </MudSelect>
         </MudForm>
@@ -66,7 +66,7 @@
 
     private MudForm? _form;
     private TaskFormModel _model = new();
-    private List<UserDto> _users = [];
+    private List<WorkspaceMemberDto> _users = [];
     
     private bool IsEditMode => Task is not null;
 

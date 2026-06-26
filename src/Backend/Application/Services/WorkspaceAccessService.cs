@@ -25,7 +25,7 @@ public class WorkspaceAccessService(
         return (userInfo.Id.Value, userInfo.Email);
     }
 
-    public async Task<WorkspaceRole> EnsureIsMemberAsync(Guid workspaceId, CancellationToken ct = default)
+    public async Task<(Guid Id, string Email, WorkspaceRole Role)> EnsureIsMemberAsync(Guid workspaceId, CancellationToken ct = default)
     {
         var userInfo = await GetCurrentUserInfoAsync(ct);
         var role = await workspaceRepository.GetUserRoleAsync(workspaceId, userInfo.Id, ct);
@@ -35,7 +35,7 @@ public class WorkspaceAccessService(
             throw new UnauthorizedAccessException("Workspace not found or you don't have permission to view it.");
         }
 
-        return role.Value;
+        return new (userInfo.Id,  userInfo.Email, role.Value);
     }
 
     public async Task<(Guid Id, string Email)> EnsureCanManageWorkspaceAsync(Guid workspaceId,
@@ -71,7 +71,7 @@ public class WorkspaceAccessService(
 
     public async Task EnsureCanManageBoardMembersAsync(Guid workspaceId, CancellationToken ct = default)
     {
-        await EnsureAccessAsync(workspaceId, WorkspaceRolePermissions.CanManageMembers,
+        await EnsureAccessAsync(workspaceId, WorkspaceRolePermissions.CanManageBoardRoles,
             "You don't have permission to manage board roles.", ct);
     }
 
