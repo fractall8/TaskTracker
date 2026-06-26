@@ -56,6 +56,7 @@ public class GetCommentsByTaskIdQueryHandler(
                 CreatedAt: comment.CreatedAt,
                 UpdatedAt: comment.UpdatedAt,
                 AuthorId: comment.CreatedById.Value,
+                AuthorAvatarUrl: author.AvatarUrl,
                 AuthorName: author.DisplayName ?? string.Empty
             ));
         }

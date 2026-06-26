@@ -31,7 +31,7 @@ public class CreateCommentCommandHandler(
         }
 
         var userInfo =
-            await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => new { u.Id, u.DisplayName }, ct);
+            await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => new { u.Id, u.DisplayName, u.AvatarUrl }, ct);
 
         if (userInfo == null)
         {
@@ -57,6 +57,7 @@ public class CreateCommentCommandHandler(
             CreatedAt: comment.CreatedAt,
             AuthorId: comment.CreatedById.Value,
             AuthorName: userInfo.DisplayName ?? string.Empty,
+            AuthorAvatarUrl: userInfo.AvatarUrl,
             UpdatedAt: comment.UpdatedAt);
     }
 }

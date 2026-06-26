@@ -7,9 +7,17 @@
 @inject IProfileStore ProfileStore
 
 <div class="d-flex gap-3 mb-6">
-    <MudAvatar Color="Color.Primary" Size="Size.Medium">
-        @(ProfileStore.Profile?.DisplayName?.FirstOrDefault().ToString()?.ToUpper() ?? "U")
+    <MudAvatar Color="Color.Primary" Size="Size.Medium" Style="font-size: 16px;">
+        @if (!string.IsNullOrEmpty(ProfileStore.Profile?.AvatarUrl))
+        {
+            <MudImage Src="@ProfileStore.Profile.AvatarUrl"/>
+        }
+        else
+        {
+            @(ProfileStore.Profile?.DisplayName?.FirstOrDefault().ToString()?.ToUpper() ?? ProfileStore.Profile?.Email?.FirstOrDefault().ToString()?.ToUpper() ?? "U")
+        }
     </MudAvatar>
+
     <MudPaper Elevation="0" Class="pa-0 flex-grow-1"
               Style="border: 1px solid var(--mud-palette-lines-default); overflow: hidden; border-radius: 8px; background-color: var(--mud-palette-surface);">
         <MudTextField @bind-Value="_newCommentText"
@@ -42,8 +50,15 @@ else if (_comments != null)
         @foreach (var comment in _comments.OrderByDescending(c => c.CreatedAt))
         {
             <div class="d-flex gap-3">
-                <MudAvatar Color="Color.Secondary" Size="Size.Medium">
-                    @(string.IsNullOrWhiteSpace(comment.AuthorName) ? "U" : comment.AuthorName.Substring(0, 1).ToUpper())
+                <MudAvatar Color="Color.Secondary" Size="Size.Medium" Style="font-size: 16px;">
+                    @if (!string.IsNullOrEmpty(comment.AuthorAvatarUrl))
+                    {
+                        <MudImage Src="@comment.AuthorAvatarUrl"/>
+                    }
+                    else
+                    {
+                        @(string.IsNullOrWhiteSpace(comment.AuthorName) ? "U" : comment.AuthorName.Substring(0, 1).ToUpper())
+                    }
                 </MudAvatar>
 
                 <div class="flex-grow-1">
@@ -54,7 +69,7 @@ else if (_comments != null)
                         </MudText>
 
                         <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">
-                            @comment.CreatedAt.ToString("MMM dd, HH:mm")
+                            @comment.CreatedAt.ToLocalTime().ToString("MMM dd, HH:mm")
                             @if (comment.UpdatedAt.HasValue)
                             {
                                 <span>(edited)</span>
@@ -247,4 +262,5 @@ else if (_comments != null)
             }
         }
     }
+
 }
