@@ -132,6 +132,14 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
                                                                Size="Size.Small" OnClick="@(() => DeleteBoard(board))"/>
                                             </MudTooltip>
                                         }
+                                        
+                                        <MudTooltip Text="Leave Board">
+                                            <MudIconButton Icon="@Icons.Material.Filled.ExitToApp"
+                                                           Color="Color.Warning"
+                                                           Size="Size.Small"
+                                                           OnClick="@(() => LeaveBoard(board))"/>
+                                        </MudTooltip>
+                                        
                                         <MudButton Href="@($"/boards/{board.Id}")" Variant="Variant.Text"
                                                    Color="Color.Primary" Class="ml-2 fw-bold">Open
                                         </MudButton>
@@ -320,7 +328,7 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
                         </MudTd>
                         <MudTd>@context.JoinedAt.ToLocalTime().ToString("dd MMM yyyy")</MudTd>
                         <MudTd>
-                            @if (context.UserId != _currentUserId && CanRemoveMember(context.Role))
+                            @if (context.UserId != _currentUserId && CanRemoveMember())
                             {
                                 <MudIconButton Icon="@Icons.Material.Filled.PersonRemove" Color="Color.Error"
                                                Size="Size.Small"
@@ -604,9 +612,7 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
     private bool CanEditRole(WorkspaceRoleDto targetRole) =>
         _currentUserRole is WorkspaceRoleDto.Owner && targetRole != WorkspaceRoleDto.Owner;
 
-    private bool CanRemoveMember(WorkspaceRoleDto targetRole) =>
-        _currentUserRole is WorkspaceRoleDto.Owner ||
-        (_currentUserRole is WorkspaceRoleDto.Admin && targetRole is WorkspaceRoleDto.Member);
+    private bool CanRemoveMember() => _currentUserRole is WorkspaceRoleDto.Owner;
 
     private string GetSafeErrorMessage(string error)
     {
@@ -825,6 +831,31 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
     {
         await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
         Snackbar.Add("Link copied to clipboard.", Severity.Info);
+    }
+
+    private async Task LeaveBoard(BoardPreviewDto board)
+    {
+        var safeBoardName = board.Name.Length > 40 ? board.Name[..40] + "..." : board.Name;
+
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            "Leave Board",
+            $"Are you sure you want to leave the board '{safeBoardName}'? You will lose access to it.",
+            yesText: "Leave", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            try
+            {
+                await BoardApiService.LeaveBoardAsync(board.Id);
+                Snackbar.Add("You left the board successfully.", Severity.Success);
+                
+                await LoadMyBoardsAsync();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to leave board: {ex.Message}", Severity.Error);
+            }
+        }
     }
 
 }

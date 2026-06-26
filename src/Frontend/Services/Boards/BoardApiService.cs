@@ -37,4 +37,7 @@ public class BoardApiService(IBoardApi boardApi) : IBoardApiService
         var response = await boardApi.DeleteBoardAsync(id, ct);
         await response.HandleResponseAsync();
     }
+
+    public async Task LeaveBoardAsync(Guid boardId, CancellationToken ct = default) =>
+        await (await boardApi.LeaveBoardAsync(boardId, ct)).HandleResponseAsync();
 }

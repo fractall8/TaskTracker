@@ -51,4 +51,11 @@ public class BoardsController(ISender sender) : ControllerBase
 
         return Ok(result);
     }
+
+    [HttpDelete("{boardId:guid}/leave")]
+    public async Task<IActionResult> LeaveBoard(Guid boardId, CancellationToken ct)
+    {
+        await sender.Send(new LeaveBoardCommand(boardId), ct);
+        return NoContent();
+    }
 }

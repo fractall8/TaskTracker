@@ -59,7 +59,7 @@ public class BoardAccessService(
 
         var workspaceRole = await workspaceRepository.GetUserRoleAsync(board.WorkspaceId, userId, ct);
 
-        if (workspaceRole is WorkspaceRole.Owner)
+        if (workspaceRole is WorkspaceRole.Owner or WorkspaceRole.Admin)
         {
             return BoardRoleDto.Admin;
         }

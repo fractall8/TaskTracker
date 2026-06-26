@@ -4,6 +4,7 @@ using Application.Interfaces.UOW;
 using Domain.Entities;
 using Domain.Enums;
 using FluentValidation;
+using FluentValidation.Results;
 using MediatR;
 
 namespace Application.Features.Boards.Commands;
@@ -48,7 +49,7 @@ public class UpdateBoardMemberRoleCommandHandler(
 
             if (totalAdmins <= 1)
             {
-                throw new InvalidOperationException("Cannot demote the last Admin of this board.");
+                throw new ValidationException([new ValidationFailure("Role", "Cannot demote the last Admin of this board.")]);
             }
         }
 

@@ -19,4 +19,14 @@ public class BoardMemberRepository(TaskTrackerDbContext dbContext)
             .Include(bm => bm.WorkspaceMember)
             .FirstOrDefaultAsync(bm => bm.BoardId == boardId && bm.WorkspaceMember!.UserId == userId, ct);
     }
+
+
+    public async Task<bool> RemoveUserFromBoardAsync(Guid boardId, Guid userId, CancellationToken ct = default)
+    {
+        var deletedRows = await DbSet
+            .Where(bm => bm.BoardId == boardId && bm.WorkspaceMember!.UserId == userId)
+            .ExecuteDeleteAsync(ct);
+
+        return deletedRows > 0;
+    }
 }
