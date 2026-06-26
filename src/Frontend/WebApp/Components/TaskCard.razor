@@ -71,7 +71,7 @@
 @code {
     [Parameter, EditorRequired] public TaskDto Task { get; set; } = null!;
 
-    [Parameter] public Guid? WorkspaceId { get; set; }
+    [Parameter] public Guid BoardId { get; set; }
 
     [Parameter] public bool CanManageTasks { get; set; }
     [Parameter] public bool CanMoveTasks { get; set; } = true;
@@ -102,7 +102,7 @@
         var parameters = new DialogParameters
         {
             ["Task"] = Task,
-            ["WorkspaceId"] = WorkspaceId
+            ["Boardid"] = BoardId
         };
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
 

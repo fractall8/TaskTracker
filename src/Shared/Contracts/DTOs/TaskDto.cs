@@ -10,8 +10,10 @@ public record TaskDto(
 
     Guid? AssigneeId,
     string? AssigneeName,
+    string? AssigneeAvatarUrl,
 
     Guid ReporterId,
     string? ReporterName,
+    string? ReporterAvatarUrl,
 
     List<AttachmentDto> Attachments);

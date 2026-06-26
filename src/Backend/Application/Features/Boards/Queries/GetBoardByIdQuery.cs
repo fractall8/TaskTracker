@@ -42,8 +42,10 @@ public class GetBoardByIdQueryHandler(
                     ColumnId: t.ColumnId,
                     AssigneeId: t.AssigneeId,
                     AssigneeName: t.Assignee?.DisplayName,
+                    AssigneeAvatarUrl: t.Assignee?.AvatarUrl,
                     ReporterId: t.ReporterId,
                     ReporterName: t.Reporter?.DisplayName,
+                    ReporterAvatarUrl: t.Reporter?.AvatarUrl,
                     Attachments: new List<AttachmentDto>()
                 )).ToList()
             ))

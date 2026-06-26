@@ -128,7 +128,7 @@
                     @foreach (var column in BoardDetailsStore.Board.Columns)
                     {
                         <BoardColumn Column="column"
-                                     WorkspaceId="@BoardDetailsStore.Board.WorkspaceId"
+                                     BoardId="@BoardId"
                                      IsDragged="_draggedColumn?.Id == column.Id"
                                      IsDropTarget="_targetColumn?.Id == column.Id"
                                      CanManageColumns="CanManageColumns"
@@ -155,7 +155,7 @@
 
             <ItemRenderer>
                 <TaskCard Task="context" 
-                          WorkspaceId="@BoardDetailsStore.Board?.WorkspaceId" 
+                          BoardId="@BoardId" 
                           CanManageTasks="CanManageTasks" 
                           CanMoveTasks="CanMoveTasks" />
             </ItemRenderer>

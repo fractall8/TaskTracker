@@ -185,6 +185,7 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
             .Where(bm => bm.BoardId == boardId)
             .Select(bm => new BoardMemberDto(
                 bm.WorkspaceMemberId,
+                bm.WorkspaceMember!.UserId,
                 bm.WorkspaceMember!.User!.Email,
                 bm.WorkspaceMember.User.DisplayName,
                 bm.WorkspaceMember.User.AvatarUrl,

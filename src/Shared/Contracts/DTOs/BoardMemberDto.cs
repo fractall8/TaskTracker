@@ -2,6 +2,7 @@
 
 public record BoardMemberDto(
     Guid WorkspaceMemberId,
+    Guid UserId,
     string Email,
     string? DisplayName,
     string? AvatarUrl,

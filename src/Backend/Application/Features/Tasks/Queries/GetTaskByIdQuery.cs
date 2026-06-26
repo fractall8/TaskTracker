@@ -33,7 +33,9 @@ public class GetTaskByIdQueryHandler(
 
         return new TaskDto(
             task.Id, task.Title, task.Description, task.Position, task.DueDate,
-            task.ColumnId, task.AssigneeId, task.Assignee?.DisplayName, task.ReporterId, task.Reporter?.DisplayName,
+            task.ColumnId, task.AssigneeId, task.Assignee?.DisplayName, task.Assignee?.AvatarUrl, task.ReporterId,
+            task.Reporter?.DisplayName,
+            task.Reporter?.AvatarUrl,
             attachments);
     }
 }

@@ -4,7 +4,6 @@
 @using Services.Abstractions.Tasks
 @using WebApp.Shared.Dialogs
 @inject ITaskApiService TaskApi
-@inject IBoardApiService BoardApiService
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
@@ -114,8 +113,15 @@
                                 Reporter
                             </MudText>
                             <div class="d-flex align-center gap-2 mt-1">
-                                <MudAvatar Size="Size.Small" Color="Color.Primary">
-                                    @((_task.ReporterName?.FirstOrDefault() ?? 'U').ToString().ToUpper())
+                                <MudAvatar Size="Size.Small" Color="Color.Primary" Style="font-size: 12px;">
+                                    @if (!string.IsNullOrEmpty(_task.ReporterAvatarUrl))
+                                    {
+                                        <MudImage Src="@_task.ReporterAvatarUrl" />
+                                    }
+                                    else
+                                    {
+                                        @((_task.ReporterName?.FirstOrDefault() ?? 'U').ToString().ToUpper())
+                                    }
                                 </MudAvatar>
                                 <MudText Typo="Typo.body2"
                                          Style="color: var(--mud-palette-text-primary); font-weight: 500;">
@@ -134,8 +140,15 @@
                             @if (_task.AssigneeId.HasValue)
                             {
                                 <div class="d-flex align-center gap-2 mt-1">
-                                    <MudAvatar Size="Size.Small" Color="Color.Secondary">
-                                        @((_task.AssigneeName?.FirstOrDefault() ?? 'U').ToString().ToUpper())
+                                    <MudAvatar Size="Size.Small" Color="Color.Secondary" Style="font-size: 12px;">
+                                        @if (!string.IsNullOrEmpty(_task.AssigneeAvatarUrl))
+                                        {
+                                            <MudImage Src="@_task.AssigneeAvatarUrl" />
+                                        }
+                                        else
+                                        {
+                                            @((_task.AssigneeName?.FirstOrDefault() ?? 'U').ToString().ToUpper())
+                                        }
                                     </MudAvatar>
                                     <MudText Typo="Typo.body2"
                                              Style="color: var(--mud-palette-text-primary); font-weight: 500;">
@@ -177,13 +190,11 @@
     [Parameter] public Guid TaskId { get; set; }
 
     private TaskDto? _task;
-    private Guid? _workspaceId;
     private bool _isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadTaskAsync();
-        await LoadWorkspaceIdAsync();
     }
 
     private async Task LoadTaskAsync()
@@ -203,25 +214,12 @@
         }
     }
 
-    private async Task LoadWorkspaceIdAsync()
-    {
-        try
-        {
-            var boardResponse = await BoardApiService.GetBoardByIdAsync(BoardId);
-            _workspaceId = boardResponse?.WorkspaceId;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to load board details: {ex.Message}");
-        }
-    }
-
     private async Task OpenEditTaskDialog()
     {
         var parameters = new DialogParameters<TaskDialog>
         {
             { x => x.Task, _task },
-            { x => x.WorkspaceId, _workspaceId }
+            { x => x.BoardId, BoardId } 
         };
 
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
@@ -269,5 +267,4 @@
             }
         }
     }
-
 }

@@ -19,10 +19,12 @@ public class GetTasksByBoardIdQueryHandler(
 
         var tasks = await taskRepository.GetTasksByBoardIdAsync(request.BoardId, cancellationToken);
 
-        return tasks.Select(task => new TaskDto(
+        return [.. tasks.Select(task => new TaskDto(
             task.Id, task.Title, task.Description, task.Position, task.DueDate,
-            task.ColumnId, task.AssigneeId, task.Assignee?.DisplayName, task.ReporterId, task.Reporter?.DisplayName, []
-        )).ToList();
+            task.ColumnId, task.AssigneeId, task.Assignee?.DisplayName, task.Assignee?.AvatarUrl, task.ReporterId,
+            task.Reporter?.DisplayName,
+            task.Reporter?.AvatarUrl,
+            []))];
     }
 }
 
