@@ -37,4 +37,12 @@ public class ColumnRepository(TaskTrackerDbContext dbContext)
                 .ExecuteUpdateAsync(s => s.SetProperty(c => c.Position, c => c.Position + 1), ct);
         }
     }
+
+    public async Task<int> GetMaxPositionAsync(Guid boardId, CancellationToken ct = default)
+    {
+        return await DbContext.Columns
+            .Where(c => c.BoardId == boardId && !c.IsDeleted)
+            .Select(c => (int?)c.Position)
+            .MaxAsync(ct) ?? 0;
+    }
 }

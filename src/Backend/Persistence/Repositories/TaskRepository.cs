@@ -49,7 +49,7 @@ public class TaskRepository(TaskTrackerDbContext dbContext) : Repository<TaskIte
     {
         return await DbContext.Tasks
             .Where(t => t.ColumnId == columnId)
-            .MaxAsync(t => (int?)t.Position, ct) ?? -1;
+            .MaxAsync(t => (int?)t.Position, ct) ?? 0;
     }
 
     public async Task DecrementPositionsAsync(Guid columnId, int startingFromPosition, CancellationToken ct = default)

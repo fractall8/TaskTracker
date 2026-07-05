@@ -33,15 +33,18 @@ public class MoveColumnCommandHandler(
             throw new KeyNotFoundException($"Column {request.ColumnId} does not exist on this board");
         }
 
-        if (column.Position == request.NewPosition)
+        var maxPosition = await columnRepository.GetMaxPositionAsync(request.BoardId, ct);
+        var safeNewPosition = Math.Min(request.NewPosition, maxPosition);
+
+        if (column.Position == safeNewPosition)
         {
             return;
         }
 
         var oldPosition = column.Position;
-        await columnRepository.UpdatePositionsOnMoveAsync(request.BoardId, oldPosition, request.NewPosition, ct);
+        await columnRepository.UpdatePositionsOnMoveAsync(request.BoardId, oldPosition, safeNewPosition, ct);
 
-        column.Position = request.NewPosition;
+        column.Position = safeNewPosition;
         columnRepository.Update(column);
 
         await unitOfWork.SaveChangesAsync(ct);
