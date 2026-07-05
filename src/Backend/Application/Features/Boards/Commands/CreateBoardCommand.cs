@@ -1,5 +1,6 @@
-using Application.Interfaces;
+using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
+using Application.Interfaces.UOW;
 using Contracts.DTOs;
 using Domain.Constants;
 using Domain.Entities;
@@ -13,6 +14,7 @@ public record CreateBoardCommand(Guid WorkspaceId, string Name, string? Descript
 
 public class CreateBoardCommandHandler(
     IWorkspaceAccessService workspaceAccessService,
+    IWorkspaceMemberRepository workspaceMemberRepository,
     IBoardRepository boardRepository,
     IUnitOfWork unitOfWork)
     : IRequestHandler<CreateBoardCommand, BoardDto>
@@ -20,6 +22,14 @@ public class CreateBoardCommandHandler(
     public async Task<BoardDto> Handle(CreateBoardCommand request, CancellationToken ct)
     {
         var userInfo = await workspaceAccessService.EnsureCanManageWorkspaceAsync(request.WorkspaceId, ct);
+
+        var workspaceMember =
+            await workspaceMemberRepository.GetByWorkspaceAndUserIdAsync(request.WorkspaceId, userInfo.UserId, ct);
+
+        if (workspaceMember == null)
+        {
+            throw new InvalidOperationException("User is not a member of this workspace.");
+        }
 
         var board = new Board
         {
@@ -33,14 +43,14 @@ public class CreateBoardCommandHandler(
         {
             Id = Guid.NewGuid(),
             BoardId = board.Id,
-            UserId = userInfo.Id,
-            Role = BoardRole.Admin
+            WorkspaceMemberId = workspaceMember.Id,
+            Role = BoardRole.Admin,
+            JoinedAt = DateTimeOffset.UtcNow
         };
 
         board.Members.Add(admin);
 
         await boardRepository.AddAsync(board, ct);
-
         await unitOfWork.SaveChangesAsync(ct);
 
         return new BoardDto(
@@ -49,7 +59,7 @@ public class CreateBoardCommandHandler(
             Description: board.Description,
             CreatedAt: board.CreatedAt,
             UserRole: (Contracts.Enums.BoardRoleDto)admin.Role,
-            Members: [new UserWithRoleDto(userInfo.Id, userInfo.Email, null, (Contracts.Enums.BoardRoleDto)admin.Role)],
+            Members: [new UserWithRoleDto(userInfo.UserId, userInfo.Email, null, (Contracts.Enums.BoardRoleDto)admin.Role)],
             Columns: []
         );
     }

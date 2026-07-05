@@ -9,7 +9,8 @@
 @inject IProfileStore ProfileStore
 @using Contracts.DTOs
 @using Contracts.Enums
-@using Contracts.Requests
+@using Contracts.Requests.Boards
+@using Contracts.Requests.Workspaces
 @using WebApp.Shared.Dialogs
 
 <PageTitle>@(WorkspaceStore.CurrentWorkspace?.Name ?? "Workspace") - TaskTracker</PageTitle>
@@ -46,14 +47,14 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
 
         <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pt-4">
 
-            <MudTabPanel Text="Boards" Icon="@Icons.Material.Filled.Dashboard">
+            <MudTabPanel Text="My Boards" Icon="@Icons.Material.Filled.Dashboard">
                 <div class="d-flex flex-column flex-md-row justify-space-between align-center mb-4 gap-3">
-                    <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-secondary);">Boards</MudText>
+                    <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-secondary);">My Boards</MudText>
                     <div class="d-flex align-center gap-2">
                         <MudTextField T="string"
-                                      Value="@_boardSearchTerm"
-                                      ValueChanged="OnBoardSearchChanged"
-                                      Placeholder="Search boards..."
+                                      Value="@_myBoardSearchTerm"
+                                      ValueChanged="OnMyBoardSearchChanged"
+                                      Placeholder="Search my boards..."
                                       Adornment="Adornment.Start"
                                       AdornmentIcon="@Icons.Material.Filled.Search"
                                       IconSize="Size.Small"
@@ -63,7 +64,7 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
                                       Immediate="true"
                                       DebounceInterval="400"
                                       Style="min-width: 220px;"/>
-                        <MudSelect T="int" Value="@_boardPageSize" ValueChanged="OnBoardPageSizeChanged"
+                        <MudSelect T="int" Value="@_myBoardPageSize" ValueChanged="OnMyBoardPageSizeChanged"
                                    Variant="Variant.Outlined" Margin="Margin.Dense"
                                    Dense="true" Style="width: 90px;">
                             <MudSelectItem Value="12">12</MudSelectItem>
@@ -81,30 +82,30 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
                     </div>
                 </div>
 
-                @if (_boardsLoading)
+                @if (_myBoardsLoading)
                 {
                     <div class="d-flex justify-center mt-8">
                         <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
                     </div>
                 }
-                else if (!_boards.Any())
+                else if (!_myBoards.Any())
                 {
                     <MudAlert Severity="Severity.Info" Class="rounded-lg">
-                        @(string.IsNullOrEmpty(_boardSearchTerm) ? "No boards yet. Create the first one!" : "No boards match your search.")
+                        @(string.IsNullOrEmpty(_myBoardSearchTerm) ? "You are not a member of any boards yet." : "No boards match your search.")
                     </MudAlert>
                 }
                 else
                 {
                     <MudGrid>
-                        @foreach (var board in _boards)
+                        @foreach (var board in _myBoards)
                         {
                             <MudItem xs="12" sm="6" md="4" lg="3">
                                 <MudCard Elevation="2" Class="h-100 d-flex flex-column rounded-lg"
                                          Style="border: 1px solid var(--mud-palette-lines-default); background-color: var(--mud-palette-surface);">
                                     <MudCardHeader>
                                         <CardHeaderContent>
-                                            <MudText Typo="Typo.h6" Class="fw-bold"
-                                                     Style="color: var(--mud-palette-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                            <MudText Typo="Typo.h6" Class="fw-bold text-truncate"
+                                                     Style="color: var(--mud-palette-text-primary);">
                                                 @board.Name
                                             </MudText>
                                             <MudText Typo="Typo.caption"
@@ -119,7 +120,7 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
                                         </MudText>
                                     </MudCardContent>
                                     <MudCardActions Class="justify-end px-4 pb-4">
-                                        @if (_currentUserRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner || board.BoardRole.ToString() == "Admin")
+                                        @if (_currentUserRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner || board.BoardRole == BoardRoleDto.Admin)
                                         {
                                             <MudTooltip Text="Edit Board">
                                                 <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Default"
@@ -131,9 +132,16 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
                                                                Size="Size.Small" OnClick="@(() => DeleteBoard(board))"/>
                                             </MudTooltip>
                                         }
+                                        
+                                        <MudTooltip Text="Leave Board">
+                                            <MudIconButton Icon="@Icons.Material.Filled.ExitToApp"
+                                                           Color="Color.Warning"
+                                                           Size="Size.Small"
+                                                           OnClick="@(() => LeaveBoard(board))"/>
+                                        </MudTooltip>
+                                        
                                         <MudButton Href="@($"/boards/{board.Id}")" Variant="Variant.Text"
-                                                   Color="Color.Primary" Class="ml-2 fw-bold">
-                                            Open
+                                                   Color="Color.Primary" Class="ml-2 fw-bold">Open
                                         </MudButton>
                                     </MudCardActions>
                                 </MudCard>
@@ -141,53 +149,172 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
                         }
                     </MudGrid>
 
-                    @if (_boardPagination.TotalPages > 1)
+                    @if (_myBoardPagination.TotalPages > 1)
                     {
                         <div class="d-flex justify-center mt-6">
-                            <MudPagination Count="@_boardPagination.TotalPages"
-                                           Selected="@_boardCurrentPage"
-                                           SelectedChanged="OnBoardPageChanged"
-                                           Color="Color.Primary"
-                                           ShowFirstButton="true"
-                                           ShowLastButton="true"/>
+                            <MudPagination Count="@_myBoardPagination.TotalPages" Selected="@_myBoardCurrentPage"
+                                           SelectedChanged="OnMyBoardPageChanged" Color="Color.Primary"
+                                           ShowFirstButton="true" ShowLastButton="true"/>
                         </div>
                     }
                 }
             </MudTabPanel>
 
+            @if (_currentUserRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
+            {
+                <MudTabPanel Text="All Workspace Boards" Icon="@Icons.Material.Filled.Business">
+                    <div class="d-flex flex-column flex-md-row justify-space-between align-center mb-4 gap-3">
+                        <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-secondary);">All Workspace Boards
+                        </MudText>
+                        <div class="d-flex align-center gap-2">
+                            <MudTextField T="string"
+                                          Value="@_allBoardSearchTerm"
+                                          ValueChanged="OnAllBoardSearchChanged"
+                                          Placeholder="Search all boards..."
+                                          Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.Search"
+                                          IconSize="Size.Small"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Clearable="true"
+                                          Immediate="true"
+                                          DebounceInterval="400"
+                                          Style="min-width: 220px;"/>
+                            <MudSelect T="int" Value="@_allBoardPageSize" ValueChanged="OnAllBoardPageSizeChanged"
+                                       Variant="Variant.Outlined" Margin="Margin.Dense"
+                                       Dense="true" Style="width: 90px;">
+                                <MudSelectItem Value="12">12</MudSelectItem>
+                                <MudSelectItem Value="24">24</MudSelectItem>
+                                <MudSelectItem Value="48">48</MudSelectItem>
+                            </MudSelect>
+                        </div>
+                    </div>
+
+                    @if (_allBoardsLoading)
+                    {
+                        <div class="d-flex justify-center mt-8">
+                            <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+                        </div>
+                    }
+                    else if (!_allBoards.Any())
+                    {
+                        <MudAlert Severity="Severity.Info" Class="rounded-lg">
+                            @(string.IsNullOrEmpty(_allBoardSearchTerm) ? "No boards exist in this workspace." : "No boards match your search.")
+                        </MudAlert>
+                    }
+                    else
+                    {
+                        <MudGrid>
+                            @foreach (var board in _allBoards)
+                            {
+                                <MudItem xs="12" sm="6" md="4" lg="3">
+                                    <MudCard Elevation="2" Class="h-100 d-flex flex-column rounded-lg"
+                                             Style="border: 1px solid var(--mud-palette-lines-default); background-color: var(--mud-palette-surface);">
+                                        <MudCardHeader>
+                                            <CardHeaderContent>
+                                                <MudText Typo="Typo.h6" Class="fw-bold text-truncate"
+                                                         Style="color: var(--mud-palette-text-primary);">
+                                                    @board.Name
+                                                </MudText>
+                                                <MudText Typo="Typo.caption"
+                                                         Style="color: var(--mud-palette-text-secondary); font-weight: 600; text-transform: uppercase;">
+                                                    Global Access
+                                                </MudText>
+                                            </CardHeaderContent>
+                                        </MudCardHeader>
+                                        <MudCardContent Class="flex-grow-1 pt-0">
+                                            <MudText Typo="Typo.body2"
+                                                     Style="color: var(--mud-palette-text-secondary);">
+                                                @(string.IsNullOrWhiteSpace(board.Description) ? "No description." : board.Description)
+                                            </MudText>
+                                        </MudCardContent>
+                                        <MudCardActions Class="justify-end px-4 pb-4">
+                                            <MudTooltip Text="Edit Board">
+                                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Default"
+                                                               Size="Size.Small"
+                                                               OnClick="@(() => OpenEditBoardDialog(board))"/>
+                                            </MudTooltip>
+                                            <MudTooltip Text="Delete Board">
+                                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                                               Size="Size.Small" OnClick="@(() => DeleteBoard(board))"/>
+                                            </MudTooltip>
+                                            <MudButton Href="@($"/boards/{board.Id}")" Variant="Variant.Text"
+                                                       Color="Color.Primary" Class="ml-2 fw-bold">Open
+                                            </MudButton>
+                                        </MudCardActions>
+                                    </MudCard>
+                                </MudItem>
+                            }
+                        </MudGrid>
+
+                        @if (_allBoardPagination.TotalPages > 1)
+                        {
+                            <div class="d-flex justify-center mt-6">
+                                <MudPagination Count="@_allBoardPagination.TotalPages" Selected="@_allBoardCurrentPage"
+                                               SelectedChanged="OnAllBoardPageChanged" Color="Color.Primary"
+                                               ShowFirstButton="true" ShowLastButton="true"/>
+                            </div>
+                        }
+                    }
+                </MudTabPanel>
+            }
+
             <MudTabPanel Text="Members" Icon="@Icons.Material.Filled.Group">
                 <div class="d-flex justify-space-between align-center mb-4">
                     <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-secondary);">Members</MudText>
                 </div>
-                
 
                 <MudTable Items="@workspace.Members" Hover="true" Elevation="0"
                           Style="border: 1px solid var(--mud-palette-lines-default); border-radius: 8px;">
                     <HeaderContent>
-                        <MudTh>Email</MudTh>
+                        <MudTh>Member</MudTh>
                         <MudTh>Role</MudTh>
                         <MudTh>Joined</MudTh>
                         <MudTh Style="width: 60px;"></MudTh>
                     </HeaderContent>
                     <RowTemplate>
                         <MudTd>
-                            <span>@context.Email</span>
-                            @if (context.UserId == _currentUserId)
-                            {
-                                <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined"
-                                         Class="ml-2" Style="height: 18px; font-size: 10px;">You
-                                </MudChip>
-                            }
+                            <div class="d-flex align-center gap-3">
+                                <MudAvatar Size="Size.Medium" Color="Color.Primary">
+                                    @{
+                                        var displayName = !string.IsNullOrWhiteSpace(context.DisplayName) ? context.DisplayName : context.Email;
+                                        var initial = displayName.FirstOrDefault().ToString().ToUpper();
+                                    }
+                                    @if (!string.IsNullOrEmpty(context.AvatarUrl))
+                                    {
+                                        <MudImage Src="@context.AvatarUrl"/>
+                                    }
+                                    else
+                                    {
+                                        @initial
+                                    }
+                                </MudAvatar>
+                                <div class="d-flex flex-column">
+                                    <div class="d-flex align-center gap-2">
+                                        <MudText Typo="Typo.body2" Class="fw-bold"
+                                                 Style="color: var(--mud-palette-text-primary);">
+                                            @context.DisplayName
+                                        </MudText>
+                                        @if (context.UserId == _currentUserId)
+                                        {
+                                            <MudChip T="string" Size="Size.Small" Color="Color.Primary"
+                                                     Variant="Variant.Outlined"
+                                                     Style="height: 18px; font-size: 10px;">You
+                                            </MudChip>
+                                        }
+                                    </div>
+                                    <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">
+                                        @context.Email
+                                    </MudText>
+                                </div>
+                            </div>
                         </MudTd>
                         <MudTd>
                             @if (context.UserId != _currentUserId && CanEditRole(context.Role))
                             {
-                                <MudSelect T="WorkspaceRoleDto"
-                                           Value="@context.Role"
+                                <MudSelect T="WorkspaceRoleDto" Value="@context.Role"
                                            ValueChanged="@(r => ChangeMemberRole(context.UserId, r))"
-                                           Variant="Variant.Outlined"
-                                           Margin="Margin.Dense"
-                                           Dense="true"
+                                           Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true"
                                            Style="min-width: 110px;">
                                     <MudSelectItem Value="WorkspaceRoleDto.Member">Member</MudSelectItem>
                                     <MudSelectItem Value="WorkspaceRoleDto.Admin">Admin</MudSelectItem>
@@ -195,19 +322,16 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
                             }
                             else
                             {
-                                <MudChip T="string" Size="Size.Small"
-                                         Color="@RoleColor(context.Role)"
-                                         Variant="Variant.Outlined">
-                                    @context.Role.ToString()
-                                </MudChip>
+                                <MudChip T="string" Size="Size.Small" Color="@RoleColor(context.Role)"
+                                         Variant="Variant.Outlined">@context.Role.ToString()</MudChip>
                             }
                         </MudTd>
                         <MudTd>@context.JoinedAt.ToLocalTime().ToString("dd MMM yyyy")</MudTd>
                         <MudTd>
-                            @if (context.UserId != _currentUserId && CanRemoveMember(context.Role))
+                            @if (context.UserId != _currentUserId && CanRemoveMember())
                             {
-                                <MudIconButton Icon="@Icons.Material.Filled.PersonRemove"
-                                               Color="Color.Error" Size="Size.Small"
+                                <MudIconButton Icon="@Icons.Material.Filled.PersonRemove" Color="Color.Error"
+                                               Size="Size.Small"
                                                OnClick="@(() => RemoveMember(context.UserId, context.Email))"/>
                             }
                         </MudTd>
@@ -219,21 +343,16 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
             {
                 <MudTabPanel Text="Invites" Icon="@Icons.Material.Filled.VpnKey">
                     <div class="d-flex justify-space-between align-center mb-4">
-                        <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-secondary);">Manage Invites</MudText>
-        
+                        <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-secondary);">Manage Invites
+                        </MudText>
                         <div class="d-flex align-center gap-2">
                             <MudButton Variant="Variant.Outlined" Color="Color.Primary"
-                                       StartIcon="@Icons.Material.Filled.Refresh"
-                                       OnClick="LoadInvitesAsync"
-                                       Disabled="_invitesLoading">
-                                Refresh
+                                       StartIcon="@Icons.Material.Filled.Refresh" OnClick="LoadInvitesAsync"
+                                       Disabled="_invitesLoading">Refresh
                             </MudButton>
-
                             <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                                       StartIcon="@Icons.Material.Filled.Add"
-                                       OnClick="GenerateInviteLink"
-                                       Disabled="_invitesLoading">
-                                Create Invite Link
+                                       StartIcon="@Icons.Material.Filled.Add" OnClick="GenerateInviteLink"
+                                       Disabled="_invitesLoading">Create Invite Link
                             </MudButton>
                         </div>
                     </div>
@@ -246,8 +365,7 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
                     }
                     else if (!_invites.Any())
                     {
-                        <MudAlert Severity="Severity.Info" Class="rounded-lg">
-                            No active or expired invites found.
+                        <MudAlert Severity="Severity.Info" Class="rounded-lg">No active or expired invites found.
                         </MudAlert>
                     }
                     else
@@ -267,39 +385,40 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
                                         <MudText Typo="Typo.body2" Class="font-monospace">
                                             @(_visibleTokens.Contains(context.Id) ? context.Token : new string('•', 20))
                                         </MudText>
-                                        <MudIconButton Icon="@(_visibleTokens.Contains(context.Id) ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
-                                                       Size="Size.Small"
-                                                       OnClick="@(() => ToggleTokenVisibility(context.Id))" />
+                                        <MudIconButton
+                                            Icon="@(_visibleTokens.Contains(context.Id) ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                            Size="Size.Small" OnClick="@(() => ToggleTokenVisibility(context.Id))"/>
                                         <MudTooltip Text="Copy Invite Link">
-                                            <MudIconButton Icon="@Icons.Material.Filled.ContentCopy"
-                                                           Size="Size.Small" Color="Color.Info"
-                                                           OnClick="@(() => CopyToClipboardAsync(GetInviteUrl(context.Token)))" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.ContentCopy" Size="Size.Small"
+                                                           Color="Color.Info"
+                                                           OnClick="@(() => CopyToClipboardAsync(GetInviteUrl(context.Token)))"/>
                                         </MudTooltip>
                                     </div>
                                 </MudTd>
                                 <MudTd>
                                     @if (context.ExpiresAt < DateTimeOffset.UtcNow)
                                     {
-                                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined">Expired</MudChip>
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Warning"
+                                                 Variant="Variant.Outlined">Expired
+                                        </MudChip>
                                     }
                                     else
                                     {
-                                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">Active</MudChip>
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Success"
+                                                 Variant="Variant.Outlined">Active
+                                        </MudChip>
                                     }
                                 </MudTd>
                                 <MudTd>@context.ExpiresAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</MudTd>
                                 <MudTd>@context.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</MudTd>
                                 <MudTd Style="text-align: right;">
                                     <MudTooltip Text="Edit Expiration">
-                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" 
-                                                       Size="Size.Small" 
-                                                       OnClick="@(() => OpenEditInviteDialog(context))" />
+                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                                       OnClick="@(() => OpenEditInviteDialog(context))"/>
                                     </MudTooltip>
                                     <MudTooltip Text="Revoke Invite">
-                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" 
-                                                       Color="Color.Error" 
-                                                       Size="Size.Small" 
-                                                       OnClick="@(() => RevokeInvite(context.Id))" />
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                                       Size="Size.Small" OnClick="@(() => RevokeInvite(context.Id))"/>
                                     </MudTooltip>
                                 </MudTd>
                             </RowTemplate>
@@ -317,12 +436,19 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
 
     [Inject] private IBoardApiService BoardApiService { get; set; } = null!;
 
-    private IReadOnlyList<BoardPreviewDto> _boards = [];
-    private PaginationMetadata _boardPagination = new();
-    private bool _boardsLoading;
-    private int _boardCurrentPage = 1;
-    private int _boardPageSize = 24;
-    private string? _boardSearchTerm;
+    private IReadOnlyList<BoardPreviewDto> _myBoards = [];
+    private PaginationMetadata _myBoardPagination = new();
+    private bool _myBoardsLoading;
+    private int _myBoardCurrentPage = 1;
+    private int _myBoardPageSize = 24;
+    private string? _myBoardSearchTerm;
+
+    private IReadOnlyList<BoardPreviewDto> _allBoards = [];
+    private PaginationMetadata _allBoardPagination = new();
+    private bool _allBoardsLoading;
+    private int _allBoardCurrentPage = 1;
+    private int _allBoardPageSize = 24;
+    private string? _allBoardSearchTerm;
 
     private string? _inviteToken;
     private IReadOnlyList<WorkspaceInviteDto> _invites = [];
@@ -340,8 +466,13 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
 
         await WorkspaceStore.LoadWorkspaceDetailsAsync(WorkspaceId);
         ResolveCurrentUserRole();
-        
-        await LoadBoardsAsync();
+
+        await LoadMyBoardsAsync();
+
+        if (_currentUserRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
+        {
+            await LoadAllBoardsAsync();
+        }
 
         if (_currentUserRole is WorkspaceRoleDto.Owner)
         {
@@ -367,26 +498,88 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
         }
     }
 
-    private async Task LoadBoardsAsync()
+    private async Task LoadMyBoardsAsync()
     {
-        _boardsLoading = true;
+        _myBoardsLoading = true;
         StateHasChanged();
         try
         {
-            var paged = await WorkspaceStore.GetWorkspaceBoardsAsync(WorkspaceId, _boardCurrentPage, _boardPageSize, _boardSearchTerm);
-            _boards = paged.Items;
-            _boardPagination = paged.Metadata;
+            var paged = await WorkspaceStore.GetMyWorkspaceBoardsAsync(WorkspaceId, _myBoardCurrentPage, _myBoardPageSize, _myBoardSearchTerm);
+            _myBoards = paged.Items;
+            _myBoardPagination = paged.Metadata;
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to load boards: {ex.Message}", Severity.Error);
-            _boards = [];
+            Snackbar.Add($"Failed to load your boards: {ex.Message}", Severity.Error);
+            _myBoards = [];
         }
         finally
         {
-            _boardsLoading = false;
+            _myBoardsLoading = false;
             StateHasChanged();
         }
+    }
+
+    private async Task OnMyBoardSearchChanged(string value)
+    {
+        _myBoardSearchTerm = value;
+        _myBoardCurrentPage = 1;
+        await LoadMyBoardsAsync();
+    }
+
+    private async Task OnMyBoardPageSizeChanged(int size)
+    {
+        _myBoardPageSize = size;
+        _myBoardCurrentPage = 1;
+        await LoadMyBoardsAsync();
+    }
+
+    private async Task OnMyBoardPageChanged(int page)
+    {
+        _myBoardCurrentPage = page;
+        await LoadMyBoardsAsync();
+    }
+
+    private async Task LoadAllBoardsAsync()
+    {
+        _allBoardsLoading = true;
+        StateHasChanged();
+        try
+        {
+            var paged = await WorkspaceStore.GetAllWorkspaceBoardsAsync(WorkspaceId, _allBoardCurrentPage, _allBoardPageSize, _allBoardSearchTerm);
+            _allBoards = paged.Items;
+            _allBoardPagination = paged.Metadata;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load all boards: {ex.Message}", Severity.Error);
+            _allBoards = [];
+        }
+        finally
+        {
+            _allBoardsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnAllBoardSearchChanged(string value)
+    {
+        _allBoardSearchTerm = value;
+        _allBoardCurrentPage = 1;
+        await LoadAllBoardsAsync();
+    }
+
+    private async Task OnAllBoardPageSizeChanged(int size)
+    {
+        _allBoardPageSize = size;
+        _allBoardCurrentPage = 1;
+        await LoadAllBoardsAsync();
+    }
+
+    private async Task OnAllBoardPageChanged(int page)
+    {
+        _allBoardCurrentPage = page;
+        await LoadAllBoardsAsync();
     }
 
     private async Task LoadInvitesAsync()
@@ -409,26 +602,6 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
         }
     }
 
-    private async Task OnBoardSearchChanged(string value)
-    {
-        _boardSearchTerm = value;
-        _boardCurrentPage = 1;
-        await LoadBoardsAsync();
-    }
-
-    private async Task OnBoardPageSizeChanged(int size)
-    {
-        _boardPageSize = size;
-        _boardCurrentPage = 1;
-        await LoadBoardsAsync();
-    }
-
-    private async Task OnBoardPageChanged(int page)
-    {
-        _boardCurrentPage = page;
-        await LoadBoardsAsync();
-    }
-
     private Color RoleColor(WorkspaceRoleDto role) => role switch
     {
         WorkspaceRoleDto.Owner => Color.Warning,
@@ -439,9 +612,7 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
     private bool CanEditRole(WorkspaceRoleDto targetRole) =>
         _currentUserRole is WorkspaceRoleDto.Owner && targetRole != WorkspaceRoleDto.Owner;
 
-    private bool CanRemoveMember(WorkspaceRoleDto targetRole) =>
-        _currentUserRole is WorkspaceRoleDto.Owner ||
-        (_currentUserRole is WorkspaceRoleDto.Admin && targetRole is WorkspaceRoleDto.Member);
+    private bool CanRemoveMember() => _currentUserRole is WorkspaceRoleDto.Owner;
 
     private string GetSafeErrorMessage(string error)
     {
@@ -466,11 +637,72 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
             {
                 await BoardApiService.CreateBoardAsync(WorkspaceId, request);
                 Snackbar.Add("Board created.", Severity.Success);
-                await LoadBoardsAsync();
+
+                await LoadMyBoardsAsync();
+                if (_currentUserRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
+                {
+                    await LoadAllBoardsAsync();
+                }
             }
             catch (Exception ex)
             {
                 Snackbar.Add($"Failed to create board: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenEditBoardDialog(BoardPreviewDto board)
+    {
+        var parameters = new DialogParameters<BoardDialog> { { x => x.Board, board } };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<BoardDialog>("Edit Board", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: UpdateBoardRequest request })
+        {
+            try
+            {
+                await BoardApiService.UpdateBoardAsync(board.Id, request);
+                Snackbar.Add("Board updated successfully.", Severity.Success);
+
+                await LoadMyBoardsAsync();
+                if (_currentUserRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
+                {
+                    await LoadAllBoardsAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to update board: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteBoard(BoardPreviewDto board)
+    {
+        var safeBoardName = board.Name.Length > 40 ? board.Name[..40] + "..." : board.Name;
+
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            "Delete Confirmation",
+            $"Are you sure you want to delete the board '{safeBoardName}'? This action cannot be undone.",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            try
+            {
+                await BoardApiService.DeleteBoardAsync(board.Id);
+                Snackbar.Add("Board deleted successfully.", Severity.Success);
+
+                await LoadMyBoardsAsync();
+                if (_currentUserRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
+                {
+                    await LoadAllBoardsAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to delete board: {ex.Message}", Severity.Error);
             }
         }
     }
@@ -492,7 +724,7 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
             {
                 _inviteToken = inviteResult.InviteToken;
                 Snackbar.Add("Invite link generated successfully.", Severity.Success);
-            
+
                 await LoadInvitesAsync();
             }
         }
@@ -501,7 +733,7 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
             Snackbar.Add($"Failed to generate invite link: {ex.Message}", Severity.Error);
         }
     }
-    
+
     private void ToggleTokenVisibility(Guid inviteId)
     {
         if (!_visibleTokens.Add(inviteId))
@@ -516,7 +748,7 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
         {
             { x => x.CurrentExpiration, invite.ExpiresAt }
         };
-        
+
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
         var dialog = await DialogService.ShowAsync<EditInviteDialog>("Edit Expiration", parameters, options);
         var result = await dialog.Result;
@@ -601,48 +833,27 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
         Snackbar.Add("Link copied to clipboard.", Severity.Info);
     }
 
-    private async Task OpenEditBoardDialog(BoardPreviewDto board)
-    {
-        var parameters = new DialogParameters<BoardDialog> { { x => x.Board, board } };
-        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<BoardDialog>("Edit Board", parameters, options);
-        var result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: UpdateBoardRequest request })
-        {
-            try
-            {
-                await BoardApiService.UpdateBoardAsync(board.Id, request);
-                Snackbar.Add("Board updated successfully.", Severity.Success);
-                await LoadBoardsAsync();
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add($"Failed to update board: {ex.Message}", Severity.Error);
-            }
-        }
-    }
-
-    private async Task DeleteBoard(BoardPreviewDto board)
+    private async Task LeaveBoard(BoardPreviewDto board)
     {
         var safeBoardName = board.Name.Length > 40 ? board.Name[..40] + "..." : board.Name;
 
         bool? result = await DialogService.ShowMessageBoxAsync(
-            "Delete Confirmation",
-            $"Are you sure you want to delete the board '{safeBoardName}'? This action cannot be undone.",
-            yesText: "Delete", cancelText: "Cancel");
+            "Leave Board",
+            $"Are you sure you want to leave the board '{safeBoardName}'? You will lose access to it.",
+            yesText: "Leave", cancelText: "Cancel");
 
         if (result == true)
         {
             try
             {
-                await BoardApiService.DeleteBoardAsync(board.Id);
-                Snackbar.Add("Board deleted successfully.", Severity.Success);
-                await LoadBoardsAsync();
+                await BoardApiService.LeaveBoardAsync(board.Id);
+                Snackbar.Add("You left the board successfully.", Severity.Success);
+                
+                await LoadMyBoardsAsync();
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Failed to delete board: {ex.Message}", Severity.Error);
+                Snackbar.Add($"Failed to leave board: {ex.Message}", Severity.Error);
             }
         }
     }

@@ -1,6 +1,6 @@
 @using System.ComponentModel.DataAnnotations
 @using Contracts.DTOs
-@using Contracts.Requests
+@using Contracts.Requests.Tasks
 
 <MudDialog>
     <TitleContent>
@@ -10,7 +10,7 @@
         </MudText>
     </TitleContent>
     <DialogContent>
-        <MudForm @ref="_form" ValidationDelay="0">
+        <MudForm @ref="_form" Model="@_model" ValidationDelay="0">
             <MudTextField @bind-Value="_model.Title"
                           For="@(() => _model.Title)"
                           Label="Task Title"
@@ -32,14 +32,46 @@
 
             <MudSelect T="Guid?"
                        @bind-Value="_model.AssigneeId"
+                       For="@(() => _model.AssigneeId)"
                        Label="Assignee (Optional)"
                        Variant="Variant.Outlined"
                        Margin="Margin.Dense"
                        Clearable="true">
                 <MudSelectItem T="Guid?" Value="@((Guid?)null)">— Unassigned —</MudSelectItem>
-                @foreach (var user in _users)
+
+                @foreach (var member in BoardMembersStore.Members)
                 {
-                    <MudSelectItem T="Guid?" Value="@((Guid?)user.Id)">@user.Email</MudSelectItem>
+                    <MudSelectItem T="Guid?" Value="@((Guid?)member.UserId)">
+                        <div class="d-flex align-center gap-2">
+                            <MudAvatar Size="Size.Small" Color="Color.Primary"
+                                       Style="width: 24px; height: 24px; font-size: 12px;">
+                                @{
+                                    var displayName = !string.IsNullOrWhiteSpace(member.DisplayName) ? member.DisplayName : member.Email;
+                                    var initial = displayName.FirstOrDefault().ToString().ToUpper();
+                                }
+                                @if (!string.IsNullOrEmpty(member.AvatarUrl))
+                                {
+                                    <MudImage Src="@member.AvatarUrl"/>
+                                }
+                                else
+                                {
+                                    @initial
+                                }
+                            </MudAvatar>
+                            <MudText Typo="Typo.body2" Class="text-truncate">
+                                @if (!string.IsNullOrWhiteSpace(member.DisplayName))
+                                {
+                                    @member.DisplayName
+                                    <span class="ms-1"
+                                          style="color: var(--mud-palette-text-secondary); font-size: 0.85em;">(@member.Email)</span>
+                                }
+                                else
+                                {
+                                    @member.Email
+                                }
+                            </MudText>
+                        </div>
+                    </MudSelectItem>
                 }
             </MudSelect>
         </MudForm>
@@ -50,8 +82,16 @@
             <MudButton Color="Color.Error" Variant="Variant.Text" OnClick="Delete" Class="mr-auto">Delete</MudButton>
         }
         <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">
-            @(IsEditMode ? "Save" : "Create")
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit"
+                   Disabled="BoardMembersStore.IsLoading">
+            @if (BoardMembersStore.IsLoading)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>
+            }
+            else
+            {
+                @(IsEditMode ? "Save" : "Create")
+            }
         </MudButton>
     </DialogActions>
 </MudDialog>
@@ -59,19 +99,21 @@
 @code {
     [CascadingParameter] public IMudDialogInstance? MudDialog { get; set; }
 
-    [Parameter] public Guid? WorkspaceId { get; set; }
+    [Parameter] public Guid BoardId { get; set; }
     [Parameter] public TaskDto? Task { get; set; }
 
-    [Inject] private IWorkspaceStore WorkspaceStore { get; set; } = null!;
+    [Inject] private IBoardMembersStore BoardMembersStore { get; set; } = null!;
+    [Inject] private ISnackbar Snackbar { get; set; } = null!;
 
     private MudForm? _form;
     private TaskFormModel _model = new();
-    private List<UserDto> _users = [];
-    
+
     private bool IsEditMode => Task is not null;
 
     protected override async Task OnInitializedAsync()
     {
+        BoardMembersStore.StateChanged += StateHasChanged;
+
         if (IsEditMode)
         {
             _model.Title = Task!.Title;
@@ -79,21 +121,26 @@
             _model.AssigneeId = Task.AssigneeId;
         }
 
-        if (WorkspaceId.HasValue)
+        if (!BoardMembersStore.Members.Any())
         {
             try
             {
-                _users = await WorkspaceStore.GetWorkspaceUsersAsync(WorkspaceId.Value);
+                await BoardMembersStore.LoadAsync(BoardId);
             }
-            catch
+            catch (Exception ex)
             {
-                _users = [];
+                Snackbar.Add($"Failed to load board members: {ex.Message}", Severity.Error);
             }
         }
     }
 
+    public void Dispose()
+    {
+        BoardMembersStore.StateChanged -= StateHasChanged;
+    }
+
     private void Cancel() => MudDialog?.Cancel();
-    
+
     private void Delete() => MudDialog?.Close(DialogResult.Ok("DELETE"));
 
     private async Task Submit()
@@ -106,7 +153,7 @@
             {
                 if (IsEditMode)
                 {
-                     var updateRequest = new UpdateTaskRequest(
+                    var updateRequest = new UpdateTaskRequest(
                         Title: _model.Title,
                         Description: string.IsNullOrWhiteSpace(_model.Description) ? null : _model.Description,
                         DueDate: Task!.DueDate,
@@ -139,4 +186,5 @@
 
         public Guid? AssigneeId { get; set; }
     }
+
 }

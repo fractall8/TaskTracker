@@ -1,4 +1,4 @@
-﻿using Contracts.Requests;
+﻿using Contracts.Requests.Profile;
 using Refit;
 
 namespace Services.Api;

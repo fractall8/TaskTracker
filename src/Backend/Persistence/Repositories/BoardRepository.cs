@@ -1,4 +1,6 @@
-using Application.Interfaces;
+using Application.Interfaces.Repositories;
+using Contracts.DTOs;
+using Contracts.Enums;
 using Domain.Entities;
 using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -8,16 +10,76 @@ namespace Persistence.Repositories;
 
 public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board, Guid>(dbContext), IBoardRepository
 {
+    public async Task<int> CountMemberWorkspaceBoardsAsync(Guid workspaceId, Guid userId, string? searchTerm = null,
+        CancellationToken ct = default)
+    {
+        var query = DbSet.Where(b =>
+            b.WorkspaceId == workspaceId && b.Members.Any(m => m.WorkspaceMember!.UserId == userId));
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            query = query.Where(b => EF.Functions.ILike(b.Name, $"%{searchTerm}%"));
+        }
+
+        return await query.CountAsync(ct);
+    }
+
+    public async Task<List<Board>> GetMemberWorkspaceBoardsPaginatedAsync(Guid workspaceId, Guid userId, int pageNumber,
+        int pageSize, string? searchTerm = null, CancellationToken ct = default)
+    {
+        var query = DbSet.Where(b =>
+            b.WorkspaceId == workspaceId && b.Members.Any(m => m.WorkspaceMember!.UserId == userId));
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            query = query.Where(b => EF.Functions.ILike(b.Name, $"%{searchTerm}%"));
+        }
+
+        return await query
+            .Include(b => b.Members)
+            .ThenInclude(m => m.WorkspaceMember)
+            .OrderByDescending(b => b.CreatedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+    }
+
+    public async Task<int> CountAllWorkspaceBoardsAsync(Guid workspaceId, string? searchTerm = null,
+        CancellationToken ct = default)
+    {
+        var query = DbSet.Where(b => b.WorkspaceId == workspaceId);
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            query = query.Where(b => EF.Functions.ILike(b.Name, $"%{searchTerm}%"));
+        }
+
+        return await query.CountAsync(ct);
+    }
+
+    public async Task<List<Board>> GetAllWorkspaceBoardsPaginatedAsync(Guid workspaceId, int pageNumber, int pageSize,
+        string? searchTerm = null, CancellationToken ct = default)
+    {
+        var query = DbSet.Where(b => b.WorkspaceId == workspaceId);
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            query = query.Where(b => EF.Functions.ILike(b.Name, $"%{searchTerm}%"));
+        }
+
+        return await query
+            .OrderByDescending(b => b.CreatedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+    }
+
     public async Task<Board?> GetBoardWithHierarchyAsync(Guid boardId, string? searchTerm = null,
         CancellationToken cancellationToken = default)
     {
-        IQueryable<Board> query;
+        var query = DbContext.Boards.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
             var lowerSearchTerm = searchTerm.ToLower();
 
-            query = DbContext.Set<Board>()
+            query = query
                 .Include(b => b.Columns.OrderBy(c => c.Position))
                 .ThenInclude(c => c.Tasks
                     .Where(t =>
@@ -31,7 +93,7 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
         }
         else
         {
-            query = DbContext.Set<Board>()
+            query = query
                 .Include(b => b.Columns.OrderBy(c => c.Position))
                 .ThenInclude(c => c.Tasks.OrderBy(t => t.Position))
                 .ThenInclude(t => t.Assignee)
@@ -47,23 +109,18 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
     {
         return await DbContext.Boards
             .AsNoTracking()
-            .Include(b => b.Members.Where(m => m.UserId == userId))
-            .Where(b => b.Members.Any(m => m.UserId == userId))
+            .Include(b => b.Members.Where(m => m.WorkspaceMember!.UserId == userId))
+            .Where(b => b.Members.Any(m => m.WorkspaceMember!.UserId == userId))
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync(ct);
     }
 
     public async Task<int> CountUserBoardsAsync(Guid userId, string? searchTerm = null, CancellationToken ct = default)
     {
-        var query = DbContext.Boards.Where(b => b.Members.Any(m => m.UserId == userId));
+        var query = DbContext.Boards
+            .Where(b => b.Members.Any(m => m.WorkspaceMember!.UserId == userId));
 
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            query = query.Where(b => EF.Functions.ILike(b.Name, $"%{searchTerm}%") ||
-                                     EF.Functions.ILike(b.Description ?? string.Empty, $"%{searchTerm}%"));
-        }
-
-        return await query.CountAsync(ct);
+        return await ApplySearchFilter(query, searchTerm).CountAsync(ct);
     }
 
     public async Task<List<Board>> GetUserBoardsPaginatedAsync(Guid userId, int pageNumber, int pageSize,
@@ -71,16 +128,10 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
     {
         var query = DbContext.Boards
             .AsNoTracking()
-            .Include(b => b.Members.Where(m => m.UserId == userId))
-            .Where(b => b.Members.Any(m => m.UserId == userId));
+            .Include(b => b.Members.Where(m => m.WorkspaceMember!.UserId == userId))
+            .Where(b => b.Members.Any(m => m.WorkspaceMember!.UserId == userId));
 
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            query = query.Where(b => EF.Functions.ILike(b.Name, $"%{searchTerm}%") ||
-                                     EF.Functions.ILike(b.Description ?? string.Empty, $"%{searchTerm}%"));
-        }
-
-        return await query
+        return await ApplySearchFilter(query, searchTerm)
             .OrderByDescending(b => b.CreatedAt)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
@@ -90,46 +141,68 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
     public async Task<BoardRole?> GetUserRoleAsync(Guid boardId, Guid userId, CancellationToken ct = default)
     {
         return await DbContext.Set<BoardMember>()
-            .Where(m => m.BoardId == boardId && m.UserId == userId)
+            .Where(m => m.BoardId == boardId && m.WorkspaceMember!.UserId == userId)
             .Select(m => (BoardRole?)m.Role)
             .FirstOrDefaultAsync(ct);
     }
 
-    public async Task<List<Board>> GetBoardsByWorkspaceIdAsync(Guid workspaceId, CancellationToken ct = default) =>
-        await DbSet
+    public async Task<List<Board>> GetBoardsByWorkspaceIdAsync(Guid workspaceId, CancellationToken ct = default)
+    {
+        return await DbSet
             .Where(b => b.WorkspaceId == workspaceId)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync(ct);
-
-    public async Task<int> CountBoardsByWorkspaceIdAsync(Guid workspaceId, Guid userId, string? searchTerm = null, CancellationToken ct = default)
-    {
-        var query = DbSet.Where(b => b.WorkspaceId == workspaceId && b.Members.Any(m => m.UserId == userId));
-
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            query = query.Where(b => EF.Functions.ILike(b.Name, $"%{searchTerm}%") ||
-                                     EF.Functions.ILike(b.Description ?? string.Empty, $"%{searchTerm}%"));
-        }
-
-        return await query.CountAsync(ct);
     }
 
-    public async Task<List<Board>> GetBoardsByWorkspaceIdPaginatedAsync(Guid workspaceId, Guid userId, int pageNumber, int pageSize, string? searchTerm = null, CancellationToken ct = default)
+    public async Task<int> CountBoardsByWorkspaceIdAsync(Guid workspaceId, Guid userId, string? searchTerm = null,
+        CancellationToken ct = default)
     {
-        var query = DbSet.AsNoTracking()
-            .Include(b => b.Members.Where(m => m.UserId == userId))
-            .Where(b => b.WorkspaceId == workspaceId && b.Members.Any(m => m.UserId == userId));
+        var query = DbSet
+            .Where(b => b.WorkspaceId == workspaceId && b.Members.Any(m => m.WorkspaceMember!.UserId == userId));
 
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            query = query.Where(b => EF.Functions.ILike(b.Name, $"%{searchTerm}%") ||
-                                     EF.Functions.ILike(b.Description ?? string.Empty, $"%{searchTerm}%"));
-        }
+        return await ApplySearchFilter(query, searchTerm).CountAsync(ct);
+    }
 
-        return await query
+    public async Task<List<Board>> GetBoardsByWorkspaceIdPaginatedAsync(Guid workspaceId, Guid userId, int pageNumber,
+        int pageSize, string? searchTerm = null, CancellationToken ct = default)
+    {
+        var query = DbSet
+            .AsNoTracking()
+            .Include(b => b.Members.Where(m => m.WorkspaceMember!.UserId == userId))
+            .Where(b => b.WorkspaceId == workspaceId && b.Members.Any(m => m.WorkspaceMember!.UserId == userId));
+
+        return await ApplySearchFilter(query, searchTerm)
             .OrderByDescending(b => b.CreatedAt)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);
+    }
+
+    public async Task<List<BoardMemberDto>> GetBoardMembersAsync(Guid boardId, CancellationToken ct = default)
+    {
+        return await DbContext.Set<BoardMember>()
+            .AsNoTracking()
+            .Where(bm => bm.BoardId == boardId)
+            .Select(bm => new BoardMemberDto(
+                bm.WorkspaceMemberId,
+                bm.WorkspaceMember!.UserId,
+                bm.WorkspaceMember!.User!.Email,
+                bm.WorkspaceMember.User.DisplayName,
+                bm.WorkspaceMember.User.AvatarUrl,
+                (BoardRoleDto)bm.Role,
+                bm.JoinedAt
+            ))
+            .ToListAsync(ct);
+    }
+
+    private static IQueryable<Board> ApplySearchFilter(IQueryable<Board> query, string? searchTerm)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            return query;
+        }
+
+        return query.Where(b => EF.Functions.ILike(b.Name, $"%{searchTerm}%") ||
+                                EF.Functions.ILike(b.Description ?? string.Empty, $"%{searchTerm}%"));
     }
 }

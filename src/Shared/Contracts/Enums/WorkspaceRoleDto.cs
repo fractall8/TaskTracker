@@ -1,5 +1,8 @@
-﻿namespace Contracts.Enums;
+﻿using System.Text.Json.Serialization;
 
+namespace Contracts.Enums;
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum WorkspaceRoleDto : byte
 {
     Member = 1,

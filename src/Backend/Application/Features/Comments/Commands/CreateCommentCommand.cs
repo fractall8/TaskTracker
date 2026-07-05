@@ -1,5 +1,6 @@
-﻿using Application.Interfaces;
+﻿using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
+using Application.Interfaces.UOW;
 using Contracts.DTOs;
 using Domain.Constants;
 using Domain.Entities;
@@ -30,7 +31,7 @@ public class CreateCommentCommandHandler(
         }
 
         var userInfo =
-            await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => new { u.Id, u.DisplayName }, ct);
+            await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => new { u.Id, u.DisplayName, u.AvatarUrl }, ct);
 
         if (userInfo == null)
         {
@@ -56,6 +57,7 @@ public class CreateCommentCommandHandler(
             CreatedAt: comment.CreatedAt,
             AuthorId: comment.CreatedById.Value,
             AuthorName: userInfo.DisplayName ?? string.Empty,
+            AuthorAvatarUrl: userInfo.AvatarUrl,
             UpdatedAt: comment.UpdatedAt);
     }
 }

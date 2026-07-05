@@ -2,7 +2,8 @@ using Application.Features.Boards.Commands;
 using Application.Features.Workspaces.Commands;
 using Application.Features.Workspaces.Queries;
 using Contracts.DTOs;
-using Contracts.Requests;
+using Contracts.Requests.Boards;
+using Contracts.Requests.Workspaces;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +26,30 @@ public class WorkspacesController(ISender sender) : ControllerBase
     public async Task<ActionResult<WorkspaceDetailsDto>> GetWorkspaceById(Guid workspaceId, CancellationToken ct)
     {
         var result = await sender.Send(new GetWorkspaceByIdQuery(workspaceId), ct);
+        return Ok(result);
+    }
+
+    [HttpGet("{workspaceId:guid}/boards/my")]
+    public async Task<ActionResult<PagedList<BoardPreviewDto>>> GetMyWorkspaceBoards(
+        Guid workspaceId,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 24,
+        [FromQuery] string? searchTerm = null,
+        CancellationToken ct = default)
+    {
+        var result = await sender.Send(new GetMyWorkspaceBoardsQuery(workspaceId, pageNumber, pageSize, searchTerm), ct);
+        return Ok(result);
+    }
+
+    [HttpGet("{workspaceId:guid}/boards/all")]
+    public async Task<ActionResult<PagedList<BoardPreviewDto>>> GetAllWorkspaceBoards(
+        Guid workspaceId,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 24,
+        [FromQuery] string? searchTerm = null,
+        CancellationToken ct = default)
+    {
+        var result = await sender.Send(new GetAllWorkspaceBoardsQuery(workspaceId, pageNumber, pageSize, searchTerm), ct);
         return Ok(result);
     }
 
@@ -58,17 +83,5 @@ public class WorkspacesController(ISender sender) : ControllerBase
     {
         await sender.Send(new DeleteWorkspaceCommand(workspaceId), ct);
         return NoContent();
-    }
-
-    [HttpGet("{workspaceId:guid}/boards")]
-    public async Task<ActionResult<PagedList<BoardPreviewDto>>> GetWorkspaceBoards(
-        Guid workspaceId,
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 24,
-        [FromQuery] string? searchTerm = null,
-        CancellationToken ct = default)
-    {
-        var result = await sender.Send(new GetWorkspaceBoardsQuery(workspaceId, pageNumber, pageSize, searchTerm), ct);
-        return Ok(result);
     }
 }

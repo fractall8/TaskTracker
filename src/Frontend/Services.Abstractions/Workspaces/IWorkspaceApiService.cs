@@ -1,5 +1,5 @@
 ﻿using Contracts.DTOs;
-using Contracts.Requests;
+using Contracts.Requests.Workspaces;
 
 namespace Services.Abstractions.Workspaces;
 
@@ -11,10 +11,13 @@ public interface IWorkspaceApiService
     Task UpdateWorkspaceAsync(Guid workspaceId, UpdateWorkspaceRequest request, CancellationToken ct = default);
     Task DeleteWorkspaceAsync(Guid workspaceId, CancellationToken ct = default);
 
-    Task<PagedList<BoardPreviewDto>> GetWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1, int pageSize = 24,
-        string? searchTerm = null, CancellationToken ct = default);
+    Task<PagedList<BoardPreviewDto>> GetAllWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1,
+        int pageSize = 24, string? searchTerm = null, CancellationToken ct = default);
 
-    Task<List<UserDto>> GetWorkspaceUsersAsync(Guid workspaceId, string? searchTerm = null,
+    Task<PagedList<BoardPreviewDto>> GetMyWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1,
+        int pageSize = 24, string? searchTerm = null, CancellationToken ct = default);
+
+    Task<List<WorkspaceMemberDto>> GetWorkspaceUsersAsync(Guid workspaceId, string? searchTerm = null,
         CancellationToken ct = default);
 
     Task RemoveMemberAsync(Guid workspaceId, Guid userId, CancellationToken ct = default);

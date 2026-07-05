@@ -1,5 +1,6 @@
-using Application.Interfaces;
+using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
+using Application.Interfaces.UOW;
 using Contracts.DTOs;
 using Domain.Constants;
 using FluentValidation;
@@ -30,7 +31,7 @@ public class UpdateCommentCommandHandler(
 
         var userInfo = await userRepository.GetUserByAzureAdIdAsync(
             currentUserAccessor.AzureAdObjectId,
-            u => new { u.Id, u.DisplayName },
+            u => new { u.Id, u.DisplayName, u.AvatarUrl },
             cancellationToken);
 
         if (userInfo == null)
@@ -55,6 +56,7 @@ public class UpdateCommentCommandHandler(
             CreatedAt: comment.CreatedAt,
             UpdatedAt: comment.UpdatedAt,
             AuthorId: comment.CreatedById!.Value,
+            AuthorAvatarUrl: userInfo.AvatarUrl,
             AuthorName: userInfo.DisplayName ?? string.Empty);
     }
 }

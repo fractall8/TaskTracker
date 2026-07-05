@@ -1,7 +1,7 @@
 using Application.Features.Workspaces.Commands;
 using Application.Features.Workspaces.Queries;
 using Contracts.DTOs;
-using Contracts.Requests;
+using Contracts.Requests.Workspaces;
 using Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;

@@ -1,12 +1,14 @@
 using Contracts.DTOs;
 using Contracts.Enums;
-using Contracts.Requests;
+using Contracts.Requests.Workspaces;
 using Services.Abstractions.Workspaces;
 
 namespace Services.Workspaces.Stores;
 
 public class WorkspaceStore(IWorkspaceApiService workspaceApiService) : IWorkspaceStore
 {
+    private readonly Dictionary<Guid, WorkspaceRoleDto> _roleCache = [];
+
     public List<WorkspaceDto> Workspaces { get; private set; } = [];
 
     public WorkspaceDetailsDto? CurrentWorkspace { get; private set; }
@@ -19,6 +21,9 @@ public class WorkspaceStore(IWorkspaceApiService workspaceApiService) : IWorkspa
 
     private void NotifyStateChanged() => StateChanged?.Invoke();
 
+    public WorkspaceRoleDto? GetCachedRole(Guid workspaceId) =>
+        _roleCache.TryGetValue(workspaceId, out var role) ? role : null;
+
     public async Task LoadUserWorkspacesAsync(CancellationToken ct = default)
     {
         IsLoading = true;
@@ -27,7 +32,13 @@ public class WorkspaceStore(IWorkspaceApiService workspaceApiService) : IWorkspa
 
         try
         {
-            Workspaces = await workspaceApiService.GetUserWorkspacesAsync(ct);
+            var workspaces = await workspaceApiService.GetUserWorkspacesAsync(ct);
+            Workspaces = workspaces;
+
+            foreach (var workspace in Workspaces)
+            {
+                _roleCache[workspace.Id] = workspace.UserRole;
+            }
         }
         catch (Exception ex)
         {
@@ -49,6 +60,11 @@ public class WorkspaceStore(IWorkspaceApiService workspaceApiService) : IWorkspa
         try
         {
             CurrentWorkspace = await workspaceApiService.GetWorkspaceByIdAsync(workspaceId, ct);
+
+            if (CurrentWorkspace != null)
+            {
+                _roleCache[CurrentWorkspace.Id] = CurrentWorkspace.UserRole;
+            }
         }
         catch (Exception ex)
         {
@@ -117,16 +133,22 @@ public class WorkspaceStore(IWorkspaceApiService workspaceApiService) : IWorkspa
         await LoadWorkspaceDetailsAsync(workspaceId, ct);
     }
 
-    public async Task<List<UserDto>> GetWorkspaceUsersAsync(Guid workspaceId, string? searchTerm = null,
+    public async Task<List<WorkspaceMemberDto>> GetWorkspaceUsersAsync(Guid workspaceId, string? searchTerm = null,
         CancellationToken ct = default)
     {
         return await workspaceApiService.GetWorkspaceUsersAsync(workspaceId, searchTerm, ct);
     }
 
-    public async Task<PagedList<BoardPreviewDto>> GetWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1,
+    public async Task<PagedList<BoardPreviewDto>> GetMyWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1,
         int pageSize = 24, string? searchTerm = null, CancellationToken ct = default)
     {
-        return await workspaceApiService.GetWorkspaceBoardsAsync(workspaceId, pageNumber, pageSize, searchTerm, ct);
+        return await workspaceApiService.GetMyWorkspaceBoardsAsync(workspaceId, pageNumber, pageSize, searchTerm, ct);
+    }
+
+    public async Task<PagedList<BoardPreviewDto>> GetAllWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1,
+        int pageSize = 24, string? searchTerm = null, CancellationToken ct = default)
+    {
+        return await workspaceApiService.GetAllWorkspaceBoardsAsync(workspaceId, pageNumber, pageSize, searchTerm, ct);
     }
 
     public async Task<List<WorkspaceInviteDto>> GetWorkspaceInvitesAsync(Guid workspaceId,

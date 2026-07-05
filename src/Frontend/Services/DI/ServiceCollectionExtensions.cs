@@ -39,6 +39,10 @@ public static class ServiceCollectionExtensions
             .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
             .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
 
+        services.AddRefitClient<IBoardMembersApi>()
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
+            .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
+
         services.AddRefitClient<IColumnsApi>()
             .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
             .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
@@ -76,6 +80,9 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IBoardApiService, BoardApiService>();
         services.AddScoped<IBoardStore, BoardStore>();
+
+        services.AddScoped<IBoardMembersStore, BoardMembersStore>();
+        services.AddScoped<IBoardMembersApiService, BoardMembersApiService>();
 
         services.AddScoped<IColumnApiService, ColumnApiService>();
         services.AddScoped<ITaskApiService, TaskApiService>();

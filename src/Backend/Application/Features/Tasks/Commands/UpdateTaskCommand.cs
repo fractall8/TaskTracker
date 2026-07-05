@@ -1,5 +1,6 @@
-﻿using Application.Interfaces;
+﻿using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
+using Application.Interfaces.UOW;
 using Contracts.DTOs;
 using Domain.Constants;
 using FluentValidation;
@@ -18,6 +19,7 @@ public record UpdateTaskCommand(
 
 public class UpdateTaskCommandHandler(
     IBoardAccessService boardAccessService,
+    IBoardRepository boardRepository,
     ITaskRepository taskRepository,
     IColumnRepository columnRepository,
     IUnitOfWork unitOfWork)
@@ -26,6 +28,15 @@ public class UpdateTaskCommandHandler(
     public async Task<TaskDto> Handle(UpdateTaskCommand request, CancellationToken ct)
     {
         await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, ct);
+
+        if (request.AssigneeId.HasValue)
+        {
+            var assigneeRole = await boardRepository.GetUserRoleAsync(request.BoardId, request.AssigneeId.Value, ct);
+            if (!assigneeRole.HasValue)
+            {
+                throw new InvalidOperationException("The selected user is not a physical member of this board.");
+            }
+        }
 
         var task = await taskRepository.GetTaskWithColumnAsync(request.TaskId, ct);
 
@@ -73,7 +84,9 @@ public class UpdateTaskCommandHandler(
 
         return new TaskDto(
             task.Id, task.Title, task.Description, task.Position, task.DueDate,
-            task.ColumnId, task.AssigneeId, task.Assignee?.DisplayName, task.ReporterId, task.Reporter?.DisplayName,
+            task.ColumnId, task.AssigneeId, task.Assignee?.DisplayName, task.Assignee?.AvatarUrl, task.ReporterId,
+            task.Reporter?.DisplayName,
+            task.Reporter?.AvatarUrl,
             []);
     }
 }

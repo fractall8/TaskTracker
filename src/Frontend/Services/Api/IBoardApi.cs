@@ -1,5 +1,5 @@
 using Contracts.DTOs;
-using Contracts.Requests;
+using Contracts.Requests.Boards;
 using Refit;
 
 namespace Services.Api;
@@ -30,4 +30,7 @@ public interface IBoardApi
 
     [Get("/api/boards/{id}")]
     Task<IApiResponse<BoardWithColumnsDto>> GetByIdAsync(Guid id, [Query] string? searchTerm = null, CancellationToken ct = default);
+
+    [Delete("/api/boards/{boardId}/leave")]
+    Task<IApiResponse> LeaveBoardAsync(Guid boardId, CancellationToken ct = default);
 }

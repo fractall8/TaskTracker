@@ -1,4 +1,4 @@
-using Application.Interfaces;
+using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Domain.Authorization;
 using Domain.Enums;
@@ -10,7 +10,7 @@ public class WorkspaceAccessService(
     IUserRepository userRepository,
     IWorkspaceRepository workspaceRepository) : IWorkspaceAccessService
 {
-    public async Task<(Guid Id, string Email)> GetCurrentUserInfoAsync(CancellationToken ct = default)
+    public async Task<(Guid UserId, string Email)> GetCurrentUserInfoAsync(CancellationToken ct = default)
     {
         var userInfo = await userRepository.GetUserByAzureAdIdAsync(
             currentUserAccessor.AzureAdObjectId,
@@ -25,20 +25,20 @@ public class WorkspaceAccessService(
         return (userInfo.Id.Value, userInfo.Email);
     }
 
-    public async Task<WorkspaceRole> EnsureIsMemberAsync(Guid workspaceId, CancellationToken ct = default)
+    public async Task<(Guid UserId, string Email, WorkspaceRole Role)> EnsureIsMemberAsync(Guid workspaceId, CancellationToken ct = default)
     {
         var userInfo = await GetCurrentUserInfoAsync(ct);
-        var role = await workspaceRepository.GetUserRoleAsync(workspaceId, userInfo.Id, ct);
+        var role = await workspaceRepository.GetUserRoleAsync(workspaceId, userInfo.UserId, ct);
 
         if (role == null)
         {
             throw new UnauthorizedAccessException("Workspace not found or you don't have permission to view it.");
         }
 
-        return role.Value;
+        return new (userInfo.UserId,  userInfo.Email, role.Value);
     }
 
-    public async Task<(Guid Id, string Email)> EnsureCanManageWorkspaceAsync(Guid workspaceId,
+    public async Task<(Guid UserId, string Email)> EnsureCanManageWorkspaceAsync(Guid workspaceId,
         CancellationToken ct = default)
     {
         return await EnsureAccessAsync(workspaceId, WorkspaceRolePermissions.CanEditWorkspace,
@@ -69,11 +69,17 @@ public class WorkspaceAccessService(
             "You don't have permission to invite users.", ct);
     }
 
-    private async Task<(Guid Id, string Email)> EnsureAccessAsync(Guid workspaceId,
+    public async Task EnsureCanManageBoardMembersAsync(Guid workspaceId, CancellationToken ct = default)
+    {
+        await EnsureAccessAsync(workspaceId, WorkspaceRolePermissions.CanManageBoardRoles,
+            "You don't have permission to manage board roles.", ct);
+    }
+
+    private async Task<(Guid UserId, string Email)> EnsureAccessAsync(Guid workspaceId,
         Func<WorkspaceRole, bool> permissionCheck, string errorMessage, CancellationToken ct)
     {
         var userInfo = await GetCurrentUserInfoAsync(ct);
-        var userRole = await workspaceRepository.GetUserRoleAsync(workspaceId, userInfo.Id, ct);
+        var userRole = await workspaceRepository.GetUserRoleAsync(workspaceId, userInfo.UserId, ct);
 
         if (userRole == null)
         {

@@ -1,4 +1,5 @@
-using Application.Interfaces;
+using System.Linq.Expressions;
+using Application.Interfaces.Repositories;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Persistence.Contexts;
@@ -24,6 +25,21 @@ public class Repository<TEntity, TId> : IRepository<TEntity, TId> where TEntity 
     public async Task<IReadOnlyList<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await DbSet.ToListAsync(cancellationToken);
+    }
+
+    public async Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default)
+    {
+        return await DbSet.AnyAsync(predicate, ct);
+    }
+
+    public async Task<TEntity?> GetAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default)
+    {
+        return await DbSet.FirstOrDefaultAsync(predicate, ct);
+    }
+
+    public async Task<int> CountAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default)
+    {
+        return await DbSet.CountAsync(predicate, ct);
     }
 
     public async Task AddAsync(TEntity entity, CancellationToken cancellationToken = default)

@@ -7,9 +7,8 @@
 @inject NavigationManager Navigation
 @using Contracts.DTOs
 @using Contracts.Enums
-@using Contracts.Requests
+@using Contracts.Requests.Workspaces
 @using WebApp.Shared.Dialogs
-@using Services.Abstractions.Workspaces
 
 <PageTitle>My Workspaces - TaskTracker</PageTitle>
 
@@ -52,12 +51,12 @@
                                     @workspace.Name
                                 </MudText>
                                 <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
-                                         Color="@RoleChipColor(workspace.Role)" Class="mt-1 ml-0" Style="height: 20px; font-size: 11px;">
-                                    @workspace.Role.ToString()
+                                         Color="@RoleChipColor(workspace.UserRole)" Class="mt-1 ml-0" Style="height: 20px; font-size: 11px;">
+                                    @workspace.UserRole.ToString()
                                 </MudChip>
                             </CardHeaderContent>
                             <CardHeaderActions>
-                                @if (workspace.Role is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
+                                @if (workspace.UserRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
                                 {
                                     <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true"
                                              @onclick:stopPropagation="true">
@@ -65,7 +64,7 @@
                                                      OnClick="@(() => OpenEditDialog(workspace))">
                                             Edit
                                         </MudMenuItem>
-                                        @if (workspace.Role is WorkspaceRoleDto.Owner)
+                                        @if (workspace.UserRole is WorkspaceRoleDto.Owner)
                                         {
                                             <MudMenuItem Icon="@Icons.Material.Filled.Delete"
                                                          IconColor="Color.Error"

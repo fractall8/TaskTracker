@@ -1,5 +1,5 @@
 using Contracts.DTOs;
-using Contracts.Requests;
+using Contracts.Requests.Boards;
 
 namespace Services.Abstractions.Boards;
 
@@ -15,4 +15,6 @@ public interface IBoardApiService
     Task<BoardPreviewDto?> UpdateBoardAsync(Guid id, UpdateBoardRequest request, CancellationToken ct = default);
 
     Task DeleteBoardAsync(Guid id, CancellationToken ct = default);
+
+    Task LeaveBoardAsync(Guid boardId, CancellationToken ct = default);
 }

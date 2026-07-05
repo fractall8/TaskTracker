@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
-using Application.Interfaces;
+using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
+using Application.Interfaces.UOW;
 using Application.Settings;
 using Contracts.DTOs;
 using Domain.Entities;

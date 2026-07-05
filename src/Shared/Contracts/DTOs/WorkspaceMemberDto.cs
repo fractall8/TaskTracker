@@ -2,4 +2,12 @@
 
 namespace Contracts.DTOs;
 
-public record WorkspaceMemberDto(Guid UserId, string Email, WorkspaceRoleDto Role, DateTimeOffset JoinedAt);
+public record WorkspaceMemberDto(
+    Guid Id,
+    Guid UserId,
+    string Email,
+    string? DisplayName,
+    string? AvatarUrl,
+    WorkspaceRoleDto Role,
+    DateTimeOffset JoinedAt
+);

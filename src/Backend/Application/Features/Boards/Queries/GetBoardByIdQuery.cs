@@ -1,7 +1,8 @@
-using Application.Interfaces;
+using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Application.Options;
 using Contracts.DTOs;
+using Contracts.Enums;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Options;
@@ -17,7 +18,7 @@ public class GetBoardByIdQueryHandler(
 {
     public async Task<BoardWithColumnsDto> Handle(GetBoardByIdQuery request, CancellationToken ct)
     {
-        await boardAccessService.EnsureCanViewBoardAsync(request.BoardId, ct);
+        var accessContext = await boardAccessService.EnsureCanViewBoardAsync(request.BoardId, ct);
 
         var board = await boardRepository.GetBoardWithHierarchyAsync(request.BoardId, request.SearchTerm, ct);
 
@@ -41,8 +42,10 @@ public class GetBoardByIdQueryHandler(
                     ColumnId: t.ColumnId,
                     AssigneeId: t.AssigneeId,
                     AssigneeName: t.Assignee?.DisplayName,
+                    AssigneeAvatarUrl: t.Assignee?.AvatarUrl,
                     ReporterId: t.ReporterId,
                     ReporterName: t.Reporter?.DisplayName,
+                    ReporterAvatarUrl: t.Reporter?.AvatarUrl,
                     Attachments: new List<AttachmentDto>()
                 )).ToList()
             ))
@@ -53,6 +56,7 @@ public class GetBoardByIdQueryHandler(
             Name: board.Name,
             Description: board.Description,
             WorkspaceId: board.WorkspaceId,
+            BoardRole: (BoardRoleDto)accessContext.Role,
             Columns: columnDtos
         );
     }

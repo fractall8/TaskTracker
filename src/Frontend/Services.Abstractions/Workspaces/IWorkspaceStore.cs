@@ -1,6 +1,6 @@
 using Contracts.DTOs;
 using Contracts.Enums;
-using Contracts.Requests;
+using Contracts.Requests.Workspaces;
 
 namespace Services.Abstractions.Workspaces;
 
@@ -15,6 +15,8 @@ public interface IWorkspaceStore
     string? ErrorMessage { get; }
 
     event Action? StateChanged;
+
+    WorkspaceRoleDto? GetCachedRole(Guid workspaceId);
 
     Task LoadUserWorkspacesAsync(CancellationToken ct = default);
 
@@ -34,11 +36,14 @@ public interface IWorkspaceStore
 
     Task AcceptInviteAsync(string token, CancellationToken ct = default);
 
-    Task<List<UserDto>> GetWorkspaceUsersAsync(Guid workspaceId, string? searchTerm = null,
+    Task<List<WorkspaceMemberDto>> GetWorkspaceUsersAsync(Guid workspaceId, string? searchTerm = null,
         CancellationToken ct = default);
 
-    Task<PagedList<BoardPreviewDto>> GetWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1, int pageSize = 24,
-        string? searchTerm = null, CancellationToken ct = default);
+    Task<PagedList<BoardPreviewDto>> GetMyWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1,
+        int pageSize = 24, string? searchTerm = null, CancellationToken ct = default);
+
+    Task<PagedList<BoardPreviewDto>> GetAllWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1,
+        int pageSize = 24, string? searchTerm = null, CancellationToken ct = default);
 
     Task<List<WorkspaceInviteDto>> GetWorkspaceInvitesAsync(Guid workspaceId, CancellationToken ct = default);
 

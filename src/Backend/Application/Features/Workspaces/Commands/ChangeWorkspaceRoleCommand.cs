@@ -1,5 +1,6 @@
-﻿using Application.Interfaces;
+﻿using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
+using Application.Interfaces.UOW;
 using Domain.Enums;
 using MediatR;
 
@@ -19,7 +20,7 @@ public class ChangeWorkspaceMemberRoleCommandHandler(
 
         var userInfo = await workspaceAccessService.GetCurrentUserInfoAsync(cancellationToken);
 
-        if (userInfo.Id == request.UserIdToChange && request.NewRole != WorkspaceRole.Owner)
+        if (userInfo.UserId == request.UserIdToChange && request.NewRole != WorkspaceRole.Owner)
         {
             throw new InvalidOperationException("The Owner cannot demote themselves. Transfer ownership first.");
         }

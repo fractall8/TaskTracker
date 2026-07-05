@@ -7,4 +7,5 @@ public record CommentDto(
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
     Guid AuthorId,
-    string AuthorName);
+    string AuthorName,
+    string? AuthorAvatarUrl);

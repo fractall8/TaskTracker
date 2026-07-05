@@ -1,6 +1,6 @@
 using System.Net;
 using Contracts.DTOs;
-using Contracts.Requests;
+using Contracts.Requests.Profile;
 using Refit;
 using Services.Abstractions.Auth;
 using Services.Abstractions.Profile;

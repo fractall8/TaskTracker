@@ -6,7 +6,7 @@ public class BoardMember : BaseEntity<Guid>
 {
     public required Guid BoardId { get; init; }
 
-    public required Guid UserId { get; init; }
+    public required Guid WorkspaceMemberId { get; init; }
 
     public DateTimeOffset JoinedAt { get; set; } = DateTimeOffset.Now;
 
@@ -14,5 +14,5 @@ public class BoardMember : BaseEntity<Guid>
 
     public Board? Board { get; set; }
 
-    public User? User { get; set; }
+    public WorkspaceMember? WorkspaceMember { get; set; }
 }

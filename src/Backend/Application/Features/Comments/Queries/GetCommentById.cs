@@ -1,4 +1,4 @@
-﻿using Application.Interfaces;
+﻿using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
 using FluentValidation;
@@ -56,6 +56,7 @@ public class GetCommentsByTaskIdQueryHandler(
                 CreatedAt: comment.CreatedAt,
                 UpdatedAt: comment.UpdatedAt,
                 AuthorId: comment.CreatedById.Value,
+                AuthorAvatarUrl: author.AvatarUrl,
                 AuthorName: author.DisplayName ?? string.Empty
             ));
         }

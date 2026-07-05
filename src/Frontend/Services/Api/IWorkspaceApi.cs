@@ -1,5 +1,5 @@
 using Contracts.DTOs;
-using Contracts.Requests;
+using Contracts.Requests.Workspaces;
 using Refit;
 
 namespace Services.Api;
@@ -21,8 +21,16 @@ public interface IWorkspaceApi
     [Delete("/api/workspaces/{workspaceId}")]
     Task<IApiResponse> DeleteWorkspaceAsync(Guid workspaceId, CancellationToken ct = default);
 
-    [Get("/api/workspaces/{workspaceId}/boards")]
-    Task<IApiResponse<PagedList<BoardPreviewDto>>> GetWorkspaceBoardsAsync(
+    [Get("/api/workspaces/{workspaceId}/boards/my")]
+    Task<IApiResponse<PagedList<BoardPreviewDto>>> GetMyWorkspaceBoardsAsync(
+        Guid workspaceId,
+        [Query] int pageNumber = 1,
+        [Query] int pageSize = 24,
+        [Query] string? searchTerm = null,
+        CancellationToken ct = default);
+
+    [Get("/api/workspaces/{workspaceId}/boards/all")]
+    Task<IApiResponse<PagedList<BoardPreviewDto>>> GetAllWorkspaceBoardsAsync(
         Guid workspaceId,
         [Query] int pageNumber = 1,
         [Query] int pageSize = 24,

@@ -1,5 +1,5 @@
 ﻿using Contracts.DTOs;
-using Contracts.Requests;
+using Contracts.Requests.Workspaces;
 using Services.Abstractions.Workspaces;
 using Services.Api;
 using Services.Extensions;
@@ -28,12 +28,17 @@ public class WorkspaceApiService(
     public async Task DeleteWorkspaceAsync(Guid workspaceId, CancellationToken ct = default) =>
         await (await workspaceApi.DeleteWorkspaceAsync(workspaceId, ct)).HandleResponseAsync();
 
-    public async Task<PagedList<BoardPreviewDto>> GetWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1,
+    public async Task<PagedList<BoardPreviewDto>> GetMyWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1,
         int pageSize = 24, string? searchTerm = null, CancellationToken ct = default) =>
-        await (await workspaceApi.GetWorkspaceBoardsAsync(workspaceId, pageNumber, pageSize, searchTerm, ct))
+        await (await workspaceApi.GetMyWorkspaceBoardsAsync(workspaceId, pageNumber, pageSize, searchTerm, ct))
             .HandleResponseAsync();
 
-    public async Task<List<UserDto>> GetWorkspaceUsersAsync(Guid workspaceId, string? searchTerm = null,
+    public async Task<PagedList<BoardPreviewDto>> GetAllWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1,
+        int pageSize = 24, string? searchTerm = null, CancellationToken ct = default) =>
+        await (await workspaceApi.GetAllWorkspaceBoardsAsync(workspaceId, pageNumber, pageSize, searchTerm, ct))
+            .HandleResponseAsync();
+
+    public async Task<List<WorkspaceMemberDto>> GetWorkspaceUsersAsync(Guid workspaceId, string? searchTerm = null,
         CancellationToken ct = default) =>
         await (await membersApi.GetWorkspaceUsersAsync(workspaceId, searchTerm, ct)).HandleResponseAsync();
 

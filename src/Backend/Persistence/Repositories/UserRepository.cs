@@ -1,5 +1,5 @@
 using System.Linq.Expressions;
-using Application.Interfaces;
+using Application.Interfaces.Repositories;
 using Contracts.DTOs;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
