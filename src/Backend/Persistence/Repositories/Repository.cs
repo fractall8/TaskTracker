@@ -27,6 +27,12 @@ public class Repository<TEntity, TId> : IRepository<TEntity, TId> where TEntity 
         return await DbSet.ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate,
+        CancellationToken cancellationToken = default)
+    {
+        return await DbSet.Where(predicate).ToListAsync(cancellationToken);
+    }
+
     public async Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default)
     {
         return await DbSet.AnyAsync(predicate, ct);
