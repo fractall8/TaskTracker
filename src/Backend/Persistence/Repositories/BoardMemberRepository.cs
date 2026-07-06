@@ -23,10 +23,12 @@ public class BoardMemberRepository(TaskTrackerDbContext dbContext)
 
     public async Task<bool> RemoveUserFromBoardAsync(Guid boardId, Guid userId, CancellationToken ct = default)
     {
-        var deletedRows = await DbSet
+        var softDeletedRows = await DbSet
             .Where(bm => bm.BoardId == boardId && bm.WorkspaceMember!.UserId == userId)
-            .ExecuteDeleteAsync(ct);
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(b => b.IsDeleted, true)
+                .SetProperty(b => b.DeletedAt, DateTimeOffset.UtcNow), ct);
 
-        return deletedRows > 0;
+        return softDeletedRows > 0;
     }
 }

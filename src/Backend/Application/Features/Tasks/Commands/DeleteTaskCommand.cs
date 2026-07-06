@@ -1,7 +1,6 @@
 ﻿using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
-using Domain.Entities;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -13,7 +12,7 @@ public record DeleteTaskCommand(Guid BoardId, Guid TaskId) : IRequest;
 public class DeleteTaskCommandHandler(
     IBoardAccessService boardAccessService,
     ITaskRepository taskRepository,
-    IRepository<Attachment, Guid> attachmentRepository,
+    IAttachmentRepository attachmentRepository,
     IFileService fileService,
     IUnitOfWork unitOfWork,
     ILogger<DeleteTaskCommandHandler> logger)
@@ -35,15 +34,14 @@ public class DeleteTaskCommandHandler(
             throw new KeyNotFoundException("Task not found on this board.");
         }
 
-        var attachments = await attachmentRepository.FindAsync(a => a.TaskId == request.TaskId, ct);
-        var urlsToDelete = attachments.Select(attachment => attachment.FileUrl).ToList();
+        var fileUrlsToDelete = await attachmentRepository.GetUrlsByTaskIdAsync(request.TaskId, ct);
 
         await taskRepository.DecrementPositionsAsync(task.ColumnId, task.Position + 1, ct);
 
         taskRepository.Delete(task);
         await unitOfWork.SaveChangesAsync(ct);
 
-        foreach (var fileUrl in urlsToDelete)
+        foreach (var fileUrl in fileUrlsToDelete)
         {
             try
             {
@@ -51,7 +49,7 @@ public class DeleteTaskCommandHandler(
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to delete orphaned attachment blob: {FileUrl}", fileUrl);
+                logger.LogError(ex, "Failed to delete orphaned blob for Task {TaskId}: {FileUrl}", request.TaskId, fileUrl);
             }
         }
     }

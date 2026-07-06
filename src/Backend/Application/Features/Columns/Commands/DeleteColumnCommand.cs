@@ -3,6 +3,7 @@ using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Features.Columns.Commands;
 
@@ -13,7 +14,10 @@ public class DeleteColumnCommandHandler(
     IBoardRepository boardRepository,
     IColumnRepository columnRepository,
     ITaskRepository taskRepository,
-    IUnitOfWork unitOfWork)
+    IAttachmentRepository attachmentRepository,
+    IFileService fileService,
+    IUnitOfWork unitOfWork,
+    ILogger<DeleteColumnCommandHandler> logger)
     : IRequestHandler<DeleteColumnCommand>
 {
     public async Task Handle(DeleteColumnCommand request, CancellationToken ct)
@@ -35,6 +39,7 @@ public class DeleteColumnCommandHandler(
         }
 
         var positionToShift = column.Position;
+        var fileUrlsToDelete = await attachmentRepository.GetUrlsByColumnIdAsync(request.ColumnId, ct);
 
         columnRepository.Delete(column);
         await unitOfWork.SaveChangesAsync(ct);
@@ -42,6 +47,18 @@ public class DeleteColumnCommandHandler(
         await taskRepository.SoftDeleteTasksAndRelationsByColumnIdAsync(column.Id, ct);
 
         await columnRepository.DecrementPositionsAsync(request.BoardId, positionToShift, ct);
+
+        foreach (var fileUrl in fileUrlsToDelete)
+        {
+            try
+            {
+                await fileService.DeleteFileAsync(fileUrl, ct);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to delete orphaned blob for Column {ColumnId}: {FileUrl}", request.ColumnId, fileUrl);
+            }
+        }
     }
 }
 
