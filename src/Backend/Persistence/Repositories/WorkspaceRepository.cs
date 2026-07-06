@@ -6,7 +6,8 @@ using Persistence.Contexts;
 
 namespace Persistence.Repositories;
 
-public class WorkspaceRepository(TaskTrackerDbContext dbContext) : Repository<Workspace, Guid>(dbContext), IWorkspaceRepository
+public class WorkspaceRepository(TaskTrackerDbContext dbContext)
+    : Repository<Workspace, Guid>(dbContext), IWorkspaceRepository
 {
     public async Task<bool> ExistsAsync(Guid workspaceId, CancellationToken ct = default) =>
         await DbSet.AnyAsync(w => w.Id == workspaceId, ct);
@@ -24,7 +25,8 @@ public class WorkspaceRepository(TaskTrackerDbContext dbContext) : Repository<Wo
             .Select(m => m.Workspace!)
             .ToListAsync(ct);
 
-    public async Task<List<(Workspace Workspace, WorkspaceRole Role)>> GetUserWorkspacesWithRolesAsync(Guid userId, CancellationToken ct = default)
+    public async Task<List<(Workspace Workspace, WorkspaceRole Role)>> GetUserWorkspacesWithRolesAsync(Guid userId,
+        CancellationToken ct = default)
     {
         var memberships = await DbContext.Set<WorkspaceMember>()
             .Where(m => m.UserId == userId)
@@ -43,4 +45,45 @@ public class WorkspaceRepository(TaskTrackerDbContext dbContext) : Repository<Wo
             .Include(w => w.Members)
             .ThenInclude(m => m.User)
             .FirstOrDefaultAsync(w => w.Id == workspaceId, ct);
+
+    public async Task SoftDeleteCascadeAsync(Guid workspaceId, CancellationToken ct = default)
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        await DbContext.Comments
+            .Where(c => c.Task!.Column!.Board!.WorkspaceId == workspaceId && !c.IsDeleted)
+            .ExecuteUpdateAsync(s => s.SetProperty(c => c.IsDeleted, true).SetProperty(c => c.DeletedAt, now), ct);
+
+        await DbContext.Attachments
+            .Where(a => a.Task!.Column!.Board!.WorkspaceId == workspaceId && !a.IsDeleted)
+            .ExecuteUpdateAsync(s => s.SetProperty(a => a.IsDeleted, true).SetProperty(a => a.DeletedAt, now), ct);
+
+        await DbContext.Tasks
+            .Where(t => t.Column!.Board!.WorkspaceId == workspaceId && !t.IsDeleted)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.IsDeleted, true).SetProperty(t => t.DeletedAt, now), ct);
+
+        await DbContext.Columns
+            .Where(c => c.Board!.WorkspaceId == workspaceId && !c.IsDeleted)
+            .ExecuteUpdateAsync(s => s.SetProperty(c => c.IsDeleted, true).SetProperty(c => c.DeletedAt, now), ct);
+
+        await DbContext.BoardMembers
+            .Where(bm => bm.Board!.WorkspaceId == workspaceId && !bm.IsDeleted)
+            .ExecuteUpdateAsync(s => s.SetProperty(bm => bm.IsDeleted, true).SetProperty(bm => bm.DeletedAt, now), ct);
+
+        await DbContext.Boards
+            .Where(b => b.WorkspaceId == workspaceId && !b.IsDeleted)
+            .ExecuteUpdateAsync(s => s.SetProperty(b => b.IsDeleted, true).SetProperty(b => b.DeletedAt, now), ct);
+
+        await DbContext.WorkspaceInvites
+            .Where(wi => wi.WorkspaceId == workspaceId && !wi.IsDeleted)
+            .ExecuteUpdateAsync(s => s.SetProperty(wi => wi.IsDeleted, true).SetProperty(wi => wi.DeletedAt, now), ct);
+
+        await DbContext.WorkspaceMembers
+            .Where(wm => wm.WorkspaceId == workspaceId && !wm.IsDeleted)
+            .ExecuteUpdateAsync(s => s.SetProperty(wm => wm.IsDeleted, true).SetProperty(wm => wm.DeletedAt, now), ct);
+
+        await DbContext.Workspaces
+            .Where(w => w.Id == workspaceId && !w.IsDeleted)
+            .ExecuteUpdateAsync(s => s.SetProperty(w => w.IsDeleted, true).SetProperty(w => w.DeletedAt, now), ct);
+    }
 }

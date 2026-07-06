@@ -205,4 +205,33 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
         return query.Where(b => EF.Functions.ILike(b.Name, $"%{searchTerm}%") ||
                                 EF.Functions.ILike(b.Description ?? string.Empty, $"%{searchTerm}%"));
     }
+
+    public async Task SoftDeleteCascadeAsync(Guid boardId, CancellationToken ct = default)
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        await DbContext.Comments
+            .Where(c => c.Task!.Column!.BoardId == boardId && !c.IsDeleted)
+            .ExecuteUpdateAsync(s => s.SetProperty(c => c.IsDeleted, true).SetProperty(c => c.DeletedAt, now), ct);
+
+        await DbContext.Attachments
+            .Where(a => a.Task!.Column!.BoardId == boardId && !a.IsDeleted)
+            .ExecuteUpdateAsync(s => s.SetProperty(a => a.IsDeleted, true).SetProperty(a => a.DeletedAt, now), ct);
+
+        await DbContext.Tasks
+            .Where(t => t.Column!.BoardId == boardId && !t.IsDeleted)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.IsDeleted, true).SetProperty(t => t.DeletedAt, now), ct);
+
+        await DbContext.Columns
+            .Where(c => c.BoardId == boardId && !c.IsDeleted)
+            .ExecuteUpdateAsync(s => s.SetProperty(c => c.IsDeleted, true).SetProperty(c => c.DeletedAt, now), ct);
+
+        await DbContext.BoardMembers
+            .Where(bm => bm.BoardId == boardId && !bm.IsDeleted)
+            .ExecuteUpdateAsync(s => s.SetProperty(bm => bm.IsDeleted, true).SetProperty(bm => bm.DeletedAt, now), ct);
+
+        await DbContext.Boards
+            .Where(b => b.Id == boardId && !b.IsDeleted)
+            .ExecuteUpdateAsync(s => s.SetProperty(b => b.IsDeleted, true).SetProperty(b => b.DeletedAt, now), ct);
+    }
 }

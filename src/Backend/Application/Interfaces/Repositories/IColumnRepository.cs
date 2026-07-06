@@ -11,4 +11,6 @@ public interface IColumnRepository : IRepository<Column, Guid>
     Task UpdatePositionsOnMoveAsync(Guid boardId, int oldPosition, int newPosition, CancellationToken ct);
 
     Task<int> GetMaxPositionAsync(Guid boardId, CancellationToken ct = default);
+
+    Task SoftDeleteCascadeAsync(Guid columnId, CancellationToken ct = default);
 }

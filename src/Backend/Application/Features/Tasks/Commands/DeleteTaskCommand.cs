@@ -1,6 +1,5 @@
 ﻿using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
-using Application.Interfaces.UOW;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -14,7 +13,6 @@ public class DeleteTaskCommandHandler(
     ITaskRepository taskRepository,
     IAttachmentRepository attachmentRepository,
     IFileService fileService,
-    IUnitOfWork unitOfWork,
     ILogger<DeleteTaskCommandHandler> logger)
     : IRequestHandler<DeleteTaskCommand>
 {
@@ -38,8 +36,7 @@ public class DeleteTaskCommandHandler(
 
         await taskRepository.DecrementPositionsAsync(task.ColumnId, task.Position + 1, ct);
 
-        taskRepository.Delete(task);
-        await unitOfWork.SaveChangesAsync(ct);
+        await taskRepository.SoftDeleteCascadeAsync(request.TaskId, ct);
 
         foreach (var fileUrl in fileUrlsToDelete)
         {

@@ -1,6 +1,5 @@
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
-using Application.Interfaces.UOW;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -14,7 +13,6 @@ public class DeleteBoardCommandHandler(
     IBoardRepository boardRepository,
     IAttachmentRepository attachmentRepository,
     IFileService fileService,
-    IUnitOfWork unitOfWork,
     ILogger<DeleteBoardCommandHandler> logger) : IRequestHandler<DeleteBoardCommand>
 {
     public async Task Handle(DeleteBoardCommand request, CancellationToken cancellationToken)
@@ -26,8 +24,7 @@ public class DeleteBoardCommandHandler(
 
         var fileUrlsToDelete = await attachmentRepository.GetUrlsByBoardIdAsync(request.BoardId, cancellationToken);
 
-        boardRepository.Delete(board);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await boardRepository.SoftDeleteCascadeAsync(request.BoardId, cancellationToken);
 
         foreach (var fileUrl in fileUrlsToDelete)
         {

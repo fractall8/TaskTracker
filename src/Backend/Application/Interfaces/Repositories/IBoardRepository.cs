@@ -31,4 +31,6 @@ public interface IBoardRepository : IRepository<Board, Guid>
     Task<List<Board>> GetBoardsByWorkspaceIdPaginatedAsync(Guid workspaceId, Guid userId, int pageNumber, int pageSize, string? searchTerm = null, CancellationToken ct = default);
 
     Task<List<BoardMemberDto>> GetBoardMembersAsync(Guid boardId, CancellationToken ct = default);
+
+    Task SoftDeleteCascadeAsync(Guid boardId, CancellationToken ct = default);
 }

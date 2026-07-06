@@ -1,6 +1,5 @@
 ﻿using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
-using Application.Interfaces.UOW;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -13,7 +12,6 @@ public class DeleteWorkspaceCommandHandler(
     IWorkspaceAccessService workspaceAccessService,
     IAttachmentRepository attachmentRepository,
     IFileService fileService,
-    IUnitOfWork unitOfWork,
     ILogger<DeleteWorkspaceCommandHandler> logger)
     : IRequestHandler<DeleteWorkspaceCommand>
 {
@@ -26,8 +24,7 @@ public class DeleteWorkspaceCommandHandler(
 
         var fileUrlsToDelete = await attachmentRepository.GetUrlsByWorkspaceIdAsync(request.WorkspaceId, cancellationToken);
 
-        workspaceRepository.Delete(workspace);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await workspaceRepository.SoftDeleteCascadeAsync(request.WorkspaceId, cancellationToken);
 
         foreach (var fileUrl in fileUrlsToDelete)
         {

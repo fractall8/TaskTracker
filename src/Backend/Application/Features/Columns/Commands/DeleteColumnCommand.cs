@@ -1,6 +1,5 @@
 ﻿using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
-using Application.Interfaces.UOW;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -13,10 +12,8 @@ public class DeleteColumnCommandHandler(
     IBoardAccessService boardAccessService,
     IBoardRepository boardRepository,
     IColumnRepository columnRepository,
-    ITaskRepository taskRepository,
     IAttachmentRepository attachmentRepository,
     IFileService fileService,
-    IUnitOfWork unitOfWork,
     ILogger<DeleteColumnCommandHandler> logger)
     : IRequestHandler<DeleteColumnCommand>
 {
@@ -41,10 +38,7 @@ public class DeleteColumnCommandHandler(
         var positionToShift = column.Position;
         var fileUrlsToDelete = await attachmentRepository.GetUrlsByColumnIdAsync(request.ColumnId, ct);
 
-        columnRepository.Delete(column);
-        await unitOfWork.SaveChangesAsync(ct);
-
-        await taskRepository.SoftDeleteTasksAndRelationsByColumnIdAsync(column.Id, ct);
+        await columnRepository.SoftDeleteCascadeAsync(request.ColumnId, ct);
 
         await columnRepository.DecrementPositionsAsync(request.BoardId, positionToShift, ct);
 
