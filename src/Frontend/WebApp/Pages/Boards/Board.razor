@@ -343,7 +343,8 @@
         { 
             { nameof(ManageBoardMembersDialog.WorkspaceId), BoardDetailsStore.Board!.WorkspaceId }, 
             { nameof(ManageBoardMembersDialog.BoardId), BoardId },
-            { nameof(ManageBoardMembersDialog.CurrentUserEmail), currentUserEmail }
+            { nameof(ManageBoardMembersDialog.CurrentUserEmail), currentUserEmail },
+            { nameof(ManageBoardMembersDialog.CurrentUserWorkspaceRole), _workspaceRole }
         };
 
         var options = new DialogOptions 

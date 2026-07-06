@@ -27,7 +27,6 @@
                              ShowProgressIndicator="true"
                              DebounceInterval="500"
                              Class="flex-grow-1">
-
                 <ItemTemplate Context="user">
                     <div class="d-flex align-center gap-2">
                         <MudAvatar Size="Size.Small" Color="Color.Primary">
@@ -115,11 +114,11 @@
                     </MudTd>
                     <MudTd DataLabel="Role">
                         <MudSelect T="BoardRoleDto"
-                                   Value="@member.Role"
+                                   Value="@member.BoardRole"
                                    ValueChanged="@(role => OnRoleChanged(member, role))"
                                    Margin="Margin.Dense"
                                    Variant="Variant.Outlined"
-                                   Disabled="@(Store.IsProcessing || member.Email == CurrentUserEmail)">
+                                   Disabled="@(Store.IsProcessing || !CanChangeRole(member))">
                             @foreach (var role in Enum.GetValues<BoardRoleDto>())
                             {
                                 <MudSelectItem Value="@role">@role.ToString()</MudSelectItem>
@@ -127,13 +126,24 @@
                         </MudSelect>
                     </MudTd>
                     <MudTd DataLabel="Actions">
-                        @if (member.Email != CurrentUserEmail)
+                        @if (CanRemoveMember(member))
                         {
-                            <MudIconButton Icon="@Icons.Material.Filled.RemoveCircleOutline"
-                                           Color="Color.Error"
-                                           Size="Size.Small"
-                                           Disabled="Store.IsProcessing"
-                                           OnClick="@(() => RemoveMember(member))"/>
+                            <MudTooltip Text="Remove from board">
+                                <MudIconButton Icon="@Icons.Material.Filled.RemoveCircleOutline"
+                                               Color="Color.Error"
+                                               Size="Size.Small"
+                                               Disabled="Store.IsProcessing"
+                                               OnClick="@(() => RemoveMember(member))"/>
+                            </MudTooltip>
+                        }
+                        else
+                        {
+                            <MudTooltip Text="You don't have permission to remove this user">
+                                <MudIconButton Icon="@Icons.Material.Filled.Lock"
+                                               Color="Color.Surface"
+                                               Size="Size.Small"
+                                               Disabled="true"/>
+                            </MudTooltip>
                         }
                     </MudTd>
                 </RowTemplate>
@@ -151,6 +161,7 @@
     [Parameter] public Guid WorkspaceId { get; set; }
     [Parameter] public Guid BoardId { get; set; }
     [Parameter] public string CurrentUserEmail { get; set; } = string.Empty;
+    [Parameter] public WorkspaceRoleDto CurrentUserWorkspaceRole { get; set; } 
 
     private WorkspaceMemberDto? _selectedUser;
     private BoardRoleDto _selectedRole = BoardRoleDto.User;
@@ -167,16 +178,31 @@
         Store.Reset();
     }
 
+    private bool CanChangeRole(BoardMemberDto targetMember)
+    {
+        if (targetMember.Email == CurrentUserEmail) return false;
+        
+        if (targetMember.WorkspaceRole is WorkspaceRoleDto.Owner or WorkspaceRoleDto.Admin) return false;
+
+        return true; 
+    }
+
+    private bool CanRemoveMember(BoardMemberDto targetMember)
+    {
+        if (targetMember.Email == CurrentUserEmail) return false;
+        if (CurrentUserWorkspaceRole == WorkspaceRoleDto.Owner) return true;
+        if (targetMember.WorkspaceRole is WorkspaceRoleDto.Owner or WorkspaceRoleDto.Admin) return false;
+
+        return true; 
+    }
+
     private async Task<IEnumerable<WorkspaceMemberDto>> SearchWorkspaceUsers(string value, CancellationToken ct)
     {
         try
         {
             var users = await WorkspaceStore.GetWorkspaceUsersAsync(WorkspaceId, value, ct);
-
             var existingMemberIds = Store.Members.Select(m => m.WorkspaceMemberId).ToHashSet();
-
             var filteredUsers = users.Where(u => !existingMemberIds.Contains(u.Id)).ToList();
-
             return filteredUsers;
         }
         catch (Exception ex)

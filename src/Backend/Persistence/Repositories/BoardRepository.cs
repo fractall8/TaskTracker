@@ -190,6 +190,7 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
                 bm.WorkspaceMember.User.DisplayName,
                 bm.WorkspaceMember.User.AvatarUrl,
                 (BoardRoleDto)bm.Role,
+                (WorkspaceRoleDto)bm.WorkspaceMember.Role,
                 bm.JoinedAt
             ))
             .ToListAsync(ct);
