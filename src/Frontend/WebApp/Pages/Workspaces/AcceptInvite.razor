@@ -53,8 +53,7 @@
     {
         if (string.IsNullOrWhiteSpace(Token))
         {
-            _error = "No invite token provided.";
-            _loading = false;
+            Navigation.NavigateTo("/dashboard");
             return;
         }
 

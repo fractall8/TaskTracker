@@ -18,6 +18,7 @@ public class CurrentUserService(IProfileStore profileStore, IAuthApiService auth
         try
         {
             await profileStore.EnsureLoadedAsync();
+            User = profileStore.Profile;
             _isInitialized = true;
         }
         catch

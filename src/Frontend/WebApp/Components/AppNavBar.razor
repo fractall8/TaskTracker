@@ -37,7 +37,10 @@
                                     }
                                     else
                                     {
-                                        @(ProfileStore.Profile.DisplayName?.FirstOrDefault() ?? ProfileStore.Profile.Email.FirstOrDefault())
+                                        var nameToUse = string.IsNullOrWhiteSpace(ProfileStore.Profile.DisplayName) 
+                                            ? ProfileStore.Profile.Email 
+                                            : ProfileStore.Profile.DisplayName;
+                                        @nameToUse.FirstOrDefault('U')
                                     }
                                 </MudAvatar>
                                 <MudText Color="Color.Inherit" Class="ml-2 font-weight-medium">
