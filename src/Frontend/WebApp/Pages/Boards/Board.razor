@@ -170,6 +170,7 @@
     private ColumnDto? _draggedColumn;
     private ColumnDto? _targetColumn;
     private string _searchQuery = string.Empty;
+    private CancellationTokenSource? _searchCts;
 
     private MudDropContainer<TaskDto>? _dropContainer;
 
@@ -183,8 +184,29 @@
     private async Task OnSearchChanged(string newValue)
     {
         _searchQuery = newValue;
-        await BoardDetailsStore.LoadAsync(BoardId, _searchQuery);
-        _dropContainer?.Refresh();
+        
+        if (_searchCts != null)
+        {
+            await _searchCts.CancelAsync();
+            _searchCts.Dispose();
+        }
+        
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+
+        try
+        {
+            await BoardDetailsStore.LoadAsync(BoardId, _searchQuery, token);
+            _dropContainer?.Refresh();
+        }
+        catch (OperationCanceledException)
+        {
+            // skip
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
     }
 
     protected override async Task OnInitializedAsync()
@@ -208,7 +230,12 @@
         }
     }
 
-    public void Dispose() => BoardDetailsStore.StateChanged -= HandleStoreStateChanged;
+    public void Dispose()
+    {
+        BoardDetailsStore.StateChanged -= HandleStoreStateChanged;
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+    }
 
     private void HandleStoreStateChanged()
     {
@@ -221,6 +248,9 @@
         if (!CanMoveTasks) return;
 
         var task = dropItem.Item;
+
+        if (task == null) return;
+        
         var targetColumnId = Guid.Parse(dropItem.DropzoneIdentifier);
         var newPosition = dropItem.IndexInZone;
 
@@ -231,6 +261,7 @@
         catch (Exception ex)
         {
             Snackbar.Add($"Failed to move task: {ex.Message}", Severity.Error);
+            _dropContainer?.Refresh();
         }
     }
 
@@ -263,6 +294,7 @@
         catch (Exception ex)
         {
             Snackbar.Add(ex.Message, Severity.Error);
+            _dropContainer?.Refresh();
         }
     }
 

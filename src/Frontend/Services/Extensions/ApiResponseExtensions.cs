@@ -41,7 +41,11 @@ public static class ApiResponseExtensions
                 {
                     if (problem.Errors != null && problem.Errors.Any())
                     {
-                        return problem.Errors.First().Value.FirstOrDefault() ?? "Validation error.";
+                        var allErrors = problem.Errors
+                            .SelectMany(kvp => kvp.Value)
+                            .Where(msg => !string.IsNullOrWhiteSpace(msg));
+
+                        return string.Join(Environment.NewLine, allErrors);
                     }
 
                     if (!string.IsNullOrWhiteSpace(problem.Detail))

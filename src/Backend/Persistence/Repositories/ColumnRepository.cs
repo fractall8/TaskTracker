@@ -37,4 +37,33 @@ public class ColumnRepository(TaskTrackerDbContext dbContext)
                 .ExecuteUpdateAsync(s => s.SetProperty(c => c.Position, c => c.Position + 1), ct);
         }
     }
+
+    public async Task<int> GetMaxPositionAsync(Guid boardId, CancellationToken ct = default)
+    {
+        return await DbContext.Columns
+            .Where(c => c.BoardId == boardId && !c.IsDeleted)
+            .Select(c => (int?)c.Position)
+            .MaxAsync(ct) ?? 0;
+    }
+
+    public async Task SoftDeleteCascadeAsync(Guid columnId, CancellationToken ct = default)
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        await DbContext.Comments
+            .Where(c => c.Task!.ColumnId == columnId && !c.IsDeleted)
+            .ExecuteUpdateAsync(s => s.SetProperty(c => c.IsDeleted, true).SetProperty(c => c.DeletedAt, now), ct);
+
+        await DbContext.Attachments
+            .Where(a => a.Task!.ColumnId == columnId && !a.IsDeleted)
+            .ExecuteUpdateAsync(s => s.SetProperty(a => a.IsDeleted, true).SetProperty(a => a.DeletedAt, now), ct);
+
+        await DbContext.Tasks
+            .Where(t => t.ColumnId == columnId && !t.IsDeleted)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.IsDeleted, true).SetProperty(t => t.DeletedAt, now), ct);
+
+        await DbContext.Columns
+            .Where(c => c.Id == columnId && !c.IsDeleted)
+            .ExecuteUpdateAsync(s => s.SetProperty(c => c.IsDeleted, true).SetProperty(c => c.DeletedAt, now), ct);
+    }
 }

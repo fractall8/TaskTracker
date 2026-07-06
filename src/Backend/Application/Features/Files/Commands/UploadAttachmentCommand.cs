@@ -7,6 +7,7 @@ using Domain.Constants;
 using Domain.Entities;
 using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Application.Features.Files.Commands;
@@ -26,53 +27,64 @@ public class UploadAttachmentCommandHandler(
     IFileService fileService,
     IUserRepository userRepository,
     ICurrentUserAccessor currentUserAccessor,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    ILogger<UploadAttachmentCommandHandler> logger)
     : IRequestHandler<UploadAttachmentCommand, AttachmentDto>
 {
     public async Task<AttachmentDto> Handle(UploadAttachmentCommand request, CancellationToken cancellationToken)
     {
-        await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, cancellationToken);
+            await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, cancellationToken);
 
-        var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, cancellationToken);
-        if (task == null || task.Column?.BoardId != request.BoardId)
-        {
-            throw new KeyNotFoundException("Task not found on this board.");
-        }
+            var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, cancellationToken);
+            if (task == null || task.Column?.BoardId != request.BoardId)
+            {
+                throw new KeyNotFoundException("Task not found on this board.");
+            }
 
-        // for default blob container is private
-        var fileUrl = await fileService.UploadFileAsync(
-            fileStream: request.FileStream,
-            fileName: request.FileName,
-            contentType: request.ContentType,
-            containerName: BlobContainerNames.Attachments,
-            cancellationToken: cancellationToken);
+            // for default blob container is private
+            var fileUrl = await fileService.UploadFileAsync(
+                fileStream: request.FileStream,
+                fileName: request.FileName,
+                contentType: request.ContentType,
+                containerName: BlobContainerNames.Attachments,
+                cancellationToken: cancellationToken);
 
-        var currentUserId =
-            await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => u.Id,
-                cancellationToken);
+            var currentUserId =
+                await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => u.Id,
+                    cancellationToken);
 
-        var attachment = new Attachment
-        {
-            Id = Guid.NewGuid(),
-            TaskId = request.TaskId,
-            FileName = request.FileName,
-            FileUrl = fileUrl,
-            SizeInBytes = request.SizeInBytes,
-            CreatedAt = DateTimeOffset.UtcNow,
-            CreatedById = currentUserId,
-            ContentType = request.ContentType
-        };
+            var attachment = new Attachment
+            {
+                Id = Guid.NewGuid(),
+                TaskId = request.TaskId,
+                FileName = request.FileName,
+                FileUrl = fileUrl,
+                SizeInBytes = request.SizeInBytes,
+                CreatedAt = DateTimeOffset.UtcNow,
+                CreatedById = currentUserId,
+                ContentType = request.ContentType
+            };
 
-        await attachmentRepository.AddAsync(attachment, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+            await attachmentRepository.AddAsync(attachment, cancellationToken);
 
-        return new AttachmentDto(
-            attachment.Id,
-            attachment.FileName,
-            attachment.FileUrl,
-            attachment.SizeInBytes,
-            attachment.CreatedAt,
-            attachment.CreatedById);
+            try
+            {
+                await unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                await fileService.DeleteFileAsync(fileUrl, cancellationToken);
+                logger.LogError(ex,"Failed to upload attachment blob: {FileUrl}", fileUrl);
+                throw;
+            }
+
+            return new AttachmentDto(
+                attachment.Id,
+                attachment.FileName,
+                attachment.FileUrl,
+                attachment.SizeInBytes,
+                attachment.CreatedAt,
+                attachment.CreatedById);
     }
 }
 
@@ -90,7 +102,7 @@ public class UploadAttachmentCommandValidator : AbstractValidator<UploadAttachme
             .Must(type => settings.AllowedTypes.Contains(type))
             .WithMessage("Unsupported file type. Please upload an image, PDF, or Word document.");
 
-        RuleFor(x => x.SizeInBytes)
+        RuleFor(x => x.FileStream.Length)
             .LessThanOrEqualTo(maxFileSizeBytes)
             .WithMessage($"File size must not exceed {settings.MaxSizeMb} MB.");
     }

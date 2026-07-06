@@ -16,7 +16,8 @@ public class BlobStorageService(BlobServiceClient blobServiceClient) : IFileServ
 
         await containerClient.CreateIfNotExistsAsync(accessType, cancellationToken: cancellationToken);
 
-        var uniqueFileName = $"{Guid.NewGuid()}_{fileName}";
+        var extension = Path.GetExtension(fileName);
+        var uniqueFileName = $"{Guid.NewGuid()}{extension}";
         var blobClient = containerClient.GetBlobClient(uniqueFileName);
         var httpHeaders = new BlobHttpHeaders { ContentType = contentType };
 

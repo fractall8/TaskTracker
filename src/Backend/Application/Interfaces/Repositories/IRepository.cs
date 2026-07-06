@@ -9,6 +9,8 @@ public interface IRepository<TEntity, TId> where TEntity : BaseEntity<TId>
 
     Task<IReadOnlyList<TEntity>> GetAllAsync(CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
+
     Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default);
 
     Task<TEntity?> GetAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken ct = default);

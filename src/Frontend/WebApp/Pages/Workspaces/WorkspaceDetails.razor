@@ -132,14 +132,14 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
                                                                Size="Size.Small" OnClick="@(() => DeleteBoard(board))"/>
                                             </MudTooltip>
                                         }
-                                        
+
                                         <MudTooltip Text="Leave Board">
                                             <MudIconButton Icon="@Icons.Material.Filled.ExitToApp"
                                                            Color="Color.Warning"
                                                            Size="Size.Small"
                                                            OnClick="@(() => LeaveBoard(board))"/>
                                         </MudTooltip>
-                                        
+
                                         <MudButton Href="@($"/boards/{board.Id}")" Variant="Variant.Text"
                                                    Color="Color.Primary" Class="ml-2 fw-bold">Open
                                         </MudButton>
@@ -450,6 +450,9 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
     private int _allBoardPageSize = 24;
     private string? _allBoardSearchTerm;
 
+    private CancellationTokenSource? _myBoardSearchCts;
+    private CancellationTokenSource? _allBoardSearchCts;
+
     private string? _inviteToken;
     private IReadOnlyList<WorkspaceInviteDto> _invites = [];
     private bool _invitesLoading;
@@ -480,8 +483,16 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
         }
     }
 
-    public void Dispose() =>
+    public void Dispose()
+    {
         WorkspaceStore.StateChanged -= OnStoreStateChanged;
+
+        _myBoardSearchCts?.Cancel();
+        _myBoardSearchCts?.Dispose();
+
+        _allBoardSearchCts?.Cancel();
+        _allBoardSearchCts?.Dispose();
+    }
 
     private void OnStoreStateChanged()
     {
@@ -498,15 +509,19 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
         }
     }
 
-    private async Task LoadMyBoardsAsync()
+    private async Task LoadMyBoardsAsync(CancellationToken ct = default)
     {
         _myBoardsLoading = true;
         StateHasChanged();
         try
         {
-            var paged = await WorkspaceStore.GetMyWorkspaceBoardsAsync(WorkspaceId, _myBoardCurrentPage, _myBoardPageSize, _myBoardSearchTerm);
+            var paged = await WorkspaceStore.GetMyWorkspaceBoardsAsync(WorkspaceId, _myBoardCurrentPage, _myBoardPageSize, _myBoardSearchTerm, ct);
             _myBoards = paged.Items;
             _myBoardPagination = paged.Metadata;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -515,8 +530,11 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
         }
         finally
         {
-            _myBoardsLoading = false;
-            StateHasChanged();
+            if (!ct.IsCancellationRequested)
+            {
+                _myBoardsLoading = false;
+                StateHasChanged();
+            }
         }
     }
 
@@ -524,7 +542,23 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
     {
         _myBoardSearchTerm = value;
         _myBoardCurrentPage = 1;
-        await LoadMyBoardsAsync();
+
+        if (_myBoardSearchCts != null)
+        {
+            await _myBoardSearchCts.CancelAsync();
+            _myBoardSearchCts.Dispose();
+        }
+
+        _myBoardSearchCts = new CancellationTokenSource();
+
+        try
+        {
+            await LoadMyBoardsAsync(_myBoardSearchCts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // skip
+        }
     }
 
     private async Task OnMyBoardPageSizeChanged(int size)
@@ -540,15 +574,19 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
         await LoadMyBoardsAsync();
     }
 
-    private async Task LoadAllBoardsAsync()
+    private async Task LoadAllBoardsAsync(CancellationToken ct = default)
     {
         _allBoardsLoading = true;
         StateHasChanged();
         try
         {
-            var paged = await WorkspaceStore.GetAllWorkspaceBoardsAsync(WorkspaceId, _allBoardCurrentPage, _allBoardPageSize, _allBoardSearchTerm);
+            var paged = await WorkspaceStore.GetAllWorkspaceBoardsAsync(WorkspaceId, _allBoardCurrentPage, _allBoardPageSize, _allBoardSearchTerm, ct);
             _allBoards = paged.Items;
             _allBoardPagination = paged.Metadata;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -557,8 +595,11 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
         }
         finally
         {
-            _allBoardsLoading = false;
-            StateHasChanged();
+            if (!ct.IsCancellationRequested)
+            {
+                _allBoardsLoading = false;
+                StateHasChanged();
+            }
         }
     }
 
@@ -566,7 +607,23 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
     {
         _allBoardSearchTerm = value;
         _allBoardCurrentPage = 1;
-        await LoadAllBoardsAsync();
+
+        if (_allBoardSearchCts != null)
+        {
+            await _allBoardSearchCts.CancelAsync();
+            _allBoardSearchCts.Dispose();
+        }
+
+        _allBoardSearchCts = new CancellationTokenSource();
+
+        try
+        {
+            await LoadAllBoardsAsync(_allBoardSearchCts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // skip
+        }
     }
 
     private async Task OnAllBoardPageSizeChanged(int size)
@@ -848,7 +905,7 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
             {
                 await BoardApiService.LeaveBoardAsync(board.Id);
                 Snackbar.Add("You left the board successfully.", Severity.Success);
-                
+
                 await LoadMyBoardsAsync();
             }
             catch (Exception ex)

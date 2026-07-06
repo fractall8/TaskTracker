@@ -22,5 +22,5 @@ public interface ITaskRepository : IRepository<TaskItem, Guid>
 
     Task<IEnumerable<Attachment>> GetAttachmentsByColumnIdAsync(Guid columnId, CancellationToken ct = default);
 
-    Task SoftDeleteTasksAndRelationsByColumnIdAsync(Guid columnId, CancellationToken ct = default);
+    Task SoftDeleteCascadeAsync(Guid taskId, CancellationToken ct = default);
 }

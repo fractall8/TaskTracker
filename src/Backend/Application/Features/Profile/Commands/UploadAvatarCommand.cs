@@ -39,7 +39,17 @@ public class UploadAvatarCommandHandler(
 
         user.AvatarUrl = newFileUrl;
         userRepository.Update(user);
-        await unitOfWork.SaveChangesAsync(ct);
+
+        try
+        {
+            await unitOfWork.SaveChangesAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            await fileService.DeleteFileAsync(newFileUrl, ct);
+            logger.LogError(ex, "Failed to save new avatar to DB, rolling back file: {FileUrl}", newFileUrl);
+            throw;
+        }
 
         if (!string.IsNullOrEmpty(oldAvatarUrl))
         {

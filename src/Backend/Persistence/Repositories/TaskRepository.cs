@@ -49,7 +49,7 @@ public class TaskRepository(TaskTrackerDbContext dbContext) : Repository<TaskIte
     {
         return await DbContext.Tasks
             .Where(t => t.ColumnId == columnId)
-            .MaxAsync(t => (int?)t.Position, ct) ?? -1;
+            .MaxAsync(t => (int?)t.Position, ct) ?? 0;
     }
 
     public async Task DecrementPositionsAsync(Guid columnId, int startingFromPosition, CancellationToken ct = default)
@@ -96,29 +96,26 @@ public class TaskRepository(TaskTrackerDbContext dbContext) : Repository<TaskIte
             .ToListAsync(ct);
     }
 
-    public async Task SoftDeleteTasksAndRelationsByColumnIdAsync(Guid columnId, CancellationToken ct = default)
+    public async Task SoftDeleteCascadeAsync(Guid taskId, CancellationToken ct = default)
     {
-        var deletedAt = DateTime.UtcNow;
+        var now = DateTimeOffset.UtcNow;
 
-        await DbContext.Set<Attachment>()
-            .IgnoreQueryFilters()
-            .Where(a => a.Task!.ColumnId == columnId)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(a => a.IsDeleted, true)
-                .SetProperty(a => a.DeletedAt, deletedAt), ct);
-
-        await DbContext.Set<Comment>()
-            .IgnoreQueryFilters()
-            .Where(c => c.Task!.ColumnId == columnId)
+        await DbContext.Comments
+            .Where(c => c.TaskId == taskId && !c.IsDeleted)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(c => c.IsDeleted, true)
-                .SetProperty(c => c.DeletedAt, deletedAt), ct);
+                .SetProperty(c => c.DeletedAt, now), ct);
 
-        await DbContext.Set<TaskItem>()
-            .IgnoreQueryFilters()
-            .Where(t => t.ColumnId == columnId)
+        await DbContext.Attachments
+            .Where(a => a.TaskId == taskId && !a.IsDeleted)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(a => a.IsDeleted, true)
+                .SetProperty(a => a.DeletedAt, now), ct);
+
+        await DbContext.Tasks
+            .Where(t => t.Id == taskId && !t.IsDeleted)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(t => t.IsDeleted, true)
-                .SetProperty(t => t.DeletedAt, deletedAt), ct);
+                .SetProperty(t => t.DeletedAt, now), ct);
     }
 }

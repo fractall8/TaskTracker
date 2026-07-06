@@ -14,4 +14,6 @@ public interface IWorkspaceRepository : IRepository<Workspace, Guid>
     Task<List<(Workspace Workspace, WorkspaceRole Role)>> GetUserWorkspacesWithRolesAsync(Guid userId, CancellationToken ct = default);
 
     Task<Workspace?> GetByIdWithMembersAsync(Guid workspaceId, CancellationToken ct = default);
+
+    Task SoftDeleteCascadeAsync(Guid workspaceId, CancellationToken ct = default);
 }

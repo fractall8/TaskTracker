@@ -15,6 +15,7 @@ public record AddBoardMemberCommand(
 
 public class AddBoardMemberCommandHandler(
     IWorkspaceAccessService workspaceAccessService,
+    IWorkspaceMemberRepository workspaceMemberRepository,
     IBoardRepository boardRepository,
     IRepository<BoardMember, Guid> boardMemberRepository,
     IUnitOfWork unitOfWork)
@@ -30,6 +31,13 @@ public class AddBoardMemberCommandHandler(
         }
 
         await workspaceAccessService.EnsureCanManageBoardMembersAsync(board.WorkspaceId, ct);
+
+        var targetMember = await workspaceMemberRepository.GetByIdAsync(request.WorkspaceMemberId, ct);
+
+        if (targetMember == null || targetMember.WorkspaceId != board.WorkspaceId)
+        {
+            throw new InvalidOperationException("The user is not a member of this workspace.");
+        }
 
         var isAlreadyMember = await boardMemberRepository.AnyAsync(
             m => m.BoardId == request.BoardId && m.WorkspaceMemberId == request.WorkspaceMemberId,

@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
+using FluentValidation;
 using MediatR;
 
 namespace Application.Features.Tasks.Commands;
@@ -39,27 +40,53 @@ public class MoveTaskCommandHandler(
         var oldColumnId = taskToMove.ColumnId;
         var oldPosition = taskToMove.Position;
 
+        var targetColumnMaxPosition = await taskRepository.GetMaxPositionAsync(request.TargetColumnId, ct);
+
+        int safeNewPosition;
+
         if (oldColumnId == request.TargetColumnId)
         {
-            if (oldPosition == request.NewPosition)
+            safeNewPosition = Math.Min(request.NewPosition, targetColumnMaxPosition);
+
+            if (oldPosition == safeNewPosition)
             {
                 return;
             }
 
-            await taskRepository.UpdatePositionsOnMoveAsync(oldColumnId, oldPosition, request.NewPosition, ct);
+            await taskRepository.UpdatePositionsOnMoveAsync(oldColumnId, oldPosition, safeNewPosition, ct);
         }
         else
         {
-            await taskRepository.DecrementPositionsAsync(oldColumnId, oldPosition + 1, ct);
+            var maxAllowedPosition = targetColumnMaxPosition + 1;
+            safeNewPosition = Math.Min(request.NewPosition, maxAllowedPosition);
 
-            await taskRepository.IncrementPositionsAsync(request.TargetColumnId, request.NewPosition, ct);
+            await taskRepository.DecrementPositionsAsync(oldColumnId, oldPosition + 1, ct);
+            await taskRepository.IncrementPositionsAsync(request.TargetColumnId, safeNewPosition, ct);
 
             taskToMove.ColumnId = request.TargetColumnId;
         }
 
-        taskToMove.Position = request.NewPosition;
+        taskToMove.Position = safeNewPosition;
 
         taskRepository.Update(taskToMove);
         await unitOfWork.SaveChangesAsync(ct);
+    }
+}
+
+public class MoveColumnCommandValidator : AbstractValidator<MoveTaskCommand>
+{
+    public MoveColumnCommandValidator()
+    {
+        RuleFor(x => x.BoardId)
+            .NotEmpty().WithMessage("Board ID is required.");
+
+        RuleFor(x => x.TaskId)
+            .NotEmpty().WithMessage("Task ID is required.");
+
+        RuleFor(x => x.TargetColumnId)
+            .NotEmpty().WithMessage("Target column ID is required.");
+
+        RuleFor(x => x.NewPosition)
+            .GreaterThanOrEqualTo(0).WithMessage("New position must be greater than or equal to 0.");
     }
 }
