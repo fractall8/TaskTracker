@@ -11,7 +11,11 @@ namespace Application.Features.Boards.Commands;
 public record RemoveBoardMemberCommand(Guid BoardId, Guid WorkspaceMemberId) : IRequest<Unit>;
 
 public class RemoveBoardMemberCommandHandler(
+    ICurrentUserAccessor currentUserAccessor,
+    IUserRepository userRepository,
     IWorkspaceAccessService workspaceAccessService,
+    IWorkspaceRepository workspaceRepository,
+    IRepository<WorkspaceMember, Guid> workspaceMemberRepository,
     IBoardRepository boardRepository,
     IRepository<BoardMember, Guid> boardMemberRepository,
     IUnitOfWork unitOfWork)
@@ -19,18 +23,37 @@ public class RemoveBoardMemberCommandHandler(
 {
     public async Task<Unit> Handle(RemoveBoardMemberCommand request, CancellationToken ct)
     {
-        var board = await boardRepository.GetByIdAsync(request.BoardId, ct);
-
-        if (board == null)
-        {
-            throw new KeyNotFoundException("Board not found.");
-        }
+        var board = await boardRepository.GetByIdAsync(request.BoardId, ct)
+                    ?? throw new KeyNotFoundException("Board not found.");
 
         await workspaceAccessService.EnsureCanManageBoardMembersAsync(board.WorkspaceId, ct);
 
+        var initiatorId = await userRepository.GetUserByAzureAdIdAsync(
+            currentUserAccessor.AzureAdObjectId,
+            u => u.Id,
+            ct);
+
+        var initiatorWorkspaceRole = await workspaceRepository.GetUserRoleAsync(board.WorkspaceId, initiatorId, ct);
+
+        var targetWorkspaceMember = await workspaceMemberRepository.GetByIdAsync(request.WorkspaceMemberId, ct)
+                                    ?? throw new KeyNotFoundException("Workspace member not found.");
+
+        if (targetWorkspaceMember.UserId == initiatorId)
+        {
+            throw new InvalidOperationException("You cannot remove yourself from the board. Use the 'Leave Board' action instead.");
+        }
+
+        if (initiatorWorkspaceRole != WorkspaceRole.Owner)
+        {
+            if (targetWorkspaceMember.Role == WorkspaceRole.Owner || targetWorkspaceMember.Role == WorkspaceRole.Admin)
+            {
+                throw new UnauthorizedAccessException("You can only remove regular Workspace Members from the board.");
+            }
+        }
+
         var boardMember = await boardMemberRepository.GetAsync(
             m => m.BoardId == request.BoardId && m.WorkspaceMemberId == request.WorkspaceMemberId,
-            ct) ?? throw new KeyNotFoundException("Board member not found.");
+            ct) ?? throw new KeyNotFoundException("Board member not found on this board.");
 
         if (boardMember.Role == BoardRole.Admin)
         {

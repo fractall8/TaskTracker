@@ -9,4 +9,10 @@ public interface IBoardMemberRepository : IRepository<BoardMember, Guid>
     Task<BoardMember?> GetByBoardAndUserIdAsync(Guid boardId, Guid userId, CancellationToken ct = default);
 
     Task<bool> RemoveUserFromBoardAsync(Guid boardId, Guid userId, CancellationToken ct = default);
+
+    Task AddUserToAllWorkspaceBoardsAsAdminAsync(Guid workspaceId, Guid workspaceMemberId,
+        CancellationToken ct = default);
+
+    Task DowngradeUserOnAllWorkspaceBoardsToUserAsync(Guid workspaceId, Guid workspaceMemberId,
+        CancellationToken ct = default);
 }
