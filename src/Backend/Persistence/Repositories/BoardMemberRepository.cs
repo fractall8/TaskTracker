@@ -70,19 +70,14 @@ public class BoardMemberRepository(TaskTrackerDbContext dbContext)
         await DbContext.BoardMembers.AddRangeAsync(newMemberships, ct);
     }
 
-    public async Task DowngradeUserOnAllWorkspaceBoardsToUserAsync(Guid workspaceId, Guid workspaceMemberId, CancellationToken ct = default)
+    public async Task RemoveUserFromAllWorkspaceBoardsAsync(Guid workspaceId, Guid workspaceMemberId, CancellationToken ct = default)
     {
-        var memberships = await DbContext.BoardMembers
+        await DbContext.BoardMembers
             .Where(bm => bm.WorkspaceMemberId == workspaceMemberId
                          && bm.Board!.WorkspaceId == workspaceId
                          && !bm.IsDeleted)
-            .ToListAsync(ct);
-
-        foreach (var membership in memberships)
-        {
-            membership.Role = BoardRole.User;
-        }
-
-        DbContext.BoardMembers.UpdateRange(memberships);
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(b => b.IsDeleted, true)
+                .SetProperty(b => b.DeletedAt, DateTimeOffset.UtcNow), ct);
     }
 }

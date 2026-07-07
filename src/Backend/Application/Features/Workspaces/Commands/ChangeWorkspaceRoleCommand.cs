@@ -42,7 +42,7 @@ public class ChangeWorkspaceMemberRoleCommandHandler(
         }
         else if (oldRole == WorkspaceRole.Admin && request.NewRole == WorkspaceRole.Member)
         {
-            await boardMemberRepository.DowngradeUserOnAllWorkspaceBoardsToUserAsync(request.WorkspaceId, targetMember.Id, cancellationToken);
+            await boardMemberRepository.RemoveUserFromAllWorkspaceBoardsAsync(request.WorkspaceId, targetMember.Id, cancellationToken);
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);

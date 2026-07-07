@@ -13,6 +13,6 @@ public interface IBoardMemberRepository : IRepository<BoardMember, Guid>
     Task AddUserToAllWorkspaceBoardsAsAdminAsync(Guid workspaceId, Guid workspaceMemberId,
         CancellationToken ct = default);
 
-    Task DowngradeUserOnAllWorkspaceBoardsToUserAsync(Guid workspaceId, Guid workspaceMemberId,
+    Task RemoveUserFromAllWorkspaceBoardsAsync(Guid workspaceId, Guid workspaceMemberId,
         CancellationToken ct = default);
 }
