@@ -1,4 +1,5 @@
 ﻿using Domain.Entities;
+using Domain.Enums;
 
 namespace Application.Interfaces.Repositories;
 
@@ -15,4 +16,7 @@ public interface IBoardMemberRepository : IRepository<BoardMember, Guid>
 
     Task RemoveUserFromAllWorkspaceBoardsAsync(Guid workspaceId, Guid workspaceMemberId,
         CancellationToken ct = default);
+
+
+    Task<Dictionary<Guid, BoardRole>> GetUserRolesForArchivedBoardsAsync(List<Guid> boardIds, Guid userId, CancellationToken ct = default);
 }

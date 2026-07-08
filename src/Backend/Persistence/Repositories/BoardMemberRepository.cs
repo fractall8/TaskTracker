@@ -9,7 +9,8 @@ namespace Persistence.Repositories;
 public class BoardMemberRepository(TaskTrackerDbContext dbContext)
     : Repository<BoardMember, Guid>(dbContext), IBoardMemberRepository
 {
-    public async Task<List<BoardMember>> GetByWorkspaceMemberIdAsync(Guid workspaceMemberId, CancellationToken cancellationToken = default)
+    public async Task<List<BoardMember>> GetByWorkspaceMemberIdAsync(Guid workspaceMemberId,
+        CancellationToken cancellationToken = default)
     {
         return await DbSet.Where(bm => bm.WorkspaceMemberId == workspaceMemberId).ToListAsync(cancellationToken);
     }
@@ -33,7 +34,8 @@ public class BoardMemberRepository(TaskTrackerDbContext dbContext)
         return softDeletedRows > 0;
     }
 
-    public async Task AddUserToAllWorkspaceBoardsAsAdminAsync(Guid workspaceId, Guid workspaceMemberId, CancellationToken ct = default)
+    public async Task AddUserToAllWorkspaceBoardsAsAdminAsync(Guid workspaceId, Guid workspaceMemberId,
+        CancellationToken ct = default)
     {
         var boardIds = await DbContext.Boards
             .Where(b => b.WorkspaceId == workspaceId && !b.IsDeleted)
@@ -70,7 +72,8 @@ public class BoardMemberRepository(TaskTrackerDbContext dbContext)
         await DbContext.BoardMembers.AddRangeAsync(newMemberships, ct);
     }
 
-    public async Task RemoveUserFromAllWorkspaceBoardsAsync(Guid workspaceId, Guid workspaceMemberId, CancellationToken ct = default)
+    public async Task RemoveUserFromAllWorkspaceBoardsAsync(Guid workspaceId, Guid workspaceMemberId,
+        CancellationToken ct = default)
     {
         await DbContext.BoardMembers
             .Where(bm => bm.WorkspaceMemberId == workspaceMemberId
@@ -79,5 +82,21 @@ public class BoardMemberRepository(TaskTrackerDbContext dbContext)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(b => b.IsDeleted, true)
                 .SetProperty(b => b.DeletedAt, DateTimeOffset.UtcNow), ct);
+    }
+
+    public async Task<Dictionary<Guid, BoardRole>> GetUserRolesForArchivedBoardsAsync(List<Guid> boardIds, Guid userId,
+        CancellationToken ct = default)
+    {
+        if (boardIds.Count == 0)
+        {
+            return new();
+        }
+
+        return await DbContext.BoardMembers
+            .Where(bm =>
+                boardIds.Contains(bm.BoardId)
+                && bm.WorkspaceMember!.UserId == userId)
+            .Select(bm => new { bm.Id, bm.Role })
+            .ToDictionaryAsync(x => x.Id, x => x.Role, ct);
     }
 }
