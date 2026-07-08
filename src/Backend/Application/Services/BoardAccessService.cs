@@ -10,8 +10,7 @@ namespace Application.Services;
 public class BoardAccessService(
     ICurrentUserAccessor currentUserAccessor,
     IUserRepository userRepository,
-    IBoardRepository boardRepository,
-    IWorkspaceRepository workspaceRepository) : IBoardAccessService
+    IBoardRepository boardRepository) : IBoardAccessService
 {
     public async Task<(Guid UserId, string Email)> GetCurrentUserAsync(CancellationToken ct = default)
     {
@@ -49,20 +48,6 @@ public class BoardAccessService(
     public async Task<BoardRoleDto?> GetEffectiveBoardRoleAsync(Guid boardId, CancellationToken ct = default)
     {
         var (userId, _) = await GetCurrentUserAsync(ct);
-
-        var board = await boardRepository.GetByIdAsync(boardId, ct);
-
-        if (board == null)
-        {
-            return null;
-        }
-
-        var workspaceRole = await workspaceRepository.GetUserRoleAsync(board.WorkspaceId, userId, ct);
-
-        if (workspaceRole is WorkspaceRole.Owner or WorkspaceRole.Admin)
-        {
-            return BoardRoleDto.Admin;
-        }
 
         var explicitBoardRole = await boardRepository.GetUserRoleAsync(boardId, userId, ct);
 

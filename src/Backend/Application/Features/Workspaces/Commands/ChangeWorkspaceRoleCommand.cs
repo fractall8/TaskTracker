@@ -9,6 +9,7 @@ namespace Application.Features.Workspaces.Commands;
 public record ChangeWorkspaceMemberRoleCommand(Guid WorkspaceId, Guid UserIdToChange, WorkspaceRole NewRole) : IRequest;
 
 public class ChangeWorkspaceMemberRoleCommandHandler(
+    IBoardMemberRepository boardMemberRepository,
     IWorkspaceMemberRepository workspaceMemberRepository,
     IWorkspaceAccessService workspaceAccessService,
     IUnitOfWork unitOfWork)
@@ -30,9 +31,20 @@ public class ChangeWorkspaceMemberRoleCommandHandler(
                 cancellationToken)
             ?? throw new KeyNotFoundException("User is not a member of this workspace.");
 
-        targetMember.Role = request.NewRole;
+        var oldRole = targetMember.Role;
 
+        targetMember.Role = request.NewRole;
         workspaceMemberRepository.Update(targetMember);
+
+        if (oldRole == WorkspaceRole.Member && request.NewRole == WorkspaceRole.Admin)
+        {
+            await boardMemberRepository.AddUserToAllWorkspaceBoardsAsAdminAsync(request.WorkspaceId, targetMember.Id, cancellationToken);
+        }
+        else if (oldRole == WorkspaceRole.Admin && request.NewRole == WorkspaceRole.Member)
+        {
+            await boardMemberRepository.RemoveUserFromAllWorkspaceBoardsAsync(request.WorkspaceId, targetMember.Id, cancellationToken);
+        }
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

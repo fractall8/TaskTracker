@@ -75,7 +75,7 @@ internal sealed class BoardMembersStore(IBoardMembersApiService apiService) : IB
             var index = _members.FindIndex(m => m.WorkspaceMemberId == workspaceMemberId);
             if (index != -1)
             {
-                _members[index] = _members[index] with { Role = newRole };
+                _members[index] = _members[index] with { BoardRole = newRole };
             }
         }
         catch (Exception ex)

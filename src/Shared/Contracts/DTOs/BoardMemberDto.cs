@@ -1,4 +1,6 @@
-﻿namespace Contracts.DTOs;
+﻿using Contracts.Enums;
+
+namespace Contracts.DTOs;
 
 public record BoardMemberDto(
     Guid WorkspaceMemberId,
@@ -6,6 +8,7 @@ public record BoardMemberDto(
     string Email,
     string? DisplayName,
     string? AvatarUrl,
-    Contracts.Enums.BoardRoleDto Role,
+    BoardRoleDto BoardRole,
+    WorkspaceRoleDto WorkspaceRole,
     DateTimeOffset JoinedAt
 );

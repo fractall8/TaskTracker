@@ -18,6 +18,10 @@ public class UpdateBoardMemberRoleCommandHandler(
     IWorkspaceAccessService workspaceAccessService,
     IBoardRepository  boardRepository,
     IRepository<BoardMember, Guid> boardMemberRepository,
+    IUserRepository  userRepository,
+    ICurrentUserAccessor currentUserAccessor,
+    IWorkspaceRepository workspaceRepository,
+    IWorkspaceMemberRepository workspaceMemberRepository,
     IUnitOfWork unitOfWork)
     : IRequestHandler<UpdateBoardMemberRoleCommand, Unit>
 {
@@ -31,6 +35,35 @@ public class UpdateBoardMemberRoleCommandHandler(
         }
 
         await workspaceAccessService.EnsureCanManageBoardMembersAsync(board.WorkspaceId, ct);
+
+        var initiatorId = await userRepository.GetUserByAzureAdIdAsync(
+            currentUserAccessor.AzureAdObjectId,
+            u => u.Id,
+            ct);
+
+        var initiatorWorkspaceRole = await workspaceRepository.GetUserRoleAsync(board.WorkspaceId, initiatorId, ct);
+
+        var targetWorkspaceMember = await workspaceMemberRepository.GetByIdAsync(request.WorkspaceMemberId, ct)
+                                    ?? throw new KeyNotFoundException("Workspace member not found.");
+
+        if (targetWorkspaceMember.UserId == initiatorId)
+        {
+            throw new InvalidOperationException("You cannot change your own role on the board.");
+        }
+
+        if (initiatorWorkspaceRole != WorkspaceRole.Owner)
+        {
+            if (targetWorkspaceMember.Role == WorkspaceRole.Owner || targetWorkspaceMember.Role == WorkspaceRole.Admin)
+            {
+                throw new UnauthorizedAccessException("You can only change board roles for regular Workspace Members.");
+            }
+        }
+
+        if ((targetWorkspaceMember.Role == WorkspaceRole.Owner || targetWorkspaceMember.Role == WorkspaceRole.Admin)
+            && request.NewRole != BoardRole.Admin)
+        {
+            throw new InvalidOperationException("Workspace Owners and Admins must always retain the Admin role on boards.");
+        }
 
         var boardMember = await boardMemberRepository.GetAsync(
             m => m.BoardId == request.BoardId && m.WorkspaceMemberId == request.WorkspaceMemberId,
