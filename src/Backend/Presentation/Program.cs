@@ -1,10 +1,16 @@
+using System.Text.Json.Serialization;
 using Application.DI;
+using Application.Interfaces.Services;
+using Application.Options;
 using Application.Settings;
-using Domain.Constants;
+using Hangfire;
+using Infrastructure.Boards.Hubs;
 using Infrastructure.DI;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.Options;
 using Persistence.DI;
 using Presentation.Configuration;
+using Presentation.Constants;
 using Presentation.Extensions;
 using Presentation.Logging;
 using Serilog;
@@ -18,7 +24,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddControllers(options => options.Conventions.Add(new PrefixConventionConfigurator("api")))
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
 builder.Services.AddEndpointsApiExplorer();
@@ -62,5 +68,27 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.UseHangfireDashboard();
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+
+    var schedulerOptions = services.GetRequiredService<IOptions<BoardExportSchedulerOptions>>().Value;
+    var recoveryOptions = services.GetRequiredService<IOptions<BoardExportRecoverySchedulerOptions>>().Value;
+
+    RecurringJob.AddOrUpdate<IBoardExportSchedulerJob>(
+        "board-export-scheduler",
+        job => job.RunAsync(CancellationToken.None),
+        schedulerOptions.CronExpression);
+
+    RecurringJob.AddOrUpdate<IBoardExportRecoverySchedulerJob>(
+        "board-export-recovery-scheduler",
+        job => job.RunAsync(CancellationToken.None),
+        recoveryOptions.CronExpression);
+}
+
+app.MapHub<BoardExportStatusHub>("/hubs/board-export-status");
 
 app.Run();

@@ -124,7 +124,7 @@ internal sealed class CosmosBoardExportService(Container container, IDateTimePro
 
     public async IAsyncEnumerable<BoardExportStatusInfoDto> ScanForFailedExportStatusesAsync(
         int maxDocuments,
-        DateTime failedCooldownThreshold,
+        DateTimeOffset failedCooldownThreshold,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
         var query = new QueryDefinition(
@@ -142,7 +142,7 @@ internal sealed class CosmosBoardExportService(Container container, IDateTimePro
 
     public async IAsyncEnumerable<BoardExportStatusInfoDto> ScanForStaleExportStatusesAsync(
         int maxDocuments,
-        DateTime staleCooldownThreshold,
+        DateTimeOffset staleCooldownThreshold,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
         var query = new QueryDefinition(

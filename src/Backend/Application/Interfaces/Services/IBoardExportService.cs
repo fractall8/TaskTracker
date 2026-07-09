@@ -10,12 +10,12 @@ public interface IBoardExportService
 
     IAsyncEnumerable<BoardExportStatusInfoDto> ScanForFailedExportStatusesAsync(
         int maxDocuments,
-        DateTime failedCooldownThreshold,
+        DateTimeOffset failedCooldownThreshold,
         CancellationToken ct = default);
 
     IAsyncEnumerable<BoardExportStatusInfoDto> ScanForStaleExportStatusesAsync(
         int maxDocuments,
-        DateTime staleCooldownThreshold,
+        DateTimeOffset staleCooldownThreshold,
         CancellationToken ct = default);
 
     Task UpdateReExportStatusAsync(Guid boardId, BoardExportStatusDto reExportStatus, string? errorMessage = null,
