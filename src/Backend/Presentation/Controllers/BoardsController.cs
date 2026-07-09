@@ -58,4 +58,12 @@ public class BoardsController(ISender sender) : ControllerBase
         await sender.Send(new LeaveBoardCommand(boardId), ct);
         return NoContent();
     }
+
+    [HttpPost("{id:guid}/archive/export")]
+    public async Task<IActionResult> ArchiveAndExport(Guid id, [FromBody] BoardExportOptionsDto exportOptions, CancellationToken ct)
+    {
+        var result = await sender.Send(new ArchiveAndExportBoardCommand(id, exportOptions), ct);
+
+        return Accepted(result);
+    }
 }

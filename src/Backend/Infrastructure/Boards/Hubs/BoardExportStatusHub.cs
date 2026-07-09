@@ -1,4 +1,4 @@
-﻿using Application.Features.Hubs;
+﻿using Application.Features.Hubs.Commands;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;

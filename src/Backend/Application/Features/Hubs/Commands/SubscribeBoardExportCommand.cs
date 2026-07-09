@@ -5,7 +5,7 @@ using Domain.Enums;
 using FluentValidation;
 using MediatR;
 
-namespace Application.Features.Hubs;
+namespace Application.Features.Hubs.Commands;
 
 public record SubscribeBoardExportStatusCommand(IReadOnlyList<Guid> BoardIds)
     : IRequest<IReadOnlyList<Guid>>;

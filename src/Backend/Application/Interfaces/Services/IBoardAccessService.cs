@@ -19,5 +19,7 @@ public interface IBoardAccessService
 
     Task<BoardAccessContext> EnsureCanViewBoardAsync(Guid boardId, CancellationToken ct = default);
 
+    Task<BoardAccessContext> EnsureCanExportBoardAsync(Guid boardId, CancellationToken ct = default);
+
     Task<BoardRoleDto?> GetEffectiveBoardRoleAsync(Guid boardId, CancellationToken ct = default);
 }

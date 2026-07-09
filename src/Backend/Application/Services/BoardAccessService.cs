@@ -45,6 +45,9 @@ public class BoardAccessService(
     public Task<BoardAccessContext> EnsureCanViewBoardAsync(Guid boardId, CancellationToken ct = default) =>
         EnsureAccessAsync(boardId, _ => true, "You don't have access to this board.", ct);
 
+    public Task<BoardAccessContext> EnsureCanExportBoardAsync(Guid boardId, CancellationToken ct = default) =>
+        EnsureAccessAsync(boardId, _ => true, "You don't have permission to export this board.", ct);
+
     public async Task<BoardRoleDto?> GetEffectiveBoardRoleAsync(Guid boardId, CancellationToken ct = default)
     {
         var (userId, _) = await GetCurrentUserAsync(ct);
