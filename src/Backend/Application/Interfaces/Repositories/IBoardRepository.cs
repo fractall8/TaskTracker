@@ -33,4 +33,7 @@ public interface IBoardRepository : IRepository<Board, Guid>
     Task<List<BoardMemberDto>> GetBoardMembersAsync(Guid boardId, CancellationToken ct = default);
 
     Task SoftDeleteCascadeAsync(Guid boardId, CancellationToken ct = default);
+
+    Task<BoardExportDataDto?> GetBoardExportDataAsync(Guid boardId, BoardExportOptionsDto options,
+        CancellationToken ct = default);
 }

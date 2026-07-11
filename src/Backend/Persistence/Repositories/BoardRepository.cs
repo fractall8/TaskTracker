@@ -235,4 +235,151 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
             .Where(b => b.Id == boardId && !b.IsDeleted)
             .ExecuteUpdateAsync(s => s.SetProperty(b => b.IsDeleted, true).SetProperty(b => b.DeletedAt, now), ct);
     }
+
+    public async Task<BoardExportDataDto?> GetBoardExportDataAsync(Guid boardId, BoardExportOptionsDto options,
+        CancellationToken ct = default)
+    {
+        var board = await DbContext.Boards
+            .Where(b => b.Id == boardId && b.IsArchived)
+            .Select(b => new BoardExportBoardDto(
+                b.Id,
+                b.Name,
+                b.CreatedAt,
+                b.IsArchived,
+                b.UpdatedAt,
+                b.Columns.Count,
+                b.Columns.SelectMany(c => c.Tasks).Count()))
+            .FirstOrDefaultAsync(ct);
+
+        if (board is null)
+        {
+            return null;
+        }
+
+        var columnData = await DbContext.Columns
+            .Where(c => c.BoardId == boardId)
+            .OrderBy(c => c.Position)
+            .Select(c => new
+            {
+                c.Id,
+                c.Name,
+                c.Position,
+                Tasks = c.Tasks
+                    .OrderBy(t => t.Position)
+                    .Select(t => new
+                    {
+                        t.Id,
+                        t.Title,
+                        t.Position,
+                        t.CreatedAt,
+                        t.UpdatedAt,
+                        t.Description,
+                        Reporter = new BoardExportUserDto(
+                            t.Reporter!.Id,
+                            t.Reporter.Email,
+                            t.Reporter.DisplayName),
+                        Assignee = t.Assignee == null
+                            ? null
+                            : new BoardExportUserDto(
+                                t.Assignee.Id,
+                                t.Assignee.Email,
+                                t.Assignee.DisplayName)
+                    })
+                    .ToList()
+            })
+            .ToListAsync(ct);
+
+        Dictionary<Guid, List<BoardExportCommentDto>> commentsByTask = [];
+
+        if (options.IncludeComments)
+        {
+            var comments = await DbContext.Comments
+                .Where(c => c.Task!.Column!.BoardId == boardId)
+                .OrderBy(c => c.CreatedAt)
+                .Select(c => new
+                {
+                    c.TaskId,
+                    Comment = new BoardExportCommentDto(
+                        c.Id,
+                        c.Text,
+                        c.CreatedAt,
+                        c.UpdatedAt,
+                        // TODO: Modify Comment entity and replace dummy value!
+                        new BoardExportUserDto(Guid.Empty, "unknown@system.local", "Unknown Author"))
+                })
+                .ToListAsync(ct);
+
+            commentsByTask = comments
+                .GroupBy(x => x.TaskId)
+                .ToDictionary(g => g.Key, g => g.Select(x => x.Comment).ToList());
+        }
+
+        Dictionary<Guid, List<BoardExportAttachmentDto>> attachmentsByTask = [];
+
+        if (options.IncludeAttachments)
+        {
+            var attachments = await DbContext.Attachments
+                .Where(a => a.Task!.Column!.BoardId == boardId)
+                .OrderBy(a => a.CreatedAt)
+                .Select(a => new
+                {
+                    a.TaskId,
+                    Attachment = new BoardExportAttachmentDto(
+                        a.Id,
+                        a.FileName,
+                        a.ContentType ?? "application/octet-stream",
+                        0, // TODO: Add SizeInBytes to Attachments
+                        0, // TODO: Add Position to Attachments
+                        a.CreatedAt,
+                        // TODO: Add UploadedBy (User) to Attachments
+                        new BoardExportUserDto(Guid.Empty, "unknown@system.local", "System"),
+                        a.FileUrl)
+                })
+                .ToListAsync(ct);
+
+            attachmentsByTask = attachments
+                .GroupBy(x => x.TaskId)
+                .ToDictionary(g => g.Key, g => g.Select(x => x.Attachment).ToList());
+        }
+
+        List<BoardExportMemberDto>? members = null;
+
+        if (options.IncludeMembers)
+        {
+            members = await DbContext.BoardMembers
+                .Where(m => m.BoardId == boardId)
+                .OrderBy(m => m.Role)
+                .ThenBy(m => m.JoinedAt)
+                .Select(m => new BoardExportMemberDto(
+                    new BoardExportUserDto(
+                        m.WorkspaceMember!.User!.Id,
+                        m.WorkspaceMember.User.Email,
+                        m.WorkspaceMember.User.DisplayName),
+                    m.Role.ToString(),
+                    m.JoinedAt))
+                .ToListAsync(ct);
+        }
+
+        var rawColumns = columnData
+            .Select(c => new BoardExportColumnDto(
+                c.Id,
+                c.Name,
+                c.Position,
+                c.Tasks
+                    .Select(t => new BoardExportTaskDto(
+                        t.Id,
+                        t.Title,
+                        t.Position,
+                        t.CreatedAt,
+                        t.UpdatedAt,
+                        t.Reporter,
+                        t.Assignee,
+                        options.IncludeDescriptions ? t.Description : null,
+                        commentsByTask.TryGetValue(t.Id, out var tc) ? tc : options.IncludeComments ? [] : null,
+                        attachmentsByTask.TryGetValue(t.Id, out var ta) ? ta : options.IncludeAttachments ? [] : null))
+                    .ToList()))
+            .ToList();
+
+        return new BoardExportDataDto(board, options, DateTimeOffset.UtcNow, rawColumns, members);
+    }
 }
