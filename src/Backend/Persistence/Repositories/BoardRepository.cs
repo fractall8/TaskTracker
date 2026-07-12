@@ -304,8 +304,7 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
                         c.Text,
                         c.CreatedAt,
                         c.UpdatedAt,
-                        // TODO: Modify Comment entity and replace dummy value!
-                        new BoardExportUserDto(Guid.Empty, "unknown@system.local", "Unknown Author"))
+                        new BoardExportUserDto(c.AuthorId, c.Author!.Email, c.Author.DisplayName))
                 })
                 .ToListAsync(ct);
 
@@ -328,11 +327,9 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
                         a.Id,
                         a.FileName,
                         a.ContentType ?? "application/octet-stream",
-                        0, // TODO: Add SizeInBytes to Attachments
-                        0, // TODO: Add Position to Attachments
+                        a.SizeInBytes,
                         a.CreatedAt,
-                        // TODO: Add UploadedBy (User) to Attachments
-                        new BoardExportUserDto(Guid.Empty, "unknown@system.local", "System"),
+                        new BoardExportUserDto(a.UploadedById, a.UploadedBy!.Email, a.UploadedBy.DisplayName),
                         a.FileUrl)
                 })
                 .ToListAsync(ct);

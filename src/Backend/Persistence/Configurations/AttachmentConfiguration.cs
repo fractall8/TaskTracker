@@ -28,6 +28,14 @@ public class AttachmentConfiguration : IEntityTypeConfiguration<Attachment>
             .HasForeignKey(a => a.TaskId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.Property(a => a.SizeInBytes)
+            .IsRequired();
+
+        builder.HasOne(a => a.UploadedBy)
+            .WithMany()
+            .HasForeignKey(a => a.UploadedById)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasIndex(a => a.TaskId);
         builder.HasQueryFilter(a => !a.IsDeleted);
     }

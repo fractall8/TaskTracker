@@ -12,5 +12,9 @@ public class Attachment : BaseEntity<Guid>
 
     public required Guid TaskId { get; set; }
 
+    public Guid UploadedById { get; set; }
+
+    public User? UploadedBy { get; set; }
+
     public TaskItem? Task { get; set; }
 }

@@ -5,7 +5,6 @@ public record BoardExportAttachmentDto(
     string OriginalFileName,
     string ContentType,
     long FileSizeBytes,
-    int Position,
     DateTimeOffset CreatedAt,
     BoardExportUserDto UploadedBy,
     string BlobName);
