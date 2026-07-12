@@ -17,9 +17,9 @@ public class BoardExportQueueTrigger(
         CancellationToken ct)
     {
         logger.LogInformation(
-            "Board export started. BoardId={BoardId}, IsReExport={IsReExport}, CorrelationId={CorrelationId}",
+            "Board export started. BoardId={BoardId}, ExportType={ExportType}, CorrelationId={CorrelationId}",
             message.BoardId,
-            message.IsReExport,
+            message.ExportType,
             message.CorrelationId);
 
         try
@@ -27,18 +27,18 @@ public class BoardExportQueueTrigger(
             await boardExportProcessor.RunAsync(message, ct);
 
             logger.LogInformation(
-                "Board export finished. BoardId={BoardId}, IsReExport={IsReExport}, CorrelationId={CorrelationId}",
+                "Board export finished. BoardId={BoardId}, ExportType={ExportType}, CorrelationId={CorrelationId}",
                 message.BoardId,
-                message.IsReExport,
+                message.ExportType,
                 message.CorrelationId);
         }
         catch (Exception ex)
         {
             logger.LogError(
                 ex,
-                "Board export failed. BoardId={BoardId}, IsReExport={IsReExport}, CorrelationId={CorrelationId}",
+                "Board export failed. BoardId={BoardId}, ExportType={ExportType}, CorrelationId={CorrelationId}",
                 message.BoardId,
-                message.IsReExport,
+                message.ExportType,
                 message.CorrelationId);
 
             throw;

@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using Application.Common.Interfaces;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
-using Infrastructure.Boards.Export;
+using Contracts.Export;
 using Microsoft.Azure.Cosmos;
 
 namespace Infrastructure.Services;

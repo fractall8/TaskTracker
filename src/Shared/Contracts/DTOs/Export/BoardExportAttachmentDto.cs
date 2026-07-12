@@ -7,4 +7,5 @@ public record BoardExportAttachmentDto(
     long FileSizeBytes,
     DateTimeOffset CreatedAt,
     BoardExportUserDto UploadedBy,
-    string BlobName);
+    string BlobName,
+    string? ArchiveRelativePath = null);

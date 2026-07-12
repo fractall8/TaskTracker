@@ -1,29 +1,76 @@
 ﻿using Contracts.Messaging;
 using Microsoft.Extensions.Logging;
 using TaskTracker.Functions.Interfaces;
+using TaskTracker.Functions.Models;
+using TaskTracker.Functions.Processing.Export;
 
 namespace TaskTracker.Functions.Processing;
 
 public class BoardExportProcessor(
-    IBoardExportDataApiClient apiClient,
-    ILogger<BoardExportProcessor> logger) : IBoardExportProcessor
+    ExportContextResolver exportContextResolver,
+    BoardExportCompletionHandlerRegistry completionHandlerRegistry,
+    IBoardExportDocumentClient boardExportDocumentClient,
+    IBoardExportDataApiClient boardExportDataApiClient,
+    IBoardArchiveBuilder archiveBuilder,
+    IBoardExportBlobService exportBlobService,
+    ILogger<BoardExportProcessor> logger)
+    : IBoardExportProcessor
 {
     public async Task RunAsync(BoardExportMessage message, CancellationToken ct = default)
     {
-        logger.LogInformation("Step 1: Fetching board data from main API for BoardId={BoardId}...", message.BoardId);
+        var exportInfo = await boardExportDocumentClient.GetBoardExportInfoAsync(message.BoardId, ct)
+                         ?? throw new InvalidOperationException($"Export document not found for board {message.BoardId}.");
 
-        var exportData = await apiClient.GetExportDataAsync(message.BoardId, message.ExportOptions, ct);
+        // get an appropriate export policy (for initial export or re-export) according to BoardExportMessage type
+        var exportContext = exportContextResolver.Resolve(message, exportInfo);
+        var completionHandler = completionHandlerRegistry.Get(message.ExportType);
 
-        logger.LogInformation("Step 2: Building archive in memory...");
+        if (exportContext.ShouldSkip)
+        {
+            logger.LogInformation(
+                "Skipping export. BoardId={BoardId}, Type={ExportType}, Reason={Reason}",
+                message.BoardId,
+                message.ExportType,
+                exportContext.SkipReason);
 
-        // TODO: await using var archiveStream = await archiveBuilder.BuildAsync(exportData, ct);
+            return;
+        }
 
-        logger.LogInformation("Step 3: Uploading archive to Blob Storage (TODO)...");
-        // TODO: Implement in this PR exportBlobService.UploadArchiveAsync
+        if (exportContext.Options is not { } exportOptions)
+        {
+            throw new InvalidOperationException(
+                $"Export options are missing for board {exportContext.BoardId}.");
+        }
 
-        logger.LogInformation("Step 4: Updating CosmosDB status and notifying UI (TODO)...");
-        // TODO: Implement in this PR completionHandler.MarkCompletedAsync
+        try
+        {
+            await completionHandler.MarkProcessingAsync(exportContext, ct);
 
-        logger.LogInformation("Export processing successfully completed in memory for BoardId={BoardId}", message.BoardId);
+            var exportData = await boardExportDataApiClient.GetExportDataAsync(
+                exportContext.BoardId,
+                exportOptions,
+                ct);
+
+            // TODO: resolve summary formats from exportOptions when PDF export is supported.
+            IReadOnlyList<BoardExportSummaryFormat> summaryFormats = [BoardExportSummaryFormat.Json];
+
+            await using var archive = await archiveBuilder.BuildAsync(exportData, summaryFormats, ct);
+
+            await exportBlobService.UploadArchiveAsync(exportContext.BoardId, archive, ct);
+
+            await completionHandler.MarkCompletedAsync(exportContext, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(
+                ex,
+                "Board export failed. BoardId={BoardId}, ExportType={ExportType}",
+                message.BoardId,
+                message.ExportType);
+
+            await completionHandler.MarkFailedAsync(exportContext, ex.Message, ct);
+
+            throw;
+        }
     }
 }

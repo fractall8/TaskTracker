@@ -1,20 +1,21 @@
 ﻿using Contracts.DTOs;
 using Newtonsoft.Json;
 
-namespace Infrastructure.Boards.Export;
+namespace Contracts.Export;
 
-internal sealed class BoardExportDocument
+// partition by /boardId
+public sealed class BoardExportDocument
 {
-    internal const string IdJson = "id";
-    internal const string BoardIdJson = "boardId";
-    internal const string ExportStatusJson = "exportStatus";
-    internal const string ExportStatusNameJson = "exportStatusName";
-    internal const string UpdatedAtUtcJson = "updatedAtUtc";
-    internal const string ErrorMessageJson = "errorMessage";
-    internal const string ExportOptionsJson = "exportOptions";
-    internal const string ReExportStatusJson = "reExportStatus";
-    internal const string ReExportStatusNameJson = "reExportStatusName";
-    internal const string ReExportOptionsJson = "reExportOptions";
+    public const string IdJson = "id";
+    public const string BoardIdJson = "boardId";
+    public const string ExportStatusJson = "exportStatus";
+    public const string ExportStatusNameJson = "exportStatusName";
+    public const string UpdatedAtUtcJson = "updatedAtUtc";
+    public const string ErrorMessageJson = "errorMessage";
+    public const string ExportOptionsJson = "exportOptions";
+    public const string ReExportStatusJson = "reExportStatus";
+    public const string ReExportStatusNameJson = "reExportStatusName";
+    public const string ReExportOptionsJson = "reExportOptions";
 
     [JsonProperty(IdJson)]
     public required string Id { get; init; }

@@ -1,5 +1,6 @@
 ﻿using Application.Interfaces.Services;
 using Contracts.DTOs;
+using Contracts.Export;
 using Contracts.Messaging;
 using Contracts.Notifications;
 using Microsoft.Extensions.Logging;
@@ -11,7 +12,7 @@ internal static class BoardExportJobOperations
     internal static async Task EnqueueAndMarkPendingAsync(
         IBoardExportQueueSender queueSender,
         BoardExportStatusInfoDto info,
-        bool isReExport,
+        BoardExportType exportType,
         Func<Guid, CancellationToken, Task> markPendingAsync,
         Func<BoardExportStatusChangedNotification, CancellationToken, Task> notifyStatusChangedAsync,
         ILogger logger,
@@ -19,9 +20,9 @@ internal static class BoardExportJobOperations
     {
         var correlationId = Guid.NewGuid().ToString();
 
-        var options = isReExport ? info.ReExportOptions : info.ExportOptions;
+        var options = exportType == BoardExportType.ReExport ? info.ReExportOptions : info.ExportOptions;
 
-        var message = new BoardExportMessage(info.BoardId, options!, isReExport, correlationId);
+        var message = new BoardExportMessage(info.BoardId, options!, exportType, correlationId);
 
         try
         {
@@ -34,18 +35,18 @@ internal static class BoardExportJobOperations
                 ct);
 
             logger.LogInformation(
-                "Enqueued board export. BoardId={BoardId}, IsReExport={IsReExport}, CorrelationId={CorrelationId}",
+                "Enqueued board export. BoardId={BoardId}, ExportType={ExportType}, CorrelationId={CorrelationId}",
                 info.BoardId,
-                isReExport,
+                exportType,
                 correlationId);
         }
         catch (Exception ex)
         {
             logger.LogError(
                 ex,
-                "Failed to enqueue board export. BoardId={BoardId}, IsReExport={IsReExport}, CorrelationId={CorrelationId}",
+                "Failed to enqueue board export. BoardId={BoardId}, ExportType={ExportType}, CorrelationId={CorrelationId}",
                 info.BoardId,
-                isReExport,
+                exportType,
                 correlationId);
         }
     }

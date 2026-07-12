@@ -3,6 +3,7 @@ using Application.Interfaces.Notifiers;
 using Application.Interfaces.Services;
 using Application.Options;
 using Contracts.DTOs;
+using Contracts.Export;
 using Hangfire;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -61,7 +62,7 @@ internal sealed class BoardExportRecoverySchedulerJob(
             await BoardExportJobOperations.EnqueueAndMarkPendingAsync(
                 queueSender,
                 info,
-                false,
+                BoardExportType.InitialExport,
                 (boardId, token) => boardExportService.UpdateExportStatusAsync(boardId, BoardExportStatusDto.Pending, null, token),
                 exportStatusNotifier.NotifyExportStatusChangedAsync,
                 logger,
@@ -73,7 +74,7 @@ internal sealed class BoardExportRecoverySchedulerJob(
             await BoardExportJobOperations.EnqueueAndMarkPendingAsync(
                 queueSender,
                 info,
-                true,
+                BoardExportType.ReExport,
                 (boardId, token) => boardExportService.UpdateReExportStatusAsync(boardId, BoardExportStatusDto.Pending, null, token),
                 exportStatusNotifier.NotifyReExportStatusChangedAsync,
                 logger,
