@@ -38,6 +38,11 @@ internal static class BoardExportJobModule
             .Validate(opts => { opts.Validate(); return true; })
             .ValidateOnStart();
 
+        services.AddOptions<InternalApiOptions>()
+            .BindConfiguration(InternalApiOptions.SectionName)
+            .Validate(opts => { opts.Validate(); return true; })
+            .ValidateOnStart();
+
         var serviceBusConnectionString = configuration.GetConnectionString(ConnectionStrings.ServiceBus);
 
         services.AddAzureClients(clientBuilder =>

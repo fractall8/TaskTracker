@@ -13,6 +13,7 @@ using Presentation.Configuration;
 using Presentation.Constants;
 using Presentation.Extensions;
 using Presentation.Logging;
+using Presentation.Middlewares;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -66,6 +67,8 @@ app.UseCors(CorsPolicies.DefaultCorsPolicy);
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseMiddleware<InternalApiKeyMiddleware>();
 
 app.MapControllers();
 

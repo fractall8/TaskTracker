@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Presentation.Controllers;
 
-/// TODO: Add InternalApiKeyMiddleware for key validation.
 [Route("internal/boards")]
 [ApiController]
 public class InternalBoardsController(
