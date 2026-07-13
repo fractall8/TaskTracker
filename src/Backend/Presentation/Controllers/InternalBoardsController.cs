@@ -56,7 +56,7 @@ public class InternalBoardsController(
             return BadRequest("Board ID mismatch.");
         }
 
-        await exportStatusNotifier.NotifyExportStatusChangedAsync(notification, ct);
+        await exportStatusNotifier.NotifyReExportStatusChangedAsync(notification, ct);
 
         return NoContent();
     }

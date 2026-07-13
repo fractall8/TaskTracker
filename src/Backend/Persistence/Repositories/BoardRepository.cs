@@ -87,8 +87,13 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
                         (t.Description != null && t.Description.ToLower().Contains(lowerSearchTerm)))
                     .OrderBy(t => t.Position))
                 .ThenInclude(t => t.Assignee)
+
                 .Include(b => b.Columns)
-                .ThenInclude(c => c.Tasks)
+                .ThenInclude(c => c.Tasks
+                    .Where(t =>
+                        t.Title.ToLower().Contains(lowerSearchTerm) ||
+                        (t.Description != null && t.Description.ToLower().Contains(lowerSearchTerm)))
+                    .OrderBy(t => t.Position))
                 .ThenInclude(t => t.Reporter);
         }
         else
@@ -97,8 +102,9 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
                 .Include(b => b.Columns.OrderBy(c => c.Position))
                 .ThenInclude(c => c.Tasks.OrderBy(t => t.Position))
                 .ThenInclude(t => t.Assignee)
+
                 .Include(b => b.Columns)
-                .ThenInclude(c => c.Tasks)
+                .ThenInclude(c => c.Tasks.OrderBy(t => t.Position))
                 .ThenInclude(t => t.Reporter);
         }
 

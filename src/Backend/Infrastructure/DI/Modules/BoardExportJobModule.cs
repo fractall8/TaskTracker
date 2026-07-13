@@ -3,6 +3,7 @@ using Application.Interfaces.Notifiers;
 using Application.Interfaces.Services;
 using Application.Options;
 using Azure.Messaging.ServiceBus;
+using Contracts.Constants;
 using Domain.Constants;
 using Hangfire;
 using Hangfire.PostgreSql;
@@ -52,7 +53,7 @@ internal static class BoardExportJobModule
             clientBuilder.AddClient<ServiceBusSender, ServiceBusClientOptions>((_, _, provider) =>
             {
                 var client = provider.GetRequiredService<ServiceBusClient>();
-                return client.CreateSender("board-exports");
+                return client.CreateSender(ServiceBusQueueNames.BoardArchivingQueue);
             });
         });
 

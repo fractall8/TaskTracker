@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Logging;
 using TaskTracker.Functions.Interfaces;
 using Microsoft.Azure.Functions.Worker;
-using TaskTracker.Functions.Constants;
+using Contracts.Constants;
 
 namespace TaskTracker.Functions.Triggers;
 
