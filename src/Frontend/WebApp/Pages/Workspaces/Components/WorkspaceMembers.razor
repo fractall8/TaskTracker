@@ -1,0 +1,132 @@
+﻿@inject IWorkspaceStore WorkspaceStore
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@using Contracts.DTOs
+@using Contracts.Enums
+
+<div class="d-flex justify-space-between align-center mb-4">
+    <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-secondary);">Members</MudText>
+</div>
+
+<MudTable Items="@Workspace.Members" Hover="true" Elevation="0"
+          Style="border: 1px solid var(--mud-palette-lines-default); border-radius: 8px;">
+    <HeaderContent>
+        <MudTh>Member</MudTh>
+        <MudTh>Role</MudTh>
+        <MudTh>Joined</MudTh>
+        <MudTh Style="width: 60px;"></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd>
+            <div class="d-flex align-center gap-3">
+                <MudAvatar Size="Size.Medium" Color="Color.Primary">
+                    @{
+                        var displayName = !string.IsNullOrWhiteSpace(context.DisplayName) ? context.DisplayName : context.Email;
+                        var initial = displayName.FirstOrDefault().ToString().ToUpper();
+                    }
+                    @if (!string.IsNullOrEmpty(context.AvatarUrl))
+                    {
+                        <MudImage Src="@context.AvatarUrl"/>
+                    }
+                    else
+                    {
+                        @initial
+                    }
+                </MudAvatar>
+                <div class="d-flex flex-column">
+                    <div class="d-flex align-center gap-2">
+                        <MudText Typo="Typo.body2" Class="fw-bold" Style="color: var(--mud-palette-text-primary);">
+                            @context.DisplayName
+                        </MudText>
+                        @if (context.UserId == CurrentUserId)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined"
+                                     Style="height: 18px; font-size: 10px;">
+                                You
+                            </MudChip>
+                        }
+                    </div>
+                    <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">
+                        @context.Email
+                    </MudText>
+                </div>
+            </div>
+        </MudTd>
+        <MudTd>
+            @if (context.UserId != CurrentUserId && CanEditRole(context.Role))
+            {
+                <MudSelect T="WorkspaceRoleDto" Value="@context.Role"
+                           ValueChanged="@(r => ChangeMemberRole(context.UserId, r))" Variant="Variant.Outlined"
+                           Margin="Margin.Dense" Dense="true" Style="min-width: 110px;">
+                    <MudSelectItem Value="WorkspaceRoleDto.Member">Member</MudSelectItem>
+                    <MudSelectItem Value="WorkspaceRoleDto.Admin">Admin</MudSelectItem>
+                </MudSelect>
+            }
+            else
+            {
+                <MudChip T="string" Size="Size.Small" Color="@RoleColor(context.Role)" Variant="Variant.Outlined">
+                    @context.Role.ToString()
+                </MudChip>
+            }
+        </MudTd>
+        <MudTd>
+            @context.JoinedAt.ToLocalTime().ToString("dd MMM yyyy")
+        </MudTd>
+        <MudTd>
+            @if (context.UserId != CurrentUserId && CanRemoveMember())
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.PersonRemove" Color="Color.Error" Size="Size.Small"
+                               OnClick="@(() => RemoveMember(context.UserId, context.Email))"/>
+            }
+        </MudTd>
+    </RowTemplate>
+</MudTable>
+
+@code {
+    [Parameter] public Guid WorkspaceId { get; set; }
+    [Parameter] public WorkspaceDetailsDto Workspace { get; set; } = null!;
+    [Parameter] public WorkspaceRoleDto? CurrentUserRole { get; set; }
+    [Parameter] public Guid? CurrentUserId { get; set; }
+
+    private Color RoleColor(WorkspaceRoleDto role) => role switch
+    {
+        WorkspaceRoleDto.Owner => Color.Warning,
+        WorkspaceRoleDto.Admin => Color.Info,
+        _ => Color.Default
+    };
+
+    private bool CanEditRole(WorkspaceRoleDto targetRole) => CurrentUserRole is WorkspaceRoleDto.Owner && targetRole != WorkspaceRoleDto.Owner;
+
+    private bool CanRemoveMember() => CurrentUserRole is WorkspaceRoleDto.Owner;
+
+    private async Task ChangeMemberRole(Guid userId, WorkspaceRoleDto newRole)
+    {
+        try
+        {
+            await WorkspaceStore.ChangeMemberRoleAsync(WorkspaceId, userId, newRole);
+            Snackbar.Add("Role updated.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to update role: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task RemoveMember(Guid userId, string email)
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync("Remove Member", $"Remove {email} from this workspace?", yesText: "Remove", cancelText: "Cancel");
+        if (confirmed == true)
+        {
+            try
+            {
+                await WorkspaceStore.RemoveMemberAsync(WorkspaceId, userId);
+                Snackbar.Add("Member removed.", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to remove member: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+}

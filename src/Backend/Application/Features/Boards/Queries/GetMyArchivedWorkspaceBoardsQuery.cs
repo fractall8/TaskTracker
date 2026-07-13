@@ -7,26 +7,36 @@ using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Options;
 
-namespace Application.Features.Workspaces.Queries;
+namespace Application.Features.Boards.Queries;
 
-public record GetMyWorkspaceBoardsQuery(Guid WorkspaceId, int PageNumber, int PageSize, string? SearchTerm)
-    : IRequest<PagedList<BoardPreviewDto>>;
+public record GetMyArchivedWorkspaceBoardsQuery(
+    Guid WorkspaceId,
+    int PageNumber,
+    int PageSize,
+    string? SearchTerm) : IRequest<PagedList<BoardPreviewDto>>;
 
-public class GetMyWorkspaceBoardsQueryHandler(
-    IBoardRepository boardRepository,
-    IWorkspaceAccessService workspaceAccessService)
-    : IRequestHandler<GetMyWorkspaceBoardsQuery, PagedList<BoardPreviewDto>>
+public class GetMyArchivedWorkspaceBoardsQueryHandler(
+    IWorkspaceAccessService workspaceAccessService,
+    IBoardRepository boardRepository)
+    : IRequestHandler<GetMyArchivedWorkspaceBoardsQuery, PagedList<BoardPreviewDto>>
 {
-    public async Task<PagedList<BoardPreviewDto>> Handle(GetMyWorkspaceBoardsQuery request, CancellationToken ct)
+    public async Task<PagedList<BoardPreviewDto>> Handle(
+        GetMyArchivedWorkspaceBoardsQuery request,
+        CancellationToken ct)
     {
         var userInfo = await workspaceAccessService.EnsureIsMemberAsync(request.WorkspaceId, ct);
 
         var totalCount =
-            await boardRepository.CountMemberWorkspaceBoardsAsync(request.WorkspaceId, userInfo.UserId,
+            await boardRepository.CountArchivedMemberWorkspaceBoardsAsync(request.WorkspaceId, userInfo.UserId,
                 request.SearchTerm, ct);
 
-        var boards = await boardRepository.GetMemberWorkspaceBoardsPaginatedAsync(
-            request.WorkspaceId, userInfo.UserId, request.PageNumber, request.PageSize, request.SearchTerm, ct);
+        var boards = await boardRepository.GetMyArchivedWorkspaceBoardsAsync(
+            request.WorkspaceId,
+            userInfo.UserId,
+            request.PageNumber,
+            request.PageSize,
+            request.SearchTerm,
+            ct);
 
         var boardDtos = boards.Select(board =>
         {
@@ -50,10 +60,9 @@ public class GetMyWorkspaceBoardsQueryHandler(
     }
 }
 
-
-public class GetMyWorkspaceBoardsQueryValidator : AbstractValidator<GetMyWorkspaceBoardsQuery>
+public class GetMyArchivedWorkspaceBoardsQueryValidator : AbstractValidator<GetMyArchivedWorkspaceBoardsQuery>
 {
-    public GetMyWorkspaceBoardsQueryValidator(IOptions<PaginationOptions> options)
+    public GetMyArchivedWorkspaceBoardsQueryValidator(IOptions<PaginationOptions> options)
     {
         var paginationOptions = options.Value;
 

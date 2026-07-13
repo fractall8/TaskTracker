@@ -1,0 +1,284 @@
+﻿@inject IWorkspaceStore WorkspaceStore
+@inject IBoardApiService BoardApiService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@using Contracts.DTOs
+@using Contracts.Enums
+@using Contracts.Requests.Boards
+@using WebApp.Shared.Dialogs
+
+<div class="d-flex flex-column flex-md-row justify-space-between align-center mb-4 gap-3">
+    <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-secondary);">Boards</MudText>
+    <div class="d-flex align-center gap-2">
+        <MudTextField T="string"
+                      Value="@_searchTerm"
+                      ValueChanged="OnSearchChanged"
+                      Placeholder="Search boards..."
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      IconSize="Size.Small"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Clearable="true"
+                      Immediate="true"
+                      DebounceInterval="400"
+                      Style="min-width: 220px;"/>
+
+        <MudSelect T="int" Value="@_pageSize" ValueChanged="OnPageSizeChanged"
+                   Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Style="width: 90px;">
+            <MudSelectItem Value="12">12</MudSelectItem>
+            <MudSelectItem Value="24">24</MudSelectItem>
+            <MudSelectItem Value="48">48</MudSelectItem>
+        </MudSelect>
+
+        @if (CurrentUserRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
+        {
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="OpenCreateBoardDialog">
+                New Board
+            </MudButton>
+        }
+    </div>
+</div>
+
+@if (_loading)
+{
+    <div class="d-flex justify-center mt-8">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+    </div>
+}
+else if (!_boards.Any())
+{
+    <MudAlert Severity="Severity.Info" Class="rounded-lg">
+        @(string.IsNullOrEmpty(_searchTerm) ? "You are not a member of any boards yet." : "No boards match your search.")
+    </MudAlert>
+}
+else
+{
+    <MudGrid>
+        @foreach (var board in _boards)
+        {
+            <MudItem xs="12" sm="6" md="4" lg="3">
+                <MudCard Elevation="2" Class="h-100 d-flex flex-column rounded-lg"
+                         Style="border: 1px solid var(--mud-palette-lines-default); background-color: var(--mud-palette-surface);">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6" Class="fw-bold text-truncate"
+                                     Style="color: var(--mud-palette-text-primary);">
+                                @board.Name
+                            </MudText>
+                            <MudText Typo="Typo.caption"
+                                     Style="color: var(--mud-palette-text-secondary); font-weight: 600; text-transform: uppercase;">
+                                @board.BoardRole.ToString()
+                            </MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent Class="flex-grow-1 pt-0">
+                        <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">
+                            @(string.IsNullOrWhiteSpace(board.Description) ? "No description." : board.Description)
+                        </MudText>
+                    </MudCardContent>
+                    <MudCardActions Class="justify-end px-4 pb-4">
+                        @if (CurrentUserRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner || board.BoardRole == BoardRoleDto.Admin)
+                        {
+                            <MudTooltip Text="Edit Board">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                               OnClick="@(() => OpenEditBoardDialog(board))"/>
+                            </MudTooltip>
+                            <MudTooltip Text="Delete Board">
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                               Size="Size.Small" OnClick="@(() => DeleteBoard(board))"/>
+                            </MudTooltip>
+                        }
+                        @if (Workspace.UserRole == WorkspaceRoleDto.Admin)
+                        {
+                            <MudTooltip Text="Leave Board">
+                                <MudIconButton Icon="@Icons.Material.Filled.ExitToApp" Color="Color.Warning"
+                                               Size="Size.Small" OnClick="@(() => LeaveBoard(board))"/>
+                            </MudTooltip>
+                        }
+                        <MudButton Href="@($"/boards/{board.Id}")" Variant="Variant.Text" Color="Color.Primary"
+                                   Class="ml-2 fw-bold">Open
+                        </MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+
+    @if (_pagination.TotalPages > 1)
+    {
+        <div class="d-flex justify-center mt-6">
+            <MudPagination Count="@_pagination.TotalPages" Selected="@_currentPage" SelectedChanged="OnPageChanged"
+                           Color="Color.Primary" ShowFirstButton="true" ShowLastButton="true"/>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public Guid WorkspaceId { get; set; }
+    [Parameter] public WorkspaceDetailsDto Workspace { get; set; } = null!;
+    [Parameter] public WorkspaceRoleDto? CurrentUserRole { get; set; }
+
+    private IReadOnlyList<BoardPreviewDto> _boards = [];
+    private PaginationMetadata _pagination = new();
+    private bool _loading;
+    private int _currentPage = 1;
+    private int _pageSize = 24;
+    private string? _searchTerm;
+    private CancellationTokenSource? _searchCts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBoardsAsync();
+    }
+
+    private async Task LoadBoardsAsync(CancellationToken ct = default)
+    {
+        _loading = true;
+        StateHasChanged();
+
+        try
+        {
+            var paged = await WorkspaceStore.GetMyWorkspaceBoardsAsync(WorkspaceId, _currentPage, _pageSize, _searchTerm, ct);
+            _boards = paged.Items;
+            _pagination = paged.Metadata;
+        }
+        catch (OperationCanceledException)
+        {
+            // skip
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load boards: {ex.Message}", Severity.Error);
+            _boards = [];
+        }
+        finally
+        {
+            if (!ct.IsCancellationRequested)
+            {
+                _loading = false;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task OnSearchChanged(string value)
+    {
+        _searchTerm = value;
+        _currentPage = 1;
+
+        if (_searchCts != null)
+        {
+            await _searchCts.CancelAsync();
+            _searchCts.Dispose();
+        }
+
+        _searchCts = new CancellationTokenSource();
+
+        try
+        {
+            await LoadBoardsAsync(_searchCts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private async Task OnPageSizeChanged(int size)
+    {
+        _pageSize = size;
+        _currentPage = 1;
+        await LoadBoardsAsync();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _currentPage = page;
+        await LoadBoardsAsync();
+    }
+
+    private async Task OpenCreateBoardDialog()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<BoardDialog>("Create Board", options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: CreateBoardRequest request })
+        {
+            try
+            {
+                await BoardApiService.CreateBoardAsync(WorkspaceId, request);
+                Snackbar.Add("Board created.", Severity.Success);
+                await LoadBoardsAsync();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to create board: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenEditBoardDialog(BoardPreviewDto board)
+    {
+        var parameters = new DialogParameters<BoardDialog> { { x => x.Board, board } };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<BoardDialog>("Edit Board", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: UpdateBoardRequest request })
+        {
+            try
+            {
+                await BoardApiService.UpdateBoardAsync(board.Id, request);
+                Snackbar.Add("Board updated.", Severity.Success);
+                await LoadBoardsAsync();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to update board: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteBoard(BoardPreviewDto board)
+    {
+        var safeBoardName = board.Name.Length > 40 ? board.Name[..40] + "..." : board.Name;
+        bool? result = await DialogService.ShowMessageBoxAsync("Delete Confirmation", $"Delete board '{safeBoardName}'?", yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            try
+            {
+                await BoardApiService.DeleteBoardAsync(board.Id);
+                Snackbar.Add("Board deleted.", Severity.Success);
+                await LoadBoardsAsync();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to delete board: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task LeaveBoard(BoardPreviewDto board)
+    {
+        var safeBoardName = board.Name.Length > 40 ? board.Name[..40] + "..." : board.Name;
+        bool? result = await DialogService.ShowMessageBoxAsync("Leave Board", $"Leave board '{safeBoardName}'?", yesText: "Leave", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            try
+            {
+                await BoardApiService.LeaveBoardAsync(board.Id);
+                Snackbar.Add("Left board successfully.", Severity.Success);
+                await LoadBoardsAsync();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to leave board: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+}

@@ -23,6 +23,21 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
         return await query.CountAsync(ct);
     }
 
+    public async Task<int> CountArchivedMemberWorkspaceBoardsAsync(Guid workspaceId, Guid userId, string? searchTerm = null,
+        CancellationToken ct = default)
+    {
+        var query = DbSet.Where(b =>
+            b.WorkspaceId == workspaceId && b.Members.Any(m => m.WorkspaceMember!.UserId == userId) && b.IsArchived &&
+            !b.IsDeleted).IgnoreQueryFilters();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            query = query.Where(b => EF.Functions.ILike(b.Name, $"%{searchTerm}%"));
+        }
+
+        return await query.CountAsync(ct);
+    }
+
     public async Task<List<Board>> GetMemberWorkspaceBoardsPaginatedAsync(Guid workspaceId, Guid userId, int pageNumber,
         int pageSize, string? searchTerm = null, CancellationToken ct = default)
     {
@@ -37,6 +52,30 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
             .Include(b => b.Members)
             .ThenInclude(m => m.WorkspaceMember)
             .OrderByDescending(b => b.CreatedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+    }
+
+    public async Task<List<Board>> GetMyArchivedWorkspaceBoardsAsync(Guid workspaceId, Guid userId, int pageNumber,
+        int pageSize, string? searchTerm,
+        CancellationToken ct = default)
+    {
+        var query = DbContext.Boards
+            .IgnoreQueryFilters()
+            .Where(b => b.WorkspaceId == workspaceId && b.IsArchived && !b.IsDeleted);
+
+        query = query.Where(b => b.Members.Any(m => m.WorkspaceMember!.UserId == userId));
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            query = query.Where(b => b.Name.Contains(searchTerm));
+        }
+
+        return await query
+            .Include(b => b.Members)
+            .ThenInclude(m => m.WorkspaceMember)
+            .OrderByDescending(b => b.UpdatedAt)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);
@@ -73,7 +112,7 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
     public async Task<Board?> GetBoardWithHierarchyAsync(Guid boardId, string? searchTerm = null,
         CancellationToken cancellationToken = default)
     {
-        var query = DbContext.Boards.AsQueryable();
+        var query = DbContext.Boards.IgnoreQueryFilters().Where(b => !b.IsDeleted).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
@@ -87,7 +126,6 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
                         (t.Description != null && t.Description.ToLower().Contains(lowerSearchTerm)))
                     .OrderBy(t => t.Position))
                 .ThenInclude(t => t.Assignee)
-
                 .Include(b => b.Columns)
                 .ThenInclude(c => c.Tasks
                     .Where(t =>
@@ -102,7 +140,6 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
                 .Include(b => b.Columns.OrderBy(c => c.Position))
                 .ThenInclude(c => c.Tasks.OrderBy(t => t.Position))
                 .ThenInclude(t => t.Assignee)
-
                 .Include(b => b.Columns)
                 .ThenInclude(c => c.Tasks.OrderBy(t => t.Position))
                 .ThenInclude(t => t.Reporter);

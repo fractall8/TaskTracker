@@ -1,4 +1,5 @@
 using Application.Features.Boards.Commands;
+using Application.Features.Boards.Queries;
 using Application.Features.Workspaces.Commands;
 using Application.Features.Workspaces.Queries;
 using Contracts.DTOs;
@@ -41,15 +42,22 @@ public class WorkspacesController(ISender sender) : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("{workspaceId:guid}/boards/all")]
-    public async Task<ActionResult<PagedList<BoardPreviewDto>>> GetAllWorkspaceBoards(
-        Guid workspaceId,
+    [HttpGet("{workspaceId:guid}/boards/my/archived")]
+    public async Task<IActionResult> GetMyArchivedBoards(
+        [FromRoute] Guid workspaceId,
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 24,
         [FromQuery] string? searchTerm = null,
         CancellationToken ct = default)
     {
-        var result = await sender.Send(new GetAllWorkspaceBoardsQuery(workspaceId, pageNumber, pageSize, searchTerm), ct);
+        var query = new GetMyArchivedWorkspaceBoardsQuery(
+            workspaceId,
+            pageNumber,
+            pageSize,
+            searchTerm);
+
+        var result = await sender.Send(query, ct);
+
         return Ok(result);
     }
 

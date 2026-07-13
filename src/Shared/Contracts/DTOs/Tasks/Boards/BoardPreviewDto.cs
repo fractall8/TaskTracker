@@ -7,5 +7,5 @@ public record BoardPreviewDto(
     string Name,
     string? Description,
     DateTimeOffset CreatedAt,
-    BoardRoleDto BoardRole
-);
+    BoardRoleDto BoardRole,
+    bool IsArchived);

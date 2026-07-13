@@ -1,0 +1,106 @@
+﻿@inject IWorkspaceStore WorkspaceStore
+@inject ISnackbar Snackbar
+@using Contracts.DTOs
+
+<div class="d-flex justify-space-between align-center mb-4">
+    <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-secondary);">Archived Boards</MudText>
+</div>
+
+@if (_loading)
+{
+    <div class="d-flex justify-center mt-8">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+    </div>
+}
+else if (!_boards.Any())
+{
+    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="rounded-lg">
+        No archived boards found in this workspace.
+    </MudAlert>
+}
+else
+{
+    <MudGrid>
+        @foreach (var board in _boards)
+        {
+            <MudItem xs="12" sm="6" md="4" lg="3">
+                <MudCard Elevation="0" Class="h-100 d-flex flex-column rounded-lg opacity-75"
+                         Style="border: 1px dashed var(--mud-palette-lines-default); background-color: var(--mud-palette-surface);">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <div class="d-flex align-center gap-2">
+                                <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Color="Color.Warning"/>
+                                <MudText Typo="Typo.h6" Class="fw-bold text-truncate"
+                                         Style="color: var(--mud-palette-text-primary);">
+                                    @board.Name
+                                </MudText>
+                            </div>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent Class="flex-grow-1 pt-0">
+                        <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">
+                            @(string.IsNullOrWhiteSpace(board.Description) ? "No description." : board.Description)
+                        </MudText>
+                    </MudCardContent>
+                    <MudCardActions Class="justify-end px-4 pb-4">
+                        <MudButton Href="@($"/boards/{board.Id}")" Variant="Variant.Text" Color="Color.Primary"
+                                   Class="fw-bold">
+                            View Archive
+                        </MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+
+    @if (_pagination.TotalPages > 1)
+    {
+        <div class="d-flex justify-center mt-6">
+            <MudPagination Color="Color.Primary" Count="@_pagination.TotalPages" Selected="@_currentPage"
+                           SelectedChanged="OnPageChanged"/>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public Guid WorkspaceId { get; set; }
+
+    private IReadOnlyList<BoardPreviewDto> _boards = [];
+    private PaginationMetadata _pagination = new();
+    private bool _loading;
+    private int _currentPage = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBoardsAsync();
+    }
+
+    private async Task LoadBoardsAsync()
+    {
+        _loading = true;
+        StateHasChanged();
+
+        try
+        {
+            var paged = await WorkspaceStore.GetMyArchivedBoardsAsync(WorkspaceId, _currentPage, 24);
+            _boards = paged.Items;
+            _pagination = paged.Metadata;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load archived boards: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _currentPage = page;
+        await LoadBoardsAsync();
+    }
+
+}

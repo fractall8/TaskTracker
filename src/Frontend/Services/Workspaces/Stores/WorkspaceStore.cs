@@ -145,6 +145,21 @@ public class WorkspaceStore(IWorkspaceApiService workspaceApiService) : IWorkspa
         return await workspaceApiService.GetMyWorkspaceBoardsAsync(workspaceId, pageNumber, pageSize, searchTerm, ct);
     }
 
+    public async Task<PagedList<BoardPreviewDto>> GetMyArchivedBoardsAsync(
+        Guid workspaceId,
+        int pageNumber = 1,
+        int pageSize = 24,
+        string? searchTerm = null,
+        CancellationToken ct = default)
+    {
+        return await workspaceApiService.GetMyArchivedWorkspaceBoardsAsync(
+            workspaceId,
+            pageNumber,
+            pageSize,
+            searchTerm,
+            ct);
+    }
+
     public async Task<PagedList<BoardPreviewDto>> GetAllWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1,
         int pageSize = 24, string? searchTerm = null, CancellationToken ct = default)
     {

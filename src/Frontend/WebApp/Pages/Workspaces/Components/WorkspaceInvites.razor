@@ -1,0 +1,204 @@
+﻿@inject IWorkspaceStore WorkspaceStore
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject IJSRuntime Js
+@inject NavigationManager Navigation
+@using Contracts.DTOs
+@using Contracts.Enums
+@using Contracts.Requests.Workspaces
+@using WebApp.Shared.Dialogs
+
+<div class="d-flex justify-space-between align-center mb-4">
+    <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-secondary);">Manage Invites</MudText>
+    <div class="d-flex align-center gap-2">
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh"
+                   OnClick="LoadInvitesAsync" Disabled="_loading">
+            Refresh
+        </MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="GenerateInviteLink" Disabled="_loading">
+            Create Invite Link
+        </MudButton>
+    </div>
+</div>
+
+@if (_loading)
+{
+    <div class="d-flex justify-center mt-8">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+    </div>
+}
+else if (!_invites.Any())
+{
+    <MudAlert Severity="Severity.Info" Class="rounded-lg">
+        No active or expired invites found.
+    </MudAlert>
+}
+else
+{
+    <MudTable Items="@_invites" Hover="true" Elevation="0"
+              Style="border: 1px solid var(--mud-palette-lines-default); border-radius: 8px;">
+        <HeaderContent>
+            <MudTh>Token / Link</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh>Expires At</MudTh>
+            <MudTh>Created</MudTh>
+            <MudTh Style="text-align: right;">Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>
+                <div class="d-flex align-center gap-2">
+                    <MudText Typo="Typo.body2" Class="font-monospace">
+                        @(_visibleTokens.Contains(context.Id) ? context.Token : new string('•', 20))
+                    </MudText>
+                    <MudIconButton
+                        Icon="@(_visibleTokens.Contains(context.Id) ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                        Size="Size.Small" OnClick="@(() => ToggleTokenVisibility(context.Id))"/>
+                    <MudTooltip Text="Copy Invite Link">
+                        <MudIconButton Icon="@Icons.Material.Filled.ContentCopy" Size="Size.Small" Color="Color.Info"
+                                       OnClick="@(() => CopyToClipboardAsync(GetInviteUrl(context.Token)))"/>
+                    </MudTooltip>
+                </div>
+            </MudTd>
+            <MudTd>
+                @if (context.ExpiresAt < DateTimeOffset.UtcNow)
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined">Expired
+                    </MudChip>
+                }
+                else
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">Active
+                    </MudChip>
+                }
+            </MudTd>
+            <MudTd>@context.ExpiresAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</MudTd>
+            <MudTd>@context.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</MudTd>
+            <MudTd Style="text-align: right;">
+                <MudTooltip Text="Edit Expiration">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                   OnClick="@(() => OpenEditInviteDialog(context))"/>
+                </MudTooltip>
+                <MudTooltip Text="Revoke Invite">
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                                   OnClick="@(() => RevokeInvite(context.Id))"/>
+                </MudTooltip>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    [Parameter] public Guid WorkspaceId { get; set; }
+    [Parameter] public WorkspaceRoleDto? CurrentUserRole { get; set; }
+
+    private IReadOnlyList<WorkspaceInviteDto> _invites = [];
+    private bool _loading;
+    private readonly HashSet<Guid> _visibleTokens = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInvitesAsync();
+    }
+
+    private async Task LoadInvitesAsync()
+    {
+        _loading = true;
+        StateHasChanged();
+
+        try
+        {
+            _invites = await WorkspaceStore.GetWorkspaceInvitesAsync(WorkspaceId);
+            _visibleTokens.Clear();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load invites: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task GenerateInviteLink()
+    {
+        try
+        {
+            var request = new InviteUserRequest(string.Empty);
+            var result = await WorkspaceStore.InviteUserAsync(WorkspaceId, request);
+
+            if (result != null)
+            {
+                Snackbar.Add("Invite link generated.", Severity.Success);
+                await LoadInvitesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to generate invite link: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void ToggleTokenVisibility(Guid inviteId)
+    {
+        if (!_visibleTokens.Add(inviteId))
+        {
+            _visibleTokens.Remove(inviteId);
+        }
+    }
+
+    private async Task OpenEditInviteDialog(WorkspaceInviteDto invite)
+    {
+        var parameters = new DialogParameters<EditInviteDialog>
+        {
+            { x => x.CurrentExpiration, invite.ExpiresAt }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<EditInviteDialog>("Edit Expiration", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: UpdateInviteExpirationRequest request })
+        {
+            try
+            {
+                await WorkspaceStore.UpdateInviteExpirationAsync(WorkspaceId, invite.Id, request);
+                Snackbar.Add("Expiration date updated.", Severity.Success);
+                await LoadInvitesAsync();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to update invite: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task RevokeInvite(Guid inviteId)
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync("Revoke Invite", "Revoke this invite?", yesText: "Revoke", cancelText: "Cancel");
+        if (confirmed == true)
+        {
+            try
+            {
+                await WorkspaceStore.RevokeInviteAsync(WorkspaceId, inviteId);
+                Snackbar.Add("Invite revoked.", Severity.Success);
+                await LoadInvitesAsync();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to revoke invite: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private string GetInviteUrl(string token) => $"{Navigation.BaseUri.TrimEnd('/')}/accept-invite?token={token}";
+
+    private async Task CopyToClipboardAsync(string text)
+    {
+        await Js.InvokeVoidAsync("navigator.clipboard.writeText", text);
+        Snackbar.Add("Link copied.", Severity.Info);
+    }
+
+}
