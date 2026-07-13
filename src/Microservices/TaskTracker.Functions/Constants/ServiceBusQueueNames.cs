@@ -2,5 +2,5 @@
 
 public static class ServiceBusQueueNames
 {
-    internal const string BoardArchivingQueue = "board-archive-queue";
+    internal const string BoardArchivingQueue = "board-archiving-queue";
 }

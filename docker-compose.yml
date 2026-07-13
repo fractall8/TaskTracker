@@ -41,6 +41,8 @@
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__PostgresConnection=Host=postgres-db;Port=5432;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}
       - ConnectionStrings__AzureBlobStorage=${AZURITE_CONNECTION_STRING}
+      - ConnectionStrings__CosmosDB=${COSMOS_DB_CONNECTION}
+      - ConnectionStrings__ServiceBus=${SERVICE_BUS_CONNECTION}
       - AzureAd__TenantId=${AZURE_TENANT_ID}
       - AzureAd__ClientId=${AZURE_CLIENT_ID}
       - AzureAd__Audience=api://${AZURE_CLIENT_ID}
