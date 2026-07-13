@@ -31,7 +31,14 @@ public sealed class BoardArchiveBuilder(
             ? EnrichWithArchiveRelativePaths(data, pathBuilder)
             : data;
 
-        var resultStream = new MemoryStream();
+        var tempFilePath = Path.GetTempFileName();
+        var resultStream = new FileStream(
+            tempFilePath,
+            FileMode.OpenOrCreate,
+            FileAccess.ReadWrite,
+            FileShare.None,
+            4096,
+            FileOptions.Asynchronous | FileOptions.DeleteOnClose);
 
         await using (var archive = new ZipArchive(resultStream, ZipArchiveMode.Create, leaveOpen: true))
         {

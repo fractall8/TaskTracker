@@ -26,11 +26,7 @@ public sealed class BoardExportBlobService(
             .GetBlobClient(blobName)
             .DownloadStreamingAsync(cancellationToken: ct);
 
-        var buffer = new MemoryStream();
-        await response.Value.Content.CopyToAsync(buffer, ct);
-        buffer.Position = 0;
-
-        return buffer;
+        return response.Value.Content;
     }
 
     public async Task UploadArchiveAsync(Guid boardId, BoardExportArchive archive, CancellationToken ct = default)
