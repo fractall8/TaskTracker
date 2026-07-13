@@ -1,5 +1,4 @@
 ﻿using Application.Interfaces.Repositories;
-using Application.Interfaces.Services;
 using Domain.Authorization;
 using Domain.Enums;
 using FluentValidation;
@@ -7,11 +6,10 @@ using MediatR;
 
 namespace Application.Features.Hubs.Commands;
 
-public record SubscribeBoardExportStatusCommand(IReadOnlyList<Guid> BoardIds)
+public record SubscribeBoardExportStatusCommand(IReadOnlyList<Guid> BoardIds, Guid AzureAdObjectId)
     : IRequest<IReadOnlyList<Guid>>;
 
 public class SubscribeBoardExportStatusCommandHandler(
-    ICurrentUserAccessor currentUserAccessor,
     IUserRepository userRepository,
     IBoardMemberRepository boardMemberRepository)
     : IRequestHandler<SubscribeBoardExportStatusCommand, IReadOnlyList<Guid>>
@@ -21,7 +19,7 @@ public class SubscribeBoardExportStatusCommandHandler(
         CancellationToken ct)
     {
         var distinctBoardIds = SubscribeBoardExportStatusBoardIds.Normalize(request.BoardIds);
-        var userId = await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => u.Id, ct);
+        var userId = await userRepository.GetUserByAzureAdIdAsync(request.AzureAdObjectId, u => u.Id, ct);
 
         var rolesByBoardId = await boardMemberRepository.GetUserRolesForArchivedBoardsAsync(
             distinctBoardIds,

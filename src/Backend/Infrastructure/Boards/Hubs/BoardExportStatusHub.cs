@@ -1,4 +1,6 @@
-﻿using Application.Features.Hubs.Commands;
+﻿using System.Security.Claims;
+using Application.Features.Hubs.Commands;
+using Infrastructure.Auth.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
@@ -24,7 +26,15 @@ public class BoardExportStatusHub(
 
         try
         {
-            var subscribableBoardIds = await sender.Send(new SubscribeBoardExportStatusCommand(boardIds), ct);
+            var claimValue = GetClaim(Context.User, EntraClaimTypes.ObjectId)
+                             ?? GetClaim(Context.User, ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrWhiteSpace(claimValue) || !Guid.TryParse(claimValue, out var objectId))
+            {
+                throw new HubException("Unauthorized: Invalid or missing user identity.");
+            }
+
+            var subscribableBoardIds = await sender.Send(new SubscribeBoardExportStatusCommand(boardIds, objectId), ct);
 
             await Task.WhenAll(subscribableBoardIds.Select(boardId =>
                 Groups.AddToGroupAsync(Context.ConnectionId, GetGroupName(boardId), ct)));
@@ -64,4 +74,7 @@ public class BoardExportStatusHub(
     }
 
     public static string GetGroupName(Guid boardId) => $"Board_{boardId}_Export";
+
+    private static string? GetClaim(ClaimsPrincipal? user, string type) =>
+        user?.FindFirst(type)?.Value;
 }

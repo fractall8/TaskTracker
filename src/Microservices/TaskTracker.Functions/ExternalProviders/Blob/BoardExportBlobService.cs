@@ -44,6 +44,10 @@ public sealed class BoardExportBlobService(
             archive.Content.Position = 0;
         }
 
+        var containerClient = blobServiceClient.GetBlobContainerClient(blobOptions.ArchivesContainerName);
+
+        await containerClient.CreateIfNotExistsAsync(cancellationToken: ct);
+
         await blobServiceClient
             .GetBlobContainerClient(blobOptions.ArchivesContainerName)
             .GetBlobClient(blobName)

@@ -246,7 +246,8 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
         CancellationToken ct = default)
     {
         var board = await DbContext.Boards
-            .Where(b => b.Id == boardId && b.IsArchived)
+            .IgnoreQueryFilters()
+            .Where(b => b.Id == boardId && b.IsArchived && !b.IsDeleted)
             .Select(b => new BoardExportBoardDto(
                 b.Id,
                 b.Name,

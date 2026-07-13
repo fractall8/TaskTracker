@@ -33,4 +33,13 @@ public interface IBoardApi
 
     [Delete("/api/boards/{boardId}/leave")]
     Task<IApiResponse> LeaveBoardAsync(Guid boardId, CancellationToken ct = default);
+
+    [Get("/api/boards/{boardId}/archive/download")]
+    Task<IApiResponse<BoardArchiveDownloadDto>> GetArchiveDownloadUrlAsync(Guid boardId, CancellationToken ct = default);
+
+    [Post("/api/boards/{boardId}/archive/export")]
+    Task<IApiResponse> ArchiveAndExportAsync(
+        Guid boardId,
+        [Body] BoardExportOptionsDto exportOptions,
+        CancellationToken ct = default);
 }

@@ -2,6 +2,7 @@
 @implements IDisposable
 @using Contracts.DTOs
 @using Contracts.Enums
+@using Services.Abstractions.Hubs
 @using WebApp.Shared.Dialogs
 @inject IBoardDetailsStore BoardDetailsStore
 @inject IWorkspaceStore WorkspaceStore
@@ -9,6 +10,7 @@
 @inject NavigationManager Navigation
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
+@inject IBoardExportStatusHubService ExportHubService
 
 <style>
     .column-grab {
@@ -66,6 +68,10 @@
                  Style="max-width: 500px; color: var(--mud-palette-text-primary);">
             @(BoardDetailsStore.Board?.Name ?? "Loading Board...")
         </MudText>
+        
+        <div class="ml-4">
+            <BoardExportControls />
+        </div>
 
         <MudSpacer/>
 
@@ -214,6 +220,8 @@
         BoardDetailsStore.StateChanged += HandleStoreStateChanged;
         await BoardDetailsStore.LoadAsync(BoardId);
         await ResolveRolesAsync();
+        
+        await ExportHubService.ConnectAsync(BoardId);
     }
 
     private async Task ResolveRolesAsync()
@@ -235,12 +243,17 @@
         BoardDetailsStore.StateChanged -= HandleStoreStateChanged;
         _searchCts?.Cancel();
         _searchCts?.Dispose();
+        
+        _ = ExportHubService.DisconnectAsync();
     }
 
     private void HandleStoreStateChanged()
     {
-        StateHasChanged();
-        _dropContainer?.Refresh();
+        InvokeAsync(() => 
+        {
+            StateHasChanged();
+            _dropContainer?.Refresh();
+        });
     }
 
     private async Task TaskUpdated(MudItemDropInfo<TaskDto> dropItem)

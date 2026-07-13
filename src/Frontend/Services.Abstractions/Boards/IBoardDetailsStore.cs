@@ -38,4 +38,8 @@ public interface IBoardDetailsStore
     Task CreateTaskAsync(Guid columnId, CreateTaskRequest request, CancellationToken ct = default);
 
     Task MoveTaskAsync(Guid taskId, Guid targetColumnId, int newPosition, CancellationToken ct = default);
+
+    void SetBoardArchived(BoardExportOptionsDto exportOptions);
+
+    void ApplyExportStatusChanged(BoardExportStatusDto status);
 }

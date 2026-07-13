@@ -61,6 +61,29 @@
           ignore:
             - bin/
             - obj/
+  
+  functions:
+    image: tasktracker-functions
+    container_name: tasktracker-functions
+    build:
+      context: .
+      dockerfile: ./src/Microservices/TaskTracker.Functions/Dockerfile
+    environment:
+      - AzureWebJobsStorage=${AZURITE_CONNECTION_STRING}
+      - ConnectionStrings__ServiceBus=${SERVICE_BUS_CONNECTION}
+      - ConnectionStrings__CosmosDB=${COSMOS_DB_CONNECTION}
+      - ConnectionStrings__BlobStorage=${AZURITE_CONNECTION_STRING}
+      - CosmosDB__DatabaseName=TaskTrackerCosmosDB
+      - CosmosDB__Containers__BoardExport=BoardExports
+      - BlobStorage__ArchivesContainerName=board-archives
+      - BlobStorage__TaskAttachmentsContainerName=task-attachments
+      - BoardExportApi__BaseUrl=http://api:8080/api/
+      - BoardExportApi__ApiKeyHeaderName=X-Internal-Api-Key
+      - BoardExportApi__ApiKey=dev-internal-api-key
+      - BoardExportApi__RequestTimeoutMinutes=5
+    depends_on:
+      - api
+      - azurite
     
   frontend:
     image: tasktracker-frontend

@@ -5,6 +5,7 @@ using Refit;
 using Services.Abstractions.Auth;
 using Services.Abstractions.Boards;
 using Services.Abstractions.Columns;
+using Services.Abstractions.Hubs;
 using Services.Abstractions.Profile;
 using Services.Abstractions.Tasks;
 using Services.Abstractions.Workspaces;
@@ -15,6 +16,7 @@ using Services.Boards;
 using Services.Boards.Stores;
 using Services.Columns;
 using Services.Configuration;
+using Services.Hubs;
 using Services.Profile;
 using Services.Tasks;
 using Services.Workspaces;
@@ -92,6 +94,8 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IWorkspaceStore, WorkspaceStore>();
         services.AddScoped<IWorkspaceApiService, WorkspaceApiService>();
+
+        services.AddScoped<IBoardExportStatusHubService, BoardExportStatusHubService>();
 
         return services;
     }

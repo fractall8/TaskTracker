@@ -1,0 +1,54 @@
+﻿@using Contracts.DTOs
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-primary);">
+            <MudIcon Icon="@Icons.Material.Filled.Archive" Class="mr-2 mb-n1" />
+            Archive Board
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Typo="Typo.body2" Class="mb-4">
+            Archiving will make this board read-only. You can also generate a downloadable ZIP archive of its contents.
+        </MudText>
+        
+        <MudText Typo="Typo.subtitle2" Class="mb-2">Include in export:</MudText>
+        <div class="d-flex flex-column gap-2">
+            <MudCheckBox @bind-Value="_model.IncludeDescriptions" Label="Task descriptions" Color="Color.Primary" Dense="true" />
+            <MudCheckBox @bind-Value="_model.IncludeComments" Label="Comments" Color="Color.Primary" Dense="true" />
+            <MudCheckBox @bind-Value="_model.IncludeAttachments" Label="Task attachments" Color="Color.Primary" Dense="true" />
+            <MudCheckBox @bind-Value="_model.IncludeMembers" Label="Board members" Color="Color.Primary" Dense="true" />
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Warning" Variant="Variant.Filled" OnClick="Submit">Archive & Export</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] public IMudDialogInstance MudDialog { get; set; } = null!;
+    
+    private readonly ExportOptionsFormModel _model = new();
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Submit()
+    {
+        var result = new BoardExportOptionsDto(
+            _model.IncludeDescriptions,
+            _model.IncludeComments,
+            _model.IncludeAttachments,
+            _model.IncludeMembers
+        );
+        MudDialog.Close(DialogResult.Ok(result));
+    }
+
+    private class ExportOptionsFormModel
+    {
+        public bool IncludeDescriptions { get; set; } = true;
+        public bool IncludeComments { get; set; } = true;
+        public bool IncludeAttachments { get; set; } = true;
+        public bool IncludeMembers { get; set; } = true;
+    }
+}

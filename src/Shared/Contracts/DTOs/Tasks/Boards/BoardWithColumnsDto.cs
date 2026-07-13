@@ -8,4 +8,7 @@ public record BoardWithColumnsDto(
     string? Description,
     Guid WorkspaceId,
     BoardRoleDto BoardRole,
-    IEnumerable<ColumnDto> Columns);
+    IEnumerable<ColumnDto> Columns,
+    bool IsArchived = false,
+    BoardExportStatusDto BoardExportStatus = BoardExportStatusDto.None,
+    BoardExportOptionsDto? ExportOptions = null);

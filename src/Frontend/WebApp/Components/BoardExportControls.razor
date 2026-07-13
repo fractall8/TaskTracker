@@ -1,0 +1,100 @@
+﻿@using Contracts.DTOs
+@using Contracts.Enums
+@using WebApp.Shared.Dialogs
+@implements IDisposable 
+
+@inject IBoardDetailsStore BoardDetailsStore
+@inject IBoardApiService BoardApi
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject IJSRuntime Js
+
+@if (BoardDetailsStore.Board is { } board)
+{
+    <div class="d-flex align-center gap-3">
+        @if (!board.IsArchived && board.BoardRole == BoardRoleDto.Admin)
+        {
+            <MudButton Variant="Variant.Outlined" Color="Color.Warning" StartIcon="@Icons.Material.Filled.Archive" OnClick="ArchiveBoardAsync">
+                Archive Board
+            </MudButton>
+        }
+        else if (board.IsArchived)
+        {
+            <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined" Class="fw-bold">Archived</MudChip>
+
+            @if (board.BoardExportStatus is BoardExportStatusDto.Requested or BoardExportStatusDto.Pending or BoardExportStatusDto.Processing)
+            {
+                <MudTooltip Text="We are currently generating your ZIP archive...">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Info" StartIcon="@Icons.Material.Filled.Sync" Disabled="true">
+                        Processing Export...
+                    </MudButton>
+                </MudTooltip>
+            }
+            else if (board.BoardExportStatus == BoardExportStatusDto.Completed)
+            {
+                <MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Filled.Download" OnClick="DownloadArchiveAsync">
+                    Download Archive
+                </MudButton>
+            }
+            else if (board.BoardExportStatus == BoardExportStatusDto.Failed)
+            {
+                <MudButton Variant="Variant.Outlined" Color="Color.Error" StartIcon="@Icons.Material.Filled.Error">
+                    Export Failed
+                </MudButton>
+            }
+        }
+    </div>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        BoardDetailsStore.StateChanged += OnStoreStateChanged;
+    }
+
+    public void Dispose()
+    {
+        BoardDetailsStore.StateChanged -= OnStoreStateChanged;
+    }
+    
+    private void OnStoreStateChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ArchiveBoardAsync()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ArchiveBoardDialog>("Archive Board", options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: BoardExportOptionsDto exportOptions })
+        {
+            try
+            {
+                await BoardApi.ArchiveAndExportBoardAsync(BoardDetailsStore.Board!.Id, exportOptions);
+                BoardDetailsStore.SetBoardArchived(exportOptions);
+                Snackbar.Add("Board archived and export queued successfully.", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+    }
+    
+    private async Task DownloadArchiveAsync()
+    {
+        try
+        {
+            var downloadInfo = await BoardApi.GetBoardArchiveDownloadUrlAsync(BoardDetailsStore.Board!.Id);
+            
+            var module = await Js.InvokeAsync<IJSObjectReference>("import", "./js/fileDownload.js");
+            await module.InvokeVoidAsync("downloadFromUrl", downloadInfo.DownloadUrl, downloadInfo.FileName);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+}

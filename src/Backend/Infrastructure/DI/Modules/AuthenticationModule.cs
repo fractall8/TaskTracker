@@ -40,6 +40,26 @@ internal static class AuthenticationModule
 
                 options.TokenValidationParameters.RoleClaimType = EntraClaimTypes.Roles;
                 options.TokenValidationParameters.NameClaimType = EntraClaimTypes.ObjectId;
+
+                options.Events ??= new JwtBearerEvents();
+
+                var originalOnMessageReceived = options.Events.OnMessageReceived;
+
+                options.Events.OnMessageReceived = async context =>
+                {
+                    var accessToken = context.Request.Query["access_token"];
+                    var path = context.HttpContext.Request.Path;
+
+                    if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                    {
+                        context.Token = accessToken;
+                    }
+
+                    if (originalOnMessageReceived != null)
+                    {
+                        await originalOnMessageReceived(context);
+                    }
+                };
             });
 
         return services;

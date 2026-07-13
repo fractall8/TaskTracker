@@ -316,4 +316,27 @@ public class BoardDetailsStore(IBoardApiService boardsApi, IColumnApiService col
             throw;
         }
     }
+
+    public void SetBoardArchived(BoardExportOptionsDto exportOptions)
+    {
+        if (Board != null)
+        {
+            Board = Board with
+            {
+                IsArchived = true,
+                BoardExportStatus = BoardExportStatusDto.Requested,
+                ExportOptions = exportOptions
+            };
+            NotifyStateChanged();
+        }
+    }
+
+    public void ApplyExportStatusChanged(BoardExportStatusDto status)
+    {
+        if (Board != null)
+        {
+            Board = Board with { BoardExportStatus = status };
+            NotifyStateChanged();
+        }
+    }
 }

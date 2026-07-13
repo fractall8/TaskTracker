@@ -1,11 +1,9 @@
 ﻿using Application.Interfaces.Notifiers;
 using Contracts.Notifications;
 using Infrastructure.Boards.Hubs;
-using Infrastructure.Common.Constants;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Infrastructure.Boards.Notifiers;
-
 
 internal class BoardExportStatusNotifier(IHubContext<BoardExportStatusHub> hubContext) : IBoardExportStatusNotifier
 {
@@ -17,6 +15,6 @@ internal class BoardExportStatusNotifier(IHubContext<BoardExportStatusHub> hubCo
 
     private Task SendAsync(string eventName, BoardExportStatusChangedNotification notification, CancellationToken ct) =>
         hubContext.Clients
-            .Group(HubGroupNames.BoardExportStatus.Get(notification.BoardId))
+            .Group(BoardExportStatusHub.GetGroupName(notification.BoardId))
             .SendAsync(eventName, notification, ct);
 }
