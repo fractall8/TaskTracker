@@ -41,5 +41,5 @@ public interface IBoardDetailsStore
 
     void SetBoardArchived(BoardExportOptionsDto exportOptions);
 
-    void ApplyExportStatusChanged(BoardExportStatusDto status);
+    void SetBoardReExporting(BoardExportOptionsDto options);
 }

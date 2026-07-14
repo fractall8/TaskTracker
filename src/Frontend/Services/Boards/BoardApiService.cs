@@ -52,4 +52,7 @@ public class BoardApiService(IBoardApi boardApi) : IBoardApiService
         var response = await boardApi.ArchiveAndExportAsync(boardId, exportOptions, ct);
         await response.HandleResponseAsync();
     }
+
+    public async Task ReExportBoardAsync(Guid boardId, BoardExportOptionsDto options, CancellationToken ct = default) =>
+        await (await boardApi.ReExportBoardAsync(boardId, options, ct)).HandleResponseAsync();
 }

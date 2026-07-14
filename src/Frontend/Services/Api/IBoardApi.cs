@@ -42,4 +42,7 @@ public interface IBoardApi
         Guid boardId,
         [Body] BoardExportOptionsDto exportOptions,
         CancellationToken ct = default);
+
+    [Post("/api/boards/{boardId}/archive/re-export")]
+    Task<IApiResponse> ReExportBoardAsync(Guid boardId, [Body] BoardExportOptionsDto request, CancellationToken ct = default);
 }

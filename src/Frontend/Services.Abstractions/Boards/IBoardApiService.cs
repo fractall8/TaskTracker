@@ -21,4 +21,6 @@ public interface IBoardApiService
     Task<BoardArchiveDownloadDto> GetBoardArchiveDownloadUrlAsync(Guid boardId, CancellationToken ct = default);
 
     Task ArchiveAndExportBoardAsync(Guid boardId, BoardExportOptionsDto exportOptions, CancellationToken ct = default);
+
+    Task ReExportBoardAsync(Guid boardId, BoardExportOptionsDto options, CancellationToken ct = default);
 }

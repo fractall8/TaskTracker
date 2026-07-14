@@ -324,18 +324,22 @@ public class BoardDetailsStore(IBoardApiService boardsApi, IColumnApiService col
             Board = Board with
             {
                 IsArchived = true,
-                BoardExportStatus = BoardExportStatusDto.Requested,
+                ExportStatus = BoardExportStatusDto.Requested,
                 ExportOptions = exportOptions
             };
             NotifyStateChanged();
         }
     }
 
-    public void ApplyExportStatusChanged(BoardExportStatusDto status)
+    public void SetBoardReExporting(BoardExportOptionsDto options)
     {
         if (Board != null)
         {
-            Board = Board with { BoardExportStatus = status };
+            Board = Board with
+            {
+                ReExportStatus = BoardExportStatusDto.Pending,
+                ReExportOptions = options
+            };
             NotifyStateChanged();
         }
     }

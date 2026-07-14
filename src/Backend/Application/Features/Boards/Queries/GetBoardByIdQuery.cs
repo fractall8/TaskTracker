@@ -62,8 +62,8 @@ public class GetBoardByIdQueryHandler(
             BoardRole: (BoardRoleDto)accessContext.Role,
             Columns: columnDtos,
             IsArchived: board.IsArchived,
-            BoardExportStatus: boardExportInfo?.ExportStatus,
-            BoardReExportStatus: boardExportInfo?.ReExportStatus
+            ExportStatus: boardExportInfo?.ExportStatus,
+            ReExportStatus: boardExportInfo?.ReExportStatus
         );
     }
 }

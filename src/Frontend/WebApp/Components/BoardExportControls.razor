@@ -1,7 +1,7 @@
 ﻿@using Contracts.DTOs
 @using Contracts.Enums
 @using WebApp.Shared.Dialogs
-@implements IDisposable 
+@implements IDisposable
 
 @inject IBoardDetailsStore BoardDetailsStore
 @inject IBoardApiService BoardApi
@@ -14,39 +14,68 @@
     <div class="d-flex align-center gap-3">
         @if (!board.IsArchived && board.BoardRole == BoardRoleDto.Admin)
         {
-            <MudButton Variant="Variant.Outlined" Color="Color.Warning" StartIcon="@Icons.Material.Filled.Archive" OnClick="ArchiveBoardAsync">
+            <MudButton Variant="Variant.Outlined" Color="Color.Warning" StartIcon="@Icons.Material.Filled.Archive"
+                       OnClick="ArchiveBoardAsync">
                 Archive Board
             </MudButton>
         }
         else if (board.IsArchived)
         {
-            <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined" Class="fw-bold">Archived</MudChip>
+            <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined" Class="fw-bold">
+                Archived
+            </MudChip>
 
-            @if (board.BoardExportStatus is BoardExportStatusDto.Requested or BoardExportStatusDto.Pending or BoardExportStatusDto.Processing)
+            @if (board.ExportStatus is BoardExportStatusDto.Requested or BoardExportStatusDto.Pending or BoardExportStatusDto.Processing)
             {
                 <MudTooltip Text="We are currently generating your ZIP archive...">
-                    <MudButton Variant="Variant.Outlined" Color="Color.Info" StartIcon="@Icons.Material.Filled.Sync" Disabled="true">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Info" StartIcon="@Icons.Material.Filled.Sync"
+                               Disabled="true">
                         Processing Export...
                     </MudButton>
                 </MudTooltip>
             }
-            else if (board.BoardExportStatus == BoardExportStatusDto.Completed)
+            else // or condition for success
             {
-                <MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Filled.Download" OnClick="DownloadArchiveAsync">
-                    Download Archive
-                </MudButton>
-            }
-            else if (board.BoardExportStatus == BoardExportStatusDto.Failed)
-            {
-                <MudButton Variant="Variant.Outlined" Color="Color.Error" StartIcon="@Icons.Material.Filled.Error">
-                    Export Failed
-                </MudButton>
+                @if (board.ExportStatus != BoardExportStatusDto.Failed)
+                {
+                    <MudButton Variant="Variant.Filled" Color="Color.Success"
+                               StartIcon="@Icons.Material.Filled.Download"
+                               OnClick="DownloadArchiveAsync">
+                        Download Archive
+                    </MudButton>
+                }
+
+                @if (board.ReExportStatus is BoardExportStatusDto.Requested or BoardExportStatusDto.Pending or BoardExportStatusDto.Processing)
+                {
+                    <MudButton Variant="Variant.Outlined" Color="Color.Info" Disabled="true">
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/>
+                        Updating Archive...
+                    </MudButton>
+                }
+                else if (board.ReExportStatus == BoardExportStatusDto.Failed || board.ExportStatus == BoardExportStatusDto.Failed)
+                {
+                    <MudTooltip Text="Export failed. Click to try again.">
+                        <MudButton Variant="Variant.Outlined" Color="Color.Error"
+                                   StartIcon="@Icons.Material.Filled.Refresh"
+                                   OnClick="ReExportBoardAsync">
+                            @(board.ExportStatus == BoardExportStatusDto.Failed ? "Retry Export" : "Retry Re-export")
+                        </MudButton>
+                    </MudTooltip>
+                }
+                else
+                {
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Refresh" OnClick="ReExportBoardAsync">
+                        Re-export
+                    </MudButton>
+                }
             }
         }
     </div>
 }
 
 @code {
+
     protected override void OnInitialized()
     {
         BoardDetailsStore.StateChanged += OnStoreStateChanged;
@@ -56,7 +85,7 @@
     {
         BoardDetailsStore.StateChanged -= OnStoreStateChanged;
     }
-    
+
     private void OnStoreStateChanged()
     {
         InvokeAsync(StateHasChanged);
@@ -82,13 +111,34 @@
             }
         }
     }
-    
+
+    private async Task ReExportBoardAsync()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ExportOptionsDialog>("Update Archive", options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: BoardExportOptionsDto exportOptions })
+        {
+            try
+            {
+                await BoardApi.ReExportBoardAsync(BoardDetailsStore.Board!.Id, exportOptions);
+                BoardDetailsStore.SetBoardReExporting(exportOptions);
+                Snackbar.Add("Re-export started. The archive will be updated in the background.", Severity.Info);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+    }
+
     private async Task DownloadArchiveAsync()
     {
         try
         {
             var downloadInfo = await BoardApi.GetBoardArchiveDownloadUrlAsync(BoardDetailsStore.Board!.Id);
-            
+
             var module = await Js.InvokeAsync<IJSObjectReference>("import", "./js/fileDownload.js");
             await module.InvokeVoidAsync("downloadFromUrl", downloadInfo.DownloadUrl, downloadInfo.FileName);
         }
@@ -97,4 +147,5 @@
             Snackbar.Add(ex.Message, Severity.Error);
         }
     }
+
 }

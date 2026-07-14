@@ -1,5 +1,8 @@
-﻿namespace Contracts.DTOs;
+﻿using System.Text.Json.Serialization;
 
+namespace Contracts.DTOs;
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum BoardExportStatusDto : byte
 {
     None = 0,

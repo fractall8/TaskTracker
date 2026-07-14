@@ -42,19 +42,19 @@ public class BoardExportStatusHubService(
             .WithAutomaticReconnect()
             .Build();
 
-        _connection.On<BoardExportStatusChangedNotification>("BoardExportStatusChanged", notification =>
+        _connection.On<BoardExportStatusChangedNotification>("BoardExportStatusChanged", async notification =>
         {
             if (notification.BoardId == _currentBoardId)
             {
-                boardDetailsStore.ApplyExportStatusChanged(notification.Status);
+                await boardDetailsStore.LoadAsync(notification.BoardId, ct: ct);
             }
         });
 
-        _connection.On<BoardExportStatusChangedNotification>("BoardReExportStatusChanged", notification =>
+        _connection.On<BoardExportStatusChangedNotification>("BoardReExportStatusChanged", async notification =>
         {
             if (notification.BoardId == _currentBoardId)
             {
-                boardDetailsStore.ApplyExportStatusChanged(notification.Status);
+                await boardDetailsStore.LoadAsync(notification.BoardId, ct: ct);
             }
         });
 

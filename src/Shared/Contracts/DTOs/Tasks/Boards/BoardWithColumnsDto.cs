@@ -10,6 +10,7 @@ public record BoardWithColumnsDto(
     BoardRoleDto BoardRole,
     IEnumerable<ColumnDto> Columns,
     bool IsArchived = false,
-    BoardExportStatusDto? BoardExportStatus = BoardExportStatusDto.None,
-    BoardExportStatusDto? BoardReExportStatus = BoardExportStatusDto.None,
-    BoardExportOptionsDto? ExportOptions = null);
+    BoardExportStatusDto? ExportStatus = BoardExportStatusDto.None,
+    BoardExportStatusDto? ReExportStatus = BoardExportStatusDto.None,
+    BoardExportOptionsDto? ExportOptions = null,
+    BoardExportOptionsDto? ReExportOptions = null);
