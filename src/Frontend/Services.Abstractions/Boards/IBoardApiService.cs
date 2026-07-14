@@ -17,4 +17,10 @@ public interface IBoardApiService
     Task DeleteBoardAsync(Guid id, CancellationToken ct = default);
 
     Task LeaveBoardAsync(Guid boardId, CancellationToken ct = default);
+
+    Task<BoardArchiveDownloadDto> GetBoardArchiveDownloadUrlAsync(Guid boardId, CancellationToken ct = default);
+
+    Task ArchiveAndExportBoardAsync(Guid boardId, BoardExportOptionsDto exportOptions, CancellationToken ct = default);
+
+    Task ReExportBoardAsync(Guid boardId, BoardExportOptionsDto options, CancellationToken ct = default);
 }

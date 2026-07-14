@@ -28,27 +28,31 @@ public class BoardAccessService(
     }
 
     public Task<BoardAccessContext> EnsureCanEditBoardAsync(Guid boardId, CancellationToken ct = default) =>
-        EnsureAccessAsync(boardId, BoardRolePermissions.CanEditBoard, "You don't have permission to edit this board.", ct);
+        EnsureAccessAsync(boardId, BoardRolePermissions.CanEditBoard, "You don't have permission to edit this board.", requiresActiveBoard: true, ct);
 
     public Task<BoardAccessContext> EnsureCanDeleteBoardAsync(Guid boardId, CancellationToken ct = default) =>
-        EnsureAccessAsync(boardId, BoardRolePermissions.CanDeleteBoard, "You don't have permission to delete this board.", ct);
+        EnsureAccessAsync(boardId, BoardRolePermissions.CanDeleteBoard, "You don't have permission to delete this board.", requiresActiveBoard: true, ct);
 
     public Task<BoardAccessContext> EnsureCanManageColumnsAsync(Guid boardId, CancellationToken ct = default) =>
-        EnsureAccessAsync(boardId, BoardRolePermissions.CanManageColumns, "You don't have permission to manage columns.", ct);
+        EnsureAccessAsync(boardId, BoardRolePermissions.CanManageColumns, "You don't have permission to manage columns.", requiresActiveBoard: true, ct);
 
     public Task<BoardAccessContext> EnsureCanManageTasksAsync(Guid boardId, CancellationToken ct = default) =>
-        EnsureAccessAsync(boardId, BoardRolePermissions.CanManageTasks, "You don't have permission to manage tasks.", ct);
+        EnsureAccessAsync(boardId, BoardRolePermissions.CanManageTasks, "You don't have permission to manage tasks.", requiresActiveBoard: true, ct);
 
     public Task<BoardAccessContext> EnsureCanManageCommentsAsync(Guid boardId, CancellationToken ct = default) =>
-        EnsureAccessAsync(boardId, BoardRolePermissions.CanManageComments, "You don't have permission to create comments.", ct);
+        EnsureAccessAsync(boardId, BoardRolePermissions.CanManageComments, "You don't have permission to create comments.", requiresActiveBoard: true, ct);
+
 
     public Task<BoardAccessContext> EnsureCanViewBoardAsync(Guid boardId, CancellationToken ct = default) =>
-        EnsureAccessAsync(boardId, _ => true, "You don't have access to this board.", ct);
+        EnsureAccessAsync(boardId, _ => true, "You don't have access to this board.", requiresActiveBoard: false, ct);
+
+    public Task<BoardAccessContext> EnsureCanExportBoardAsync(Guid boardId, CancellationToken ct = default) =>
+        EnsureAccessAsync(boardId, _ => true, "You don't have permission to export this board.", requiresActiveBoard: false, ct);
+
 
     public async Task<BoardRoleDto?> GetEffectiveBoardRoleAsync(Guid boardId, CancellationToken ct = default)
     {
         var (userId, _) = await GetCurrentUserAsync(ct);
-
         var explicitBoardRole = await boardRepository.GetUserRoleAsync(boardId, userId, ct);
 
         if (explicitBoardRole.HasValue)
@@ -59,7 +63,12 @@ public class BoardAccessService(
         return null;
     }
 
-    private async Task<BoardAccessContext> EnsureAccessAsync(Guid boardId, Func<BoardRole, bool> permissionCheck, string errorMessage, CancellationToken ct)
+    private async Task<BoardAccessContext> EnsureAccessAsync(
+        Guid boardId,
+        Func<BoardRole, bool> permissionCheck,
+        string errorMessage,
+        bool requiresActiveBoard,
+        CancellationToken ct)
     {
         var effectiveRoleDto = await GetEffectiveBoardRoleAsync(boardId, ct);
 
@@ -73,6 +82,16 @@ public class BoardAccessService(
         if (!permissionCheck(effectiveBoardRole))
         {
             throw new UnauthorizedAccessException(errorMessage);
+        }
+
+        if (requiresActiveBoard)
+        {
+            var isArchived = await boardRepository.IsBoardArchivedAsync(boardId, ct);
+
+            if (isArchived)
+            {
+                throw new InvalidOperationException("This action cannot be performed because the board is archived.");
+            }
         }
 
         var (userId, _) = await GetCurrentUserAsync(ct);

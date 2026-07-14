@@ -8,6 +8,10 @@ public class Board : BaseEntity<Guid>
 
     public string? Description { get; set; }
 
+    public bool IsArchived { get; set; }
+
+    public DateTimeOffset? ArchivedAt { get; set; }
+
     public Workspace? Workspace { get; set; }
 
     public ICollection<BoardMember> Members { get; set; } = [];

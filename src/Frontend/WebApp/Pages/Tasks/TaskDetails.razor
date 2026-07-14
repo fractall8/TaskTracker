@@ -1,9 +1,11 @@
 ﻿@page "/boards/{BoardId:guid}/tasks/{TaskId:guid}"
 @using Contracts.DTOs
+@using Contracts.Enums
 @using Contracts.Requests.Tasks
 @using Services.Abstractions.Tasks
 @using WebApp.Shared.Dialogs
 @inject ITaskApiService TaskApi
+@inject IBoardDetailsStore BoardDetailsStore
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
@@ -30,7 +32,7 @@
 <MudContainer MaxWidth="MaxWidth.Large" Class="pt-6 px-4 d-flex flex-column"
               Style="height: calc(100vh - 64px); overflow: hidden;">
 
-    @if (_isLoading)
+    @if (_isLoading || (BoardDetailsStore.IsLoading && BoardDetailsStore.Board == null))
     {
         <div class="d-flex justify-center align-center flex-grow-1">
             <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large"/>
@@ -46,6 +48,15 @@
             </MudButton>
         </div>
 
+        @if (IsArchived)
+        {
+            <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Class="mb-4 rounded-lg flex-shrink-0"
+                      Icon="@Icons.Material.Filled.Archive"
+                      Style="border-width: 2px; background-color: var(--mud-palette-surface);">
+                This board is archived. The task and its details are in Read-Only mode.
+            </MudAlert>
+        }
+
         <div class="d-flex flex-column flex-md-row gap-6 flex-grow-1 overflow-hidden w-100 pb-4">
 
             <div class="d-flex flex-column flex-grow-1 overflow-hidden" style="min-width: 0;">
@@ -59,15 +70,18 @@
                         </MudText>
                     </div>
 
-                    <MudButton StartIcon="@Icons.Material.Outlined.Edit"
-                               Variant="Variant.Outlined"
-                               Color="Color.Default"
-                               Size="Size.Small"
-                               Class="flex-shrink-0"
-                               Style="white-space: nowrap;"
-                               OnClick="OpenEditTaskDialog">
-                        Edit Task
-                    </MudButton>
+                    @if (CanManageTasks)
+                    {
+                        <MudButton StartIcon="@Icons.Material.Outlined.Edit"
+                                   Variant="Variant.Outlined"
+                                   Color="Color.Default"
+                                   Size="Size.Small"
+                                   Class="flex-shrink-0"
+                                   Style="white-space: nowrap;"
+                                   OnClick="OpenEditTaskDialog">
+                            Edit Task
+                        </MudButton>
+                    }
                 </div>
 
                 <div class="flex-grow-1 overflow-y-auto task-scroll-area pr-2">
@@ -91,11 +105,12 @@
                         }
                     </MudPaper>
 
-                    <TaskAttachment BoardId="BoardId" TaskId="TaskId" Attachments="_task.Attachments"/>
+                    <TaskAttachment BoardId="BoardId" TaskId="TaskId" Attachments="_task.Attachments"
+                                    IsReadOnly="IsArchived"/>
 
                     <MudDivider Class="my-8"/>
 
-                    <TaskComments BoardId="BoardId" TaskId="TaskId"/>
+                    <TaskComments BoardId="BoardId" TaskId="TaskId" IsReadOnly="IsArchived"/>
                 </div>
             </div>
 
@@ -116,7 +131,7 @@
                                 <MudAvatar Size="Size.Small" Color="Color.Primary" Style="font-size: 12px;">
                                     @if (!string.IsNullOrEmpty(_task.ReporterAvatarUrl))
                                     {
-                                        <MudImage Src="@_task.ReporterAvatarUrl" />
+                                        <MudImage Src="@_task.ReporterAvatarUrl"/>
                                     }
                                     else
                                     {
@@ -143,7 +158,7 @@
                                     <MudAvatar Size="Size.Small" Color="Color.Secondary" Style="font-size: 12px;">
                                         @if (!string.IsNullOrEmpty(_task.AssigneeAvatarUrl))
                                         {
-                                            <MudImage Src="@_task.AssigneeAvatarUrl" />
+                                            <MudImage Src="@_task.AssigneeAvatarUrl"/>
                                         }
                                         else
                                         {
@@ -192,8 +207,16 @@
     private TaskDto? _task;
     private bool _isLoading = true;
 
+    private bool IsArchived => BoardDetailsStore.Board?.IsArchived == true;
+    private bool CanManageTasks => !IsArchived && BoardDetailsStore.Board?.BoardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
+
     protected override async Task OnInitializedAsync()
     {
+        if (BoardDetailsStore.Board?.Id != BoardId)
+        {
+            await BoardDetailsStore.LoadAsync(BoardId);
+        }
+
         await LoadTaskAsync();
     }
 
@@ -219,7 +242,7 @@
         var parameters = new DialogParameters<TaskDialog>
         {
             { x => x.Task, _task },
-            { x => x.BoardId, BoardId } 
+            { x => x.BoardId, BoardId }
         };
 
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
@@ -267,4 +290,5 @@
             }
         }
     }
+
 }

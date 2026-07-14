@@ -42,8 +42,12 @@ public interface IWorkspaceStore
     Task<PagedList<BoardPreviewDto>> GetMyWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1,
         int pageSize = 24, string? searchTerm = null, CancellationToken ct = default);
 
-    Task<PagedList<BoardPreviewDto>> GetAllWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1,
-        int pageSize = 24, string? searchTerm = null, CancellationToken ct = default);
+    Task<PagedList<BoardPreviewDto>> GetMyArchivedBoardsAsync(
+        Guid workspaceId,
+        int pageNumber = 1,
+        int pageSize = 24,
+        string? searchTerm = null,
+        CancellationToken ct = default);
 
     Task<List<WorkspaceInviteDto>> GetWorkspaceInvitesAsync(Guid workspaceId, CancellationToken ct = default);
 

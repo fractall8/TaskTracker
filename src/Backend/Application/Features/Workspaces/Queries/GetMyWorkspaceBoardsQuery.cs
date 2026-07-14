@@ -1,8 +1,11 @@
 ﻿using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
+using Application.Options;
 using Contracts.DTOs;
 using Contracts.Enums;
+using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Options;
 
 namespace Application.Features.Workspaces.Queries;
 
@@ -34,7 +37,8 @@ public class GetMyWorkspaceBoardsQueryHandler(
                 board.Name,
                 board.Description,
                 board.CreatedAt,
-                (BoardRoleDto)userMemberRecord.Role);
+                (BoardRoleDto)userMemberRecord.Role,
+                board.IsArchived);
         }).ToList();
 
         return new PagedList<BoardPreviewDto>
@@ -43,5 +47,18 @@ public class GetMyWorkspaceBoardsQueryHandler(
                 { CurrentPage = request.PageNumber, PageSize = request.PageSize, TotalCount = totalCount },
             Items = boardDtos
         };
+    }
+}
+
+
+public class GetMyWorkspaceBoardsQueryValidator : AbstractValidator<GetMyWorkspaceBoardsQuery>
+{
+    public GetMyWorkspaceBoardsQueryValidator(IOptions<PaginationOptions> options)
+    {
+        var paginationOptions = options.Value;
+
+        RuleFor(x => x.WorkspaceId).NotEmpty();
+        RuleFor(x => x.PageNumber).GreaterThanOrEqualTo(1);
+        RuleFor(x => x.PageSize).GreaterThan(0).LessThanOrEqualTo(paginationOptions.MaxPageSize);
     }
 }

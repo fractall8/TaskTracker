@@ -17,6 +17,6 @@ public class BoardConfiguration : IEntityTypeConfiguration<Board>
 
         builder.Property(e => e.Name).IsRequired().HasMaxLength(BoardConstants.MaxNameLength);
 
-        builder.HasQueryFilter(e => !e.IsDeleted);
+        builder.HasQueryFilter(e => !e.IsDeleted && !e.IsArchived);
     }
 }

@@ -58,4 +58,28 @@ public class BoardsController(ISender sender) : ControllerBase
         await sender.Send(new LeaveBoardCommand(boardId), ct);
         return NoContent();
     }
+
+    [HttpPost("{id:guid}/archive/export")]
+    public async Task<IActionResult> ArchiveAndExport(Guid id, [FromBody] BoardExportOptionsDto exportOptions, CancellationToken ct)
+    {
+        var result = await sender.Send(new ArchiveAndExportBoardCommand(id, exportOptions), ct);
+
+        return Accepted(result);
+    }
+
+    [HttpGet("{id:guid}/archive/download")]
+    [Authorize]
+    public async Task<IActionResult> GetArchiveDownload(Guid id, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetBoardArchiveDownloadQuery(id), ct);
+        return Ok(result);
+    }
+
+    [HttpPost("{id:guid}/archive/re-export")]
+    [Authorize]
+    public async Task<IActionResult> ReExportArchived(Guid id, [FromBody] BoardExportOptionsDto reExportOptions, CancellationToken ct)
+    {
+        await sender.Send(new ReExportArchivedBoardCommand(id, reExportOptions), ct);
+        return NoContent();
+    }
 }

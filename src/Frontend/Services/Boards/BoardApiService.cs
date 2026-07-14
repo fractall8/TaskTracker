@@ -40,4 +40,19 @@ public class BoardApiService(IBoardApi boardApi) : IBoardApiService
 
     public async Task LeaveBoardAsync(Guid boardId, CancellationToken ct = default) =>
         await (await boardApi.LeaveBoardAsync(boardId, ct)).HandleResponseAsync();
+
+    public async Task<BoardArchiveDownloadDto> GetBoardArchiveDownloadUrlAsync(Guid boardId, CancellationToken ct = default)
+    {
+        var response = await boardApi.GetArchiveDownloadUrlAsync(boardId, ct);
+        return await response.HandleResponseAsync();
+    }
+
+    public async Task ArchiveAndExportBoardAsync(Guid boardId, BoardExportOptionsDto exportOptions, CancellationToken ct = default)
+    {
+        var response = await boardApi.ArchiveAndExportAsync(boardId, exportOptions, ct);
+        await response.HandleResponseAsync();
+    }
+
+    public async Task ReExportBoardAsync(Guid boardId, BoardExportOptionsDto options, CancellationToken ct = default) =>
+        await (await boardApi.ReExportBoardAsync(boardId, options, ct)).HandleResponseAsync();
 }

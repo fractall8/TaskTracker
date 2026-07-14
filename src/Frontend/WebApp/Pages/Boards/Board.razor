@@ -2,6 +2,7 @@
 @implements IDisposable
 @using Contracts.DTOs
 @using Contracts.Enums
+@using Services.Abstractions.Hubs
 @using WebApp.Shared.Dialogs
 @inject IBoardDetailsStore BoardDetailsStore
 @inject IWorkspaceStore WorkspaceStore
@@ -9,6 +10,7 @@
 @inject NavigationManager Navigation
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
+@inject IBoardExportStatusHubService ExportHubService
 
 <style>
     .column-grab {
@@ -66,6 +68,10 @@
                  Style="max-width: 500px; color: var(--mud-palette-text-primary);">
             @(BoardDetailsStore.Board?.Name ?? "Loading Board...")
         </MudText>
+        
+        <div class="ml-4">
+            <BoardExportControls />
+        </div>
 
         <MudSpacer/>
 
@@ -113,12 +119,24 @@
     }
     else if (BoardDetailsStore.Board != null)
     {
+        @if (BoardDetailsStore.Board is { IsArchived: true })
+        {
+            <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Class="mb-4 rounded-lg" Icon="@Icons.Material.Filled.Archive" Style="border-width: 2px; background-color: var(--mud-palette-surface);">
+                <div class="d-flex align-center justify-space-between w-100">
+                    <div>
+                        <MudText Typo="Typo.h6" Class="fw-bold">Archived Board</MudText>
+                        <MudText Typo="Typo.body2">This board is in Read-Only mode. You can view tasks and download the archive, but no changes can be made.</MudText>
+                    </div>
+                </div>
+            </MudAlert>
+        }
         <MudDropContainer @ref="_dropContainer"
                           T="TaskDto"
                           Items="BoardDetailsStore.Tasks"
                           ItemsSelector="@((item, dropzone) => item.ColumnId.ToString() == dropzone)"
                           ItemDropped="TaskUpdated"
                           ItemDisabled="@((item) => !CanMoveTasks)"
+                          CanDrop="@((_, _) => CanMoveTasks)"
                           Class="d-flex flex-column flex-grow-1 overflow-hidden w-100">
 
             <ChildContent>
@@ -177,9 +195,14 @@
     private BoardRoleDto? _boardRole => BoardDetailsStore.Board?.BoardRole;
     private WorkspaceRoleDto? _workspaceRole;
 
-    private bool CanManageColumns => _boardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
-    private bool CanManageTasks => _boardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
-    private bool CanMoveTasks => _boardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster or BoardRoleDto.User;
+    private bool CanManageColumns => BoardDetailsStore.Board is { IsArchived: false } && 
+                                     _boardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
+
+    private bool CanManageTasks => BoardDetailsStore.Board is { IsArchived: false } && 
+                                   _boardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
+
+    private bool CanMoveTasks => BoardDetailsStore.Board is { IsArchived: false } && 
+                                 _boardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster or BoardRoleDto.User;
 
     private async Task OnSearchChanged(string newValue)
     {
@@ -214,6 +237,8 @@
         BoardDetailsStore.StateChanged += HandleStoreStateChanged;
         await BoardDetailsStore.LoadAsync(BoardId);
         await ResolveRolesAsync();
+        
+        await ExportHubService.ConnectAsync(BoardId);
     }
 
     private async Task ResolveRolesAsync()
@@ -235,12 +260,17 @@
         BoardDetailsStore.StateChanged -= HandleStoreStateChanged;
         _searchCts?.Cancel();
         _searchCts?.Dispose();
+        
+        _ = ExportHubService.DisconnectAsync();
     }
 
     private void HandleStoreStateChanged()
     {
-        StateHasChanged();
-        _dropContainer?.Refresh();
+        InvokeAsync(() => 
+        {
+            StateHasChanged();
+            _dropContainer?.Refresh();
+        });
     }
 
     private async Task TaskUpdated(MudItemDropInfo<TaskDto> dropItem)

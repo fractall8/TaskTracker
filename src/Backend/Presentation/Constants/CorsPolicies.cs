@@ -1,4 +1,4 @@
-namespace Domain.Constants;
+namespace Presentation.Constants;
 
 public class CorsPolicies
 {

@@ -17,6 +17,9 @@ public interface IWorkspaceApiService
     Task<PagedList<BoardPreviewDto>> GetMyWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1,
         int pageSize = 24, string? searchTerm = null, CancellationToken ct = default);
 
+    Task<PagedList<BoardPreviewDto>> GetMyArchivedWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1,
+        int pageSize = 24, string? searchTerm = null, CancellationToken ct = default);
+
     Task<List<WorkspaceMemberDto>> GetWorkspaceUsersAsync(Guid workspaceId, string? searchTerm = null,
         CancellationToken ct = default);
 

@@ -2,6 +2,7 @@
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Contracts.DTOs;
+using Contracts.Enums;
 using Domain.Constants;
 using FluentValidation;
 using MediatR;
@@ -36,7 +37,8 @@ public class UpdateBoardCommandHandler(
             Name: board.Name,
             Description: board.Description,
             CreatedAt: board.CreatedAt,
-            BoardRole: (Contracts.Enums.BoardRoleDto)boardAccessContext.Role
+            BoardRole: (BoardRoleDto)boardAccessContext.Role,
+            IsArchived: board.IsArchived
         );
     }
 }

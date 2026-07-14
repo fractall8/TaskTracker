@@ -19,7 +19,7 @@ public class Repository<TEntity, TId> : IRepository<TEntity, TId> where TEntity 
 
     public async Task<TEntity?> GetByIdAsync(TId id, CancellationToken cancellationToken = default)
     {
-        return await DbSet.FirstOrDefaultAsync(e => e.Id != null && e.Id.Equals(id), cancellationToken);
+        return await DbSet.IgnoreQueryFilters().Where(b => !b.IsDeleted).FirstOrDefaultAsync(e => e.Id != null && e.Id.Equals(id), cancellationToken);
     }
 
     public async Task<IReadOnlyList<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)

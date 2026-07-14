@@ -29,6 +29,14 @@ public interface IWorkspaceApi
         [Query] string? searchTerm = null,
         CancellationToken ct = default);
 
+    [Get("/api/workspaces/{workspaceId}/boards/my/archived")]
+    Task<IApiResponse<PagedList<BoardPreviewDto>>> GetMyArchivedWorkspaceBoardsAsync(
+        Guid workspaceId,
+        [Query] int pageNumber = 1,
+        [Query] int pageSize = 24,
+        [Query] string? searchTerm = null,
+        CancellationToken ct = default);
+
     [Get("/api/workspaces/{workspaceId}/boards/all")]
     Task<IApiResponse<PagedList<BoardPreviewDto>>> GetAllWorkspaceBoardsAsync(
         Guid workspaceId,

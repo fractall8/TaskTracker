@@ -22,6 +22,11 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
             .HasForeignKey(c => c.TaskId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasOne(c => c.Author)
+            .WithMany()
+            .HasForeignKey(c => c.AuthorId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasIndex(c => c.TaskId);
 
         builder.HasQueryFilter(c => !c.IsDeleted);

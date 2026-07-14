@@ -6,4 +6,10 @@ public interface IFileService
         bool isPublic = false, CancellationToken cancellationToken = default);
 
     Task DeleteFileAsync(string fileUrl, CancellationToken cancellationToken = default);
+
+    Task<(bool Exists, string? DownloadUrl, string? FileName)> GetDownloadUrlByPrefixAsync(
+        string containerName,
+        string prefix,
+        TimeSpan? expiry = null,
+        CancellationToken ct = default);
 }

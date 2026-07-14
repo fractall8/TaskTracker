@@ -30,10 +30,10 @@ public class CreateCommentCommandHandler(
             throw new KeyNotFoundException("Task not found.");
         }
 
-        var userInfo =
-            await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => new { u.Id, u.DisplayName, u.AvatarUrl }, ct);
+        var user =
+            await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => u, ct);
 
-        if (userInfo == null)
+        if (user == null)
         {
             throw new UnauthorizedAccessException("User is not authenticated.");
         }
@@ -44,7 +44,9 @@ public class CreateCommentCommandHandler(
             TaskId = request.TaskId,
             Text = request.Text,
             CreatedAt = DateTimeOffset.UtcNow,
-            CreatedById = userInfo.Id,
+            CreatedById = user.Id,
+            AuthorId = user.Id,
+            Author = user,
         };
 
         await commentRepository.AddAsync(comment, ct);
@@ -56,8 +58,8 @@ public class CreateCommentCommandHandler(
             TaskId: comment.TaskId,
             CreatedAt: comment.CreatedAt,
             AuthorId: comment.CreatedById.Value,
-            AuthorName: userInfo.DisplayName ?? string.Empty,
-            AuthorAvatarUrl: userInfo.AvatarUrl,
+            AuthorName: user.DisplayName ?? string.Empty,
+            AuthorAvatarUrl: user.AvatarUrl,
             UpdatedAt: comment.UpdatedAt);
     }
 }

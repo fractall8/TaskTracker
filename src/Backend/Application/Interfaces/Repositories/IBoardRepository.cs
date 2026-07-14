@@ -8,7 +8,18 @@ public interface IBoardRepository : IRepository<Board, Guid>
 {
     Task<int> CountMemberWorkspaceBoardsAsync(Guid workspaceId, Guid userId, string? searchTerm = null, CancellationToken ct = default);
 
+    Task<int> CountArchivedMemberWorkspaceBoardsAsync(Guid workspaceId, Guid userId, string? searchTerm = null,
+        CancellationToken ct = default);
+
     Task<List<Board>> GetMemberWorkspaceBoardsPaginatedAsync(Guid workspaceId, Guid userId, int pageNumber, int pageSize, string? searchTerm = null, CancellationToken ct = default);
+
+    Task<List<Board>> GetMyArchivedWorkspaceBoardsAsync(
+        Guid workspaceId,
+        Guid userId,
+        int pageNumber,
+        int pageSize,
+        string? searchTerm,
+        CancellationToken ct = default);
 
     Task<int> CountAllWorkspaceBoardsAsync(Guid workspaceId, string? searchTerm = null, CancellationToken ct = default);
 
@@ -33,4 +44,9 @@ public interface IBoardRepository : IRepository<Board, Guid>
     Task<List<BoardMemberDto>> GetBoardMembersAsync(Guid boardId, CancellationToken ct = default);
 
     Task SoftDeleteCascadeAsync(Guid boardId, CancellationToken ct = default);
+
+    Task<BoardExportDataDto?> GetBoardExportDataAsync(Guid boardId, BoardExportOptionsDto options,
+        CancellationToken ct = default);
+
+    Task<bool> IsBoardArchivedAsync(Guid boardId, CancellationToken ct = default);
 }

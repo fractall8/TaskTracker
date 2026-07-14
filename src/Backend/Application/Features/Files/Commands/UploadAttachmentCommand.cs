@@ -49,9 +49,14 @@ public class UploadAttachmentCommandHandler(
                 containerName: BlobContainerNames.Attachments,
                 cancellationToken: cancellationToken);
 
-            var currentUserId =
-                await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => u.Id,
+            var currentUser =
+                await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => u,
                     cancellationToken);
+
+            if (currentUser == null)
+            {
+                throw new UnauthorizedAccessException("User not found.");
+            }
 
             var attachment = new Attachment
             {
@@ -61,7 +66,9 @@ public class UploadAttachmentCommandHandler(
                 FileUrl = fileUrl,
                 SizeInBytes = request.SizeInBytes,
                 CreatedAt = DateTimeOffset.UtcNow,
-                CreatedById = currentUserId,
+                CreatedById = currentUser.Id,
+                UploadedBy = currentUser,
+                UploadedById = currentUser.Id,
                 ContentType = request.ContentType
             };
 

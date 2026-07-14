@@ -33,6 +33,11 @@ public class WorkspaceApiService(
         await (await workspaceApi.GetMyWorkspaceBoardsAsync(workspaceId, pageNumber, pageSize, searchTerm, ct))
             .HandleResponseAsync();
 
+    public async Task<PagedList<BoardPreviewDto>> GetMyArchivedWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1,
+        int pageSize = 24, string? searchTerm = null, CancellationToken ct = default) =>
+        await (await workspaceApi.GetMyArchivedWorkspaceBoardsAsync(workspaceId, pageNumber, pageSize, searchTerm, ct))
+            .HandleResponseAsync();
+
     public async Task<PagedList<BoardPreviewDto>> GetAllWorkspaceBoardsAsync(Guid workspaceId, int pageNumber = 1,
         int pageSize = 24, string? searchTerm = null, CancellationToken ct = default) =>
         await (await workspaceApi.GetAllWorkspaceBoardsAsync(workspaceId, pageNumber, pageSize, searchTerm, ct))

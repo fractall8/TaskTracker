@@ -13,6 +13,7 @@ public record GetBoardByIdQuery(Guid BoardId, string? SearchTerm = null) : IRequ
 
 public class GetBoardByIdQueryHandler(
     IBoardAccessService boardAccessService,
+    IBoardExportService boardExportService,
     IBoardRepository boardRepository)
     : IRequestHandler<GetBoardByIdQuery, BoardWithColumnsDto>
 {
@@ -51,13 +52,18 @@ public class GetBoardByIdQueryHandler(
             ))
             .ToList();
 
+        var boardExportInfo = await boardExportService.GetBoardExportInfoAsync(request.BoardId, ct);
+
         return new BoardWithColumnsDto(
             Id: board.Id,
             Name: board.Name,
             Description: board.Description,
             WorkspaceId: board.WorkspaceId,
             BoardRole: (BoardRoleDto)accessContext.Role,
-            Columns: columnDtos
+            Columns: columnDtos,
+            IsArchived: board.IsArchived,
+            ExportStatus: boardExportInfo?.ExportStatus,
+            ReExportStatus: boardExportInfo?.ReExportStatus
         );
     }
 }
