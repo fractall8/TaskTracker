@@ -423,4 +423,13 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
 
         return new BoardExportDataDto(board, options, DateTimeOffset.UtcNow, rawColumns, members);
     }
+
+    public async Task<bool> IsBoardArchivedAsync(Guid boardId, CancellationToken ct = default)
+    {
+        return await DbContext.Boards
+            .IgnoreQueryFilters()
+            .Where(b => b.Id == boardId)
+            .Select(b => b.IsArchived)
+            .FirstOrDefaultAsync(ct);
+    }
 }
