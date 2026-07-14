@@ -76,7 +76,7 @@
       - CosmosDB__DatabaseName=TaskTrackerCosmosDB
       - CosmosDB__Containers__BoardExport=BoardExports
       - BlobStorage__ArchivesContainerName=board-archives
-      - BlobStorage__TaskAttachmentsContainerName=task-attachments
+      - BlobStorage__TaskAttachmentsContainerName=attachments
       - BoardExportApi__BaseUrl=http://api:8080/api/
       - BoardExportApi__ApiKeyHeaderName=X-Internal-Api-Key
       - BoardExportApi__ApiKey=dev-internal-api-key

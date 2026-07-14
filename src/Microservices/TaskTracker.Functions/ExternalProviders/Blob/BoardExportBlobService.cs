@@ -1,4 +1,5 @@
-﻿using Azure.Storage.Blobs;
+﻿using Azure;
+using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -17,16 +18,24 @@ public sealed class BoardExportBlobService(
     public async Task<Stream> DownloadAttachmentAsync(string blobName, CancellationToken ct = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(blobName);
-
         var blobOptions = options.Value;
         blobOptions.Validate();
 
-        var response = await blobServiceClient
-            .GetBlobContainerClient(blobOptions.TaskAttachmentsContainerName)
-            .GetBlobClient(blobName)
-            .DownloadStreamingAsync(cancellationToken: ct);
+        var containerClient = blobServiceClient.GetBlobContainerClient(blobOptions.TaskAttachmentsContainerName);
 
-        return response.Value.Content;
+        try
+        {
+            var response = await containerClient
+                .GetBlobClient(blobName)
+                .DownloadStreamingAsync(cancellationToken: ct);
+
+            return response.Value.Content;
+        }
+        catch (RequestFailedException ex) when (ex.ErrorCode == "ContainerNotFound" || ex.ErrorCode == "BlobNotFound")
+        {
+            logger.LogWarning(ex, "Attachment {BlobName} not found in container {ContainerName}.", blobName, blobOptions.TaskAttachmentsContainerName);
+            throw new FileNotFoundException($"Attachment '{blobName}' is missing from storage.", ex);
+        }
     }
 
     public async Task UploadArchiveAsync(Guid boardId, BoardExportArchive archive, CancellationToken ct = default)

@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
+using Domain.Constants;
 using MediatR;
 
 namespace Application.Features.Boards.Queries;
@@ -10,7 +11,8 @@ public record GetBoardArchiveDownloadQuery(Guid BoardId) : IRequest<BoardArchive
 public class GetBoardArchiveDownloadQueryHandler(
     IBoardAccessService boardAccessService,
     IBoardRepository boardRepository,
-    IBoardExportService boardExportService
+    IBoardExportService boardExportService,
+    IFileService fileService
     )
     : IRequestHandler<GetBoardArchiveDownloadQuery, BoardArchiveDownloadDto>
 {
@@ -36,10 +38,21 @@ public class GetBoardArchiveDownloadQueryHandler(
             throw new InvalidOperationException("The board archive export is not completed yet.");
         }
 
-        // TODO: check file name
+        var containerName = BlobContainerNames.ArchiveBoard;
 
-        // TODO: get download url (SAS-token)
+        var prefix = $"{request.BoardId:D}/";
 
-        return new BoardArchiveDownloadDto("downloadUrl", "fileName");
+        var (exists, downloadUrl, fileName) = await fileService.GetDownloadUrlByPrefixAsync(
+            containerName,
+            prefix,
+            TimeSpan.FromMinutes(5),
+            cancellationToken);
+
+        if (!exists || downloadUrl == null || fileName == null)
+        {
+            throw new FileNotFoundException("The export file is missing from storage.");
+        }
+
+        return new BoardArchiveDownloadDto(downloadUrl, fileName);
     }
 }

@@ -374,7 +374,7 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
                         a.SizeInBytes,
                         a.CreatedAt,
                         new BoardExportUserDto(a.UploadedById, a.UploadedBy!.Email, a.UploadedBy.DisplayName),
-                        a.FileUrl)
+                        Path.GetFileName(new Uri(a.FileUrl).LocalPath))
                 })
                 .ToListAsync(ct);
 
