@@ -20,7 +20,5 @@ public interface ITaskRepository : IRepository<TaskItem, Guid>
 
     Task UpdatePositionsOnMoveAsync(Guid columnId, int oldPosition, int newPosition, CancellationToken ct = default);
 
-    Task<IEnumerable<Attachment>> GetAttachmentsByColumnIdAsync(Guid columnId, CancellationToken ct = default);
-
     Task SoftDeleteCascadeAsync(Guid taskId, CancellationToken ct = default);
 }
