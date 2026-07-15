@@ -1,0 +1,240 @@
+﻿.profile-page {
+    padding: 36px 44px 60px;
+    max-width: 900px;
+    margin: 0 auto;
+    font-family: "Inter", sans-serif;
+}
+
+.page-title {
+    font-size: 22px;
+    font-weight: 500;
+    margin: 0 0 22px 0;
+    color: var(--mud-palette-text-primary);
+    letter-spacing: -0.01em;
+}
+
+.profile-grid {
+    display: flex;
+    gap: 16px;
+    align-items: stretch;
+    flex-wrap: wrap;
+}
+
+.card {
+    background: var(--mud-palette-surface);
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 12px;
+    transition: border-color 0.2s;
+}
+
+.card:hover {
+    border-color: var(--mud-palette-primary);
+}
+
+/* avatar card */
+.avatar-card {
+    width: 230px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 28px 20px;
+}
+
+.avatar-big {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 500;
+}
+
+.link-btn {
+    border: none;
+    background: transparent;
+    color: var(--mud-palette-primary);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 0;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.link-btn:hover {
+    text-decoration: underline;
+    opacity: 0.8;
+}
+
+/* information card */
+.info-card {
+    flex: 1;
+    min-width: 320px;
+    padding: 22px 24px;
+}
+
+.info-card-title {
+    margin: 0 0 18px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--mud-palette-text-primary);
+}
+
+.info-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 0;
+    border-top: 1px solid var(--mud-palette-lines-default);
+}
+
+.info-row:first-of-type {
+    border-top: none;
+    padding-top: 0;
+}
+
+.info-row-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.info-label {
+    margin: 0 0 4px;
+    font-size: 12px;
+    color: var(--mud-palette-text-secondary);
+}
+
+.info-value {
+    margin: 0;
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--mud-palette-text-primary);
+}
+
+/* name edit */
+.field-edit-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.form-input {
+    flex: 1;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13.5px;
+    color: var(--mud-palette-text-primary);
+    background: var(--mud-palette-background);
+    font-weight: 400;
+    transition: border-color 0.2s;
+    outline: none;
+}
+
+.form-input:focus {
+    border-color: var(--mud-palette-primary);
+}
+
+/* buttons & icons */
+::deep .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    border: 1px solid var(--mud-palette-lines-default);
+    background: transparent;
+    color: var(--mud-palette-text-secondary);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s, color 0.2s;
+}
+
+::deep .icon-btn:hover {
+    background: var(--mud-palette-action-default-hover);
+    color: var(--mud-palette-text-primary);
+}
+
+::deep .icon-btn.sm {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+}
+
+::deep .icon-btn.ghost {
+    border-color: transparent;
+}
+
+/* colors for avatars */
+.profile-page {
+    --c-purple-bg: #EEEDFE;
+    --c-purple-txt: #3C3489;
+    --c-coral-bg: #FAECE7;
+    --c-coral-txt: #712B13;
+    --c-blue-bg: #E6F1FB;
+    --c-blue-txt: #0C447C;
+    --c-teal-bg: #E1F5EE;
+    --c-teal-txt: #085041;
+    --c-pink-bg: #FBEAF0;
+    --c-pink-txt: #72243E;
+}
+
+:global(.dark-mode) .profile-page,
+:global([data-theme="dark"]) .profile-page,
+:global(.mud-theme-dark) .profile-page {
+    --c-purple-bg: #332C77;
+    --c-purple-txt: #CECBF6;
+    --c-coral-bg: #5E240F;
+    --c-coral-txt: #F5C4B3;
+    --c-blue-bg: #0F3A63;
+    --c-blue-txt: #B5D4F4;
+    --c-teal-bg: #0B4438;
+    --c-teal-txt: #9FE1CB;
+    --c-pink-bg: #5E1D33;
+    --c-pink-txt: #F4C0D1;
+}
+
+::deep .bg-purple {
+    background: var(--c-purple-bg);
+    color: var(--c-purple-txt);
+}
+
+::deep .bg-coral {
+    background: var(--c-coral-bg);
+    color: var(--c-coral-txt);
+}
+
+::deep .bg-blue {
+    background: var(--c-blue-bg);
+    color: var(--c-blue-txt);
+}
+
+::deep .bg-teal {
+    background: var(--c-teal-bg);
+    color: var(--c-teal-txt);
+}
+
+::deep .bg-pink {
+    background: var(--c-pink-bg);
+    color: var(--c-pink-txt);
+}
+
+@media (max-width: 600px) {
+    .profile-page {
+        padding: 24px;
+    }
+
+    .avatar-card {
+        width: 100%;
+    }
+
+    .info-card {
+        min-width: 100%;
+    }
+}
