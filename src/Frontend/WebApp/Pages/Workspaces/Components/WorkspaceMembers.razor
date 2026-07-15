@@ -4,83 +4,67 @@
 @using Contracts.DTOs
 @using Contracts.Enums
 
-<div class="d-flex justify-space-between align-center mb-4">
-    <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-secondary);">Members</MudText>
-</div>
-
-<MudTable Items="@Workspace.Members" Hover="true" Elevation="0"
-          Style="border: 1px solid var(--mud-palette-lines-default); border-radius: 8px;">
-    <HeaderContent>
-        <MudTh>Member</MudTh>
-        <MudTh>Role</MudTh>
-        <MudTh>Joined</MudTh>
-        <MudTh Style="width: 60px;"></MudTh>
-    </HeaderContent>
-    <RowTemplate>
-        <MudTd>
-            <div class="d-flex align-center gap-3">
-                <MudAvatar Size="Size.Medium" Color="Color.Primary">
-                    @{
-                        var displayName = !string.IsNullOrWhiteSpace(context.DisplayName) ? context.DisplayName : context.Email;
-                        var initial = displayName.FirstOrDefault().ToString().ToUpper();
-                    }
-                    @if (!string.IsNullOrEmpty(context.AvatarUrl))
-                    {
-                        <MudImage Src="@context.AvatarUrl"/>
-                    }
-                    else
-                    {
-                        @initial
-                    }
-                </MudAvatar>
-                <div class="d-flex flex-column">
-                    <div class="d-flex align-center gap-2">
-                        <MudText Typo="Typo.body2" Class="fw-bold" Style="color: var(--mud-palette-text-primary);">
-                            @context.DisplayName
-                        </MudText>
-                        @if (context.UserId == CurrentUserId)
+<table class="data-table">
+    <thead>
+    <tr>
+        <th>Member</th>
+        <th>Joined</th>
+        <th>Role</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var member in FilteredMembers)
+    {
+        <tr class="@(member.UserId == CurrentUserId ? "row-you" : "")">
+            <td>
+                <div class="cell-member">
+                    <div class="avatar-round @GetColorClass(member.DisplayName ?? member.Email)">
+                        @if (!string.IsNullOrEmpty(member.AvatarUrl))
                         {
-                            <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined"
-                                     Style="height: 18px; font-size: 10px;">
-                                You
-                            </MudChip>
+                            <img src="@member.AvatarUrl" alt="Avatar"
+                                 style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"/>
+                        }
+                        else
+                        {
+                            @(string.IsNullOrWhiteSpace(member.DisplayName) ? member.Email.FirstOrDefault().ToString().ToUpper() : member.DisplayName.FirstOrDefault().ToString().ToUpper())
                         }
                     </div>
-                    <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">
-                        @context.Email
-                    </MudText>
+                    <div>
+                        <p class="member-name">
+                            @(member.DisplayName ?? member.Email)
+                            @if (member.UserId == CurrentUserId)
+                            {
+                                <span class="tag-you">You</span>
+                            }
+                        </p>
+                        @if (!string.IsNullOrWhiteSpace(member.DisplayName))
+                        {
+                            <p class="member-email">@member.Email</p>
+                        }
+                    </div>
                 </div>
-            </div>
-        </MudTd>
-        <MudTd>
-            @if (context.UserId != CurrentUserId && CanEditRole(context.Role))
-            {
-                <MudSelect T="WorkspaceRoleDto" Value="@context.Role"
-                           ValueChanged="@(r => ChangeMemberRole(context.UserId, r))" Variant="Variant.Outlined"
-                           Margin="Margin.Dense" Dense="true" Style="min-width: 110px;">
-                    <MudSelectItem Value="WorkspaceRoleDto.Member">Member</MudSelectItem>
-                    <MudSelectItem Value="WorkspaceRoleDto.Admin">Admin</MudSelectItem>
-                </MudSelect>
-            }
-            else
-            {
-                <MudChip T="string" Size="Size.Small" Color="@RoleColor(context.Role)" Variant="Variant.Outlined">
-                    @context.Role.ToString()
-                </MudChip>
-            }
-        </MudTd>
-        <MudTd>
-            @context.JoinedAt.ToLocalTime().ToString("dd MMM yyyy")
-        </MudTd>
-        <MudTd>
-            @if (context.UserId != CurrentUserId && CanRemoveMember())
-            {
-                <MudIconButton Icon="@Icons.Material.Filled.PersonRemove" Color="Color.Error" Size="Size.Small"
-                               OnClick="@(() => RemoveMember(context.UserId, context.Email))"/>
-            }
-        </MudTd>
-    </RowTemplate>
-</MudTable>
+            </td>
+            <td class="muted">@member.JoinedAt.ToLocalTime().ToString("MMM dd, yyyy", System.Globalization.CultureInfo.InvariantCulture)</td>
+            <td>
+                <select class="fake-select @(member.UserId == CurrentUserId || !CanEditRole(member.Role) ? "disabled" : "")"
+                        disabled="@(member.UserId == CurrentUserId || !CanEditRole(member.Role))"
+                        @onchange="@((ChangeEventArgs e) => ChangeMemberRole(member.UserId, Enum.Parse<WorkspaceRoleDto>(e.Value.ToString())))">
+                    <option value="Member" selected="@(member.Role == WorkspaceRoleDto.Member)">Member</option>
+                    <option value="Admin" selected="@(member.Role == WorkspaceRoleDto.Admin)">Admin</option>
+                    <option value="Owner" selected="@(member.Role == WorkspaceRoleDto.Owner)" disabled="true">Owner</option>
+                </select>
+            </td>
+            <td class="actions">
+                <button class="icon-btn sm ghost" disabled="@(member.UserId == CurrentUserId || !CanRemoveMember())" 
+                        aria-label="Remove member" @onclick="@(() => RemoveMember(member.UserId, member.Email))">
+                    <MudIcon Icon="@Icons.Material.Outlined.PersonRemove" Size="Size.Small" />
+                </button>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
 
 @code {
     [Parameter] public Guid WorkspaceId { get; set; }
@@ -88,15 +72,27 @@
     [Parameter] public WorkspaceRoleDto? CurrentUserRole { get; set; }
     [Parameter] public Guid? CurrentUserId { get; set; }
 
-    private Color RoleColor(WorkspaceRoleDto role) => role switch
+    private string _searchTerm = "";
+
+    private IEnumerable<WorkspaceMemberDto> FilteredMembers =>
+        string.IsNullOrWhiteSpace(_searchTerm)
+            ? Workspace.Members
+            : Workspace.Members.Where(m => (m.DisplayName?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                                           m.Email.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase));
+
+    private string GetColorClass(string name)
     {
-        WorkspaceRoleDto.Owner => Color.Warning,
-        WorkspaceRoleDto.Admin => Color.Info,
-        _ => Color.Default
-    };
+        if (string.IsNullOrEmpty(name)) return "bg-purple";
+        var colors = new[] { "bg-purple", "bg-blue", "bg-teal", "bg-coral", "bg-pink" };
+        return colors[Math.Abs(name.GetHashCode()) % colors.Length];
+    }
+
+    private void OnSearchChangedNative(ChangeEventArgs e)
+    {
+        _searchTerm = e.Value?.ToString() ?? "";
+    }
 
     private bool CanEditRole(WorkspaceRoleDto targetRole) => CurrentUserRole is WorkspaceRoleDto.Owner && targetRole != WorkspaceRoleDto.Owner;
-
     private bool CanRemoveMember() => CurrentUserRole is WorkspaceRoleDto.Owner;
 
     private async Task ChangeMemberRole(Guid userId, WorkspaceRoleDto newRole)

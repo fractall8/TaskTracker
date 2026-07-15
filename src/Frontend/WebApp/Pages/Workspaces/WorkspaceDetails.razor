@@ -21,7 +21,7 @@ else if (!string.IsNullOrEmpty(WorkspaceStore.ErrorMessage))
         <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="rounded-lg">
             @GetSafeErrorMessage(WorkspaceStore.ErrorMessage)
         </MudAlert>
-        <button class="crumb-btn mt-4" @onclick="@(() => Navigation.NavigateTo("/dashboard"))">
+        <button class="crumb mt-4" @onclick="@(() => Navigation.NavigateTo("/dashboard"))">
             <MudIcon Icon="@Icons.Material.Filled.ChevronLeft" Size="Size.Small"/>
             Return to Dashboard
         </button>
@@ -30,13 +30,13 @@ else if (!string.IsNullOrEmpty(WorkspaceStore.ErrorMessage))
 else if (WorkspaceStore.CurrentWorkspace is { } workspace)
 {
     <div class="workspace-details" @key="WorkspaceId">
-        <button class="crumb-btn" @onclick="@(() => Navigation.NavigateTo("/dashboard"))">
+        <button class="crumb" @onclick="@(() => Navigation.NavigateTo("/dashboard"))">
             <MudIcon Icon="@Icons.Material.Filled.ChevronLeft" Size="Size.Small"/>
             All workspaces
         </button>
 
         <div class="ws-header">
-            <div class="ws-icon" style="@GetAvatarStyle(workspace.Name)">
+            <div class="ws-icon @GetColorClass(workspace.Name)">
                 @(workspace.Name.FirstOrDefault().ToString().ToUpper())
             </div>
             <div class="ws-info">
@@ -48,25 +48,42 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
             </div>
         </div>
 
-        <MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="true" PanelClass="pt-6" Class="custom-tabs">
-            <MudTabPanel Text="Boards">
-                <WorkspaceActiveBoards WorkspaceId="WorkspaceId" Workspace="workspace"
-                                       CurrentUserRole="_currentUserRole"/>
-            </MudTabPanel>
-            <MudTabPanel Text="Archived">
-                <WorkspaceArchivedBoards WorkspaceId="WorkspaceId"/>
-            </MudTabPanel>
-            <MudTabPanel Text="Members">
-                <WorkspaceMembers WorkspaceId="WorkspaceId" Workspace="workspace" CurrentUserRole="_currentUserRole"
-                                  CurrentUserId="_currentUserId"/>
-            </MudTabPanel>
+        <nav class="tabs">
+            <button class="tab @(_activeTab == "boards" ? "active" : "")" @onclick="@(() => _activeTab = "boards")">
+                Boards
+            </button>
+            <button class="tab @(_activeTab == "archived" ? "active" : "")" @onclick="@(() => _activeTab = "archived")">
+                Archived
+            </button>
+            <button class="tab @(_activeTab == "members" ? "active" : "")" @onclick="@(() => _activeTab = "members")">
+                Members
+            </button>
             @if (_currentUserRole is WorkspaceRoleDto.Owner)
             {
-                <MudTabPanel Text="Invites">
-                    <WorkspaceInvites WorkspaceId="WorkspaceId" CurrentUserRole="_currentUserRole"/>
-                </MudTabPanel>
+                <button class="tab @(_activeTab == "invites" ? "active" : "")" @onclick="@(() => _activeTab = "invites")">
+                    Invites
+                </button>
             }
-        </MudTabs>
+        </nav>
+
+        <div class="tab-content">
+            @if (_activeTab == "boards")
+            {
+                <WorkspaceActiveBoards WorkspaceId="WorkspaceId" Workspace="workspace" CurrentUserRole="_currentUserRole"/>
+            }
+            else if (_activeTab == "archived")
+            {
+                <WorkspaceArchivedBoards WorkspaceId="WorkspaceId"/>
+            }
+            else if (_activeTab == "members")
+            {
+                <WorkspaceMembers WorkspaceId="WorkspaceId" Workspace="workspace" CurrentUserRole="_currentUserRole" CurrentUserId="_currentUserId"/>
+            }
+            else if (_activeTab == "invites" && _currentUserRole is WorkspaceRoleDto.Owner)
+            {
+                <WorkspaceInvites WorkspaceId="WorkspaceId" CurrentUserRole="_currentUserRole"/>
+            }
+        </div>
     </div>
 }
 
@@ -74,17 +91,14 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
     [Parameter] public Guid WorkspaceId { get; set; }
     private WorkspaceRoleDto? _currentUserRole;
     private Guid? _currentUserId;
+    
+    private string _activeTab = "boards";
 
-    private readonly (string bg, string color)[] _avatarColors =
-    [
-        ("#FBCBBD", "#8A3B24"), ("#B5D4F5", "#1E4F8A"), ("#CFC9FC", "#3E3882"), ("#F4C0D4", "#802A4B"), ("#A3E5C7", "#1C613D")
-    ];
-
-    private string GetAvatarStyle(string name)
+    private string GetColorClass(string name)
     {
-        if (string.IsNullOrEmpty(name)) return $"background-color: {_avatarColors[0].bg}; color: {_avatarColors[0].color};";
-        int index = Math.Abs(name.GetHashCode()) % _avatarColors.Length;
-        return $"background-color: {_avatarColors[index].bg}; color: {_avatarColors[index].color};";
+        if (string.IsNullOrEmpty(name)) return "bg-purple";
+        var colors = new[] { "bg-purple", "bg-blue", "bg-teal", "bg-coral", "bg-pink" };
+        return colors[Math.Abs(name.GetHashCode()) % colors.Length];
     }
 
     protected override async Task OnInitializedAsync()

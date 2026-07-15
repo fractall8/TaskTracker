@@ -28,4 +28,5 @@ html, body {
     --mud-palette-error: #DE350B;
     --mud-palette-error-hover: #BF2600;
     --mud-palette-success: #27AE60;
+    --mud-palette-action-default-hover: #0052CC;
 }

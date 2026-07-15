@@ -2,41 +2,32 @@
 @inject IBoardApiService BoardApiService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
+@inject NavigationManager Navigation
 @using Contracts.DTOs
 @using Contracts.Enums
 @using Contracts.Requests.Boards
 @using WebApp.Shared.Dialogs
 
-<div class="d-flex flex-column flex-md-row justify-space-between align-center mb-4 gap-3">
-    <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-secondary);">Boards</MudText>
-    <div class="d-flex align-center gap-2">
-        <MudTextField T="string"
-                      Value="@_searchTerm"
-                      ValueChanged="OnSearchChanged"
-                      Placeholder="Search boards..."
-                      Adornment="Adornment.Start"
-                      AdornmentIcon="@Icons.Material.Filled.Search"
-                      IconSize="Size.Small"
-                      Variant="Variant.Outlined"
-                      Margin="Margin.Dense"
-                      Clearable="true"
-                      Immediate="true"
-                      DebounceInterval="400"
-                      Style="min-width: 220px;"/>
-
-        <MudSelect T="int" Value="@_pageSize" ValueChanged="OnPageSizeChanged"
-                   Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Style="width: 90px;">
-            <MudSelectItem Value="12">12</MudSelectItem>
-            <MudSelectItem Value="24">24</MudSelectItem>
-            <MudSelectItem Value="48">48</MudSelectItem>
-        </MudSelect>
-
+<div class="toolbar">
+    <div class="search-input">
+        <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Small"/>
+        <input placeholder="Search boards" value="@_searchTerm" @oninput="OnSearchInput" />
+    </div>
+    <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+        <div class="pg-size">
+            <span>Items per page</span>
+            <select value="@_pageSize" @onchange="OnPageSizeChangedNative">
+                <option value="12">12</option>
+                <option value="24">24</option>
+                <option value="48">48</option>
+            </select>
+        </div>
         @if (CurrentUserRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
         {
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
-                       OnClick="OpenCreateBoardDialog">
-                New Board
-            </MudButton>
+            <button class="btn btn-primary" @onclick="OpenCreateBoardDialog">
+                <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small"/>
+                Create board
+            </button>
         }
     </div>
 </div>
@@ -55,62 +46,73 @@ else if (!_boards.Any())
 }
 else
 {
-    <MudGrid>
+    <div class="grid">
         @foreach (var board in _boards)
         {
-            <MudItem xs="12" sm="6" md="4" lg="3">
-                <MudCard Elevation="2" Class="h-100 d-flex flex-column rounded-lg"
-                         Style="border: 1px solid var(--mud-palette-lines-default); background-color: var(--mud-palette-surface);">
-                    <MudCardHeader>
-                        <CardHeaderContent>
-                            <MudText Typo="Typo.h6" Class="fw-bold text-truncate"
-                                     Style="color: var(--mud-palette-text-primary);">
-                                @board.Name
-                            </MudText>
-                            <MudText Typo="Typo.caption"
-                                     Style="color: var(--mud-palette-text-secondary); font-weight: 600; text-transform: uppercase;">
-                                @board.BoardRole.ToString()
-                            </MudText>
-                        </CardHeaderContent>
-                    </MudCardHeader>
-                    <MudCardContent Class="flex-grow-1 pt-0">
-                        <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">
-                            @(string.IsNullOrWhiteSpace(board.Description) ? "No description." : board.Description)
-                        </MudText>
-                    </MudCardContent>
-                    <MudCardActions Class="justify-end px-4 pb-4">
+            <div class="card" @onclick="@(() => Navigation.NavigateTo($"/boards/{board.Id}"))" style="cursor: pointer;">
+                <div class="card-top">
+                    <div class="card-icon @GetColorClass(board.Name)">
+                        @(board.Name.FirstOrDefault().ToString().ToUpper())
+                    </div>
+                    <div class="card-actions" @onclick:stopPropagation="true">
                         @if (CurrentUserRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner || board.BoardRole == BoardRoleDto.Admin)
                         {
-                            <MudTooltip Text="Edit Board">
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
-                                               OnClick="@(() => OpenEditBoardDialog(board))"/>
-                            </MudTooltip>
-                            <MudTooltip Text="Delete Board">
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
-                                               Size="Size.Small" OnClick="@(() => DeleteBoard(board))"/>
-                            </MudTooltip>
+                            <button class="icon-btn sm ghost" aria-label="Edit board"
+                                    @onclick="@(() => OpenEditBoardDialog(board))">
+                                <MudIcon Icon="@Icons.Material.Outlined.Edit" Size="Size.Small"/>
+                            </button>
+                            <button class="icon-btn sm ghost" aria-label="Delete board"
+                                    @onclick="@(() => DeleteBoard(board))">
+                                <MudIcon Icon="@Icons.Material.Outlined.Delete" Size="Size.Small"/>
+                            </button>
                         }
                         @if (Workspace.UserRole == WorkspaceRoleDto.Admin)
                         {
-                            <MudTooltip Text="Leave Board">
-                                <MudIconButton Icon="@Icons.Material.Filled.ExitToApp" Color="Color.Warning"
-                                               Size="Size.Small" OnClick="@(() => LeaveBoard(board))"/>
-                            </MudTooltip>
+                            <button class="icon-btn sm ghost" aria-label="Leave board"
+                                    @onclick="@(() => LeaveBoard(board))">
+                                <MudIcon Icon="@Icons.Material.Outlined.ExitToApp" Size="Size.Small"/>
+                            </button>
                         }
-                        <MudButton Href="@($"/boards/{board.Id}")" Variant="Variant.Text" Color="Color.Primary"
-                                   Class="ml-2 fw-bold">Open
-                        </MudButton>
-                    </MudCardActions>
-                </MudCard>
-            </MudItem>
+                    </div>
+                </div>
+                <p class="card-title">@board.Name</p>
+                <p class="card-desc">@(string.IsNullOrWhiteSpace(board.Description) ? "No description provided." : board.Description)</p>
+                <div class="card-foot">
+                    <span class="badge badge-gray">@board.BoardRole.ToString()</span>
+                    <button class="card-open" @onclick="@(() => Navigation.NavigateTo($"/boards/{board.Id}"))">
+                        Open board
+                        <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small"/>
+                    </button>
+                </div>
+            </div>
         }
-    </MudGrid>
 
-    @if (_pagination.TotalPages > 1)
+        @if (CurrentUserRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner && _currentPage >= _pagination.TotalPages)
+        {
+            <div class="card-add" @onclick="OpenCreateBoardDialog">
+                <MudIcon Icon="@Icons.Material.Filled.Add" Style="font-size: 24px;"/>
+                <span>New board</span>
+            </div>
+        }
+    </div>
+
+    @if (_pagination.TotalCount > 1)
     {
-        <div class="d-flex justify-center mt-6">
-            <MudPagination Count="@_pagination.TotalPages" Selected="@_currentPage" SelectedChanged="OnPageChanged"
-                           Color="Color.Primary" ShowFirstButton="true" ShowLastButton="true"/>
+        <div class="pagination-custom">
+            <div class="pg-info">
+                @((_currentPage - 1) * _pageSize + 1)&ndash;@(Math.Min(_currentPage * _pageSize, _pagination.TotalCount)) of @_pagination.TotalCount
+            </div>
+            <div class="pg-controls">
+                <button class="icon-btn" disabled="@(!_pagination.HasPrevious)"
+                        @onclick="@(() => OnPageChanged(_currentPage - 1))">
+                    <MudIcon Icon="@Icons.Material.Filled.ChevronLeft" Size="Size.Small"/>
+                </button>
+                <span>Page @_currentPage of @Math.Max(1, _pagination.TotalPages)</span>
+                <button class="icon-btn" disabled="@(!_pagination.HasNext)"
+                        @onclick="@(() => OnPageChanged(_currentPage + 1))">
+                    <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small"/>
+                </button>
+            </div>
         </div>
     }
 }
@@ -127,6 +129,14 @@ else
     private int _pageSize = 24;
     private string? _searchTerm;
     private CancellationTokenSource? _searchCts;
+    private CancellationTokenSource? _debounceCts;
+
+    private string GetColorClass(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return "bg-purple";
+        var colors = new[] { "bg-purple", "bg-blue", "bg-teal", "bg-coral", "bg-pink" };
+        return colors[Math.Abs(name.GetHashCode()) % colors.Length];
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -137,7 +147,6 @@ else
     {
         _loading = true;
         StateHasChanged();
-
         try
         {
             var paged = await WorkspaceStore.GetMyWorkspaceBoardsAsync(WorkspaceId, _currentPage, _pageSize, _searchTerm, ct);
@@ -146,7 +155,6 @@ else
         }
         catch (OperationCanceledException)
         {
-            // skip
         }
         catch (Exception ex)
         {
@@ -163,33 +171,50 @@ else
         }
     }
 
-    private async Task OnSearchChanged(string value)
+    private async Task OnSearchInput(ChangeEventArgs e)
     {
-        _searchTerm = value;
-        _currentPage = 1;
+        _searchTerm = e.Value?.ToString();
 
-        if (_searchCts != null)
+        if (_debounceCts != null)
         {
-            await _searchCts.CancelAsync();
-            _searchCts.Dispose();
+            await _debounceCts.CancelAsync();
+            _debounceCts.Dispose();
         }
 
-        _searchCts = new CancellationTokenSource();
+        _debounceCts = new CancellationTokenSource();
+        var token = _debounceCts.Token;
 
         try
         {
-            await LoadBoardsAsync(_searchCts.Token);
+            await Task.Delay(500, token); // using 500 ms for default
+
+            if (!token.IsCancellationRequested)
+            {
+                _currentPage = 1;
+                if (_searchCts != null)
+                {
+                    await _searchCts.CancelAsync();
+                    _searchCts.Dispose();
+                }
+                
+                _searchCts = new CancellationTokenSource();
+                await LoadBoardsAsync(_searchCts.Token);
+            }
         }
-        catch (OperationCanceledException)
+        catch (TaskCanceledException)
         {
+            // skip
         }
     }
 
-    private async Task OnPageSizeChanged(int size)
+    private async Task OnPageSizeChangedNative(ChangeEventArgs e)
     {
-        _pageSize = size;
-        _currentPage = 1;
-        await LoadBoardsAsync();
+        if (int.TryParse(e.Value?.ToString(), out var size))
+        {
+            _pageSize = size;
+            _currentPage = 1;
+            await LoadBoardsAsync();
+        }
     }
 
     private async Task OnPageChanged(int page)
@@ -203,7 +228,6 @@ else
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
         var dialog = await DialogService.ShowAsync<BoardDialog>("Create Board", options);
         var result = await dialog.Result;
-
         if (result is { Canceled: false, Data: CreateBoardRequest request })
         {
             try
@@ -225,7 +249,6 @@ else
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
         var dialog = await DialogService.ShowAsync<BoardDialog>("Edit Board", parameters, options);
         var result = await dialog.Result;
-
         if (result is { Canceled: false, Data: UpdateBoardRequest request })
         {
             try
@@ -245,7 +268,6 @@ else
     {
         var safeBoardName = board.Name.Length > 40 ? board.Name[..40] + "..." : board.Name;
         bool? result = await DialogService.ShowMessageBoxAsync("Delete Confirmation", $"Delete board '{safeBoardName}'?", yesText: "Delete", cancelText: "Cancel");
-
         if (result == true)
         {
             try
@@ -265,7 +287,6 @@ else
     {
         var safeBoardName = board.Name.Length > 40 ? board.Name[..40] + "..." : board.Name;
         bool? result = await DialogService.ShowMessageBoxAsync("Leave Board", $"Leave board '{safeBoardName}'?", yesText: "Leave", cancelText: "Cancel");
-
         if (result == true)
         {
             try

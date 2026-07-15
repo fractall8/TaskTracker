@@ -1,9 +1,19 @@
 ﻿@inject IWorkspaceStore WorkspaceStore
 @inject ISnackbar Snackbar
+@inject NavigationManager Navigation
 @using Contracts.DTOs
 
-<div class="d-flex justify-space-between align-center mb-4">
-    <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-secondary);">Archived Boards</MudText>
+<div class="toolbar" style="justify-content: flex-end;">
+    <div style="display: flex; align-items: center; gap: 14px;">
+        <div class="pg-size">
+            <span>Items per page</span>
+            <select value="@_pageSize" @onchange="OnPageSizeChangedNative">
+                <option value="12">12</option>
+                <option value="24">24</option>
+                <option value="48">48</option>
+            </select>
+        </div>
+    </div>
 </div>
 
 @if (_loading)
@@ -20,44 +30,45 @@ else if (!_boards.Any())
 }
 else
 {
-    <MudGrid>
+    <div class="grid">
         @foreach (var board in _boards)
         {
-            <MudItem xs="12" sm="6" md="4" lg="3">
-                <MudCard Elevation="0" Class="h-100 d-flex flex-column rounded-lg opacity-75"
-                         Style="border: 1px dashed var(--mud-palette-lines-default); background-color: var(--mud-palette-surface);">
-                    <MudCardHeader>
-                        <CardHeaderContent>
-                            <div class="d-flex align-center gap-2">
-                                <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Color="Color.Warning"/>
-                                <MudText Typo="Typo.h6" Class="fw-bold text-truncate"
-                                         Style="color: var(--mud-palette-text-primary);">
-                                    @board.Name
-                                </MudText>
-                            </div>
-                        </CardHeaderContent>
-                    </MudCardHeader>
-                    <MudCardContent Class="flex-grow-1 pt-0">
-                        <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">
-                            @(string.IsNullOrWhiteSpace(board.Description) ? "No description." : board.Description)
-                        </MudText>
-                    </MudCardContent>
-                    <MudCardActions Class="justify-end px-4 pb-4">
-                        <MudButton Href="@($"/boards/{board.Id}")" Variant="Variant.Text" Color="Color.Primary"
-                                   Class="fw-bold">
-                            View Archive
-                        </MudButton>
-                    </MudCardActions>
-                </MudCard>
-            </MudItem>
+            <div class="card archived">
+                <div class="card-top">
+                    <div class="card-icon @GetColorClass(board.Name)">
+                        <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small"/>
+                    </div>
+                </div>
+                <p class="card-title">@board.Name</p>
+                <p class="card-desc">@(string.IsNullOrWhiteSpace(board.Description) ? "No description provided." : board.Description)</p>
+                <div class="card-foot">
+                    <span class="badge badge-gray">Archived</span>
+                    <button class="card-open" @onclick="@(() => Navigation.NavigateTo($"/boards/{board.Id}"))">
+                        View Archive
+                        <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small"/>
+                    </button>
+                </div>
+            </div>
         }
-    </MudGrid>
+    </div>
 
     @if (_pagination.TotalPages > 1)
     {
-        <div class="d-flex justify-center mt-6">
-            <MudPagination Color="Color.Primary" Count="@_pagination.TotalPages" Selected="@_currentPage"
-                           SelectedChanged="OnPageChanged"/>
+        <div class="pagination-custom">
+            <div class="pg-info">
+                @((_currentPage - 1) * _pageSize + 1)&ndash;@(Math.Min(_currentPage * _pageSize, _pagination.TotalCount)) of @_pagination.TotalCount
+            </div>
+            <div class="pg-controls">
+                <button class="icon-btn" disabled="@(!_pagination.HasPrevious)"
+                        @onclick="@(() => OnPageChanged(_currentPage - 1))">
+                    <MudIcon Icon="@Icons.Material.Filled.ChevronLeft" Size="Size.Small"/>
+                </button>
+                <span>Page @_currentPage of @Math.Max(1, _pagination.TotalPages)</span>
+                <button class="icon-btn" disabled="@(!_pagination.HasNext)"
+                        @onclick="@(() => OnPageChanged(_currentPage + 1))">
+                    <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small"/>
+                </button>
+            </div>
         </div>
     }
 }
@@ -69,6 +80,14 @@ else
     private PaginationMetadata _pagination = new();
     private bool _loading;
     private int _currentPage = 1;
+    private int _pageSize = 24;
+
+    private string GetColorClass(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return "bg-gray";
+        var colors = new[] { "bg-purple", "bg-blue", "bg-teal", "bg-coral", "bg-pink" };
+        return colors[Math.Abs(name.GetHashCode()) % colors.Length];
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -79,10 +98,9 @@ else
     {
         _loading = true;
         StateHasChanged();
-
         try
         {
-            var paged = await WorkspaceStore.GetMyArchivedBoardsAsync(WorkspaceId, _currentPage, 24);
+            var paged = await WorkspaceStore.GetMyArchivedBoardsAsync(WorkspaceId, _currentPage, _pageSize);
             _boards = paged.Items;
             _pagination = paged.Metadata;
         }
@@ -94,6 +112,16 @@ else
         {
             _loading = false;
             StateHasChanged();
+        }
+    }
+
+    private async Task OnPageSizeChangedNative(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var size))
+        {
+            _pageSize = size;
+            _currentPage = 1;
+            await LoadBoardsAsync();
         }
     }
 
