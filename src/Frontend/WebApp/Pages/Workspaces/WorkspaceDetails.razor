@@ -17,75 +17,90 @@
 }
 else if (!string.IsNullOrEmpty(WorkspaceStore.ErrorMessage))
 {
-    <MudContainer MaxWidth="MaxWidth.Large" Class="pt-6">
+    <div class="workspace-details" @key="WorkspaceId">
         <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="rounded-lg">
             @GetSafeErrorMessage(WorkspaceStore.ErrorMessage)
         </MudAlert>
-        <MudButton Variant="Variant.Text" Color="Color.Primary" Class="mt-4 fw-bold"
-                   StartIcon="@Icons.Material.Filled.ArrowBack"
-                   OnClick="@(() => Navigation.NavigateTo("/dashboard"))">
+        <button class="crumb-btn mt-4" @onclick="@(() => Navigation.NavigateTo("/dashboard"))">
+            <MudIcon Icon="@Icons.Material.Filled.ChevronLeft" Size="Size.Small"/>
             Return to Dashboard
-        </MudButton>
-    </MudContainer>
+        </button>
+    </div>
 }
 else if (WorkspaceStore.CurrentWorkspace is { } workspace)
 {
-    <MudContainer MaxWidth="MaxWidth.Large" Class="pt-6 pb-8 px-4">
-        <div class="d-flex align-center mb-4 gap-2">
-            <MudIconButton Icon="@Icons.Material.Filled.ArrowBack"
-                           OnClick="@(() => Navigation.NavigateTo("/dashboard"))"/>
-            <MudText Typo="Typo.h4" Class="fw-bold" Style="color: var(--mud-palette-text-primary);">
-                @workspace.Name
-            </MudText>
+    <div class="workspace-details" @key="WorkspaceId">
+        <button class="crumb-btn" @onclick="@(() => Navigation.NavigateTo("/dashboard"))">
+            <MudIcon Icon="@Icons.Material.Filled.ChevronLeft" Size="Size.Small"/>
+            All workspaces
+        </button>
+
+        <div class="ws-header">
+            <div class="ws-icon" style="@GetAvatarStyle(workspace.Name)">
+                @(workspace.Name.FirstOrDefault().ToString().ToUpper())
+            </div>
+            <div class="ws-info">
+                <div class="ws-title-row">
+                    <h1>@workspace.Name</h1>
+                    <span class="badge badge-purple">@_currentUserRole.ToString()</span>
+                </div>
+                <p>@(string.IsNullOrWhiteSpace(workspace.Description) ? "No description provided." : workspace.Description)</p>
+            </div>
         </div>
 
-        <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pt-4">
-
-            <MudTabPanel Text="Boards" Icon="@Icons.Material.Filled.Dashboard">
+        <MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="true" PanelClass="pt-6" Class="custom-tabs">
+            <MudTabPanel Text="Boards">
                 <WorkspaceActiveBoards WorkspaceId="WorkspaceId" Workspace="workspace"
                                        CurrentUserRole="_currentUserRole"/>
             </MudTabPanel>
-
-            <MudTabPanel Text="Archived" Icon="@Icons.Material.Filled.Archive">
+            <MudTabPanel Text="Archived">
                 <WorkspaceArchivedBoards WorkspaceId="WorkspaceId"/>
             </MudTabPanel>
-
-            <MudTabPanel Text="Members" Icon="@Icons.Material.Filled.Group">
+            <MudTabPanel Text="Members">
                 <WorkspaceMembers WorkspaceId="WorkspaceId" Workspace="workspace" CurrentUserRole="_currentUserRole"
                                   CurrentUserId="_currentUserId"/>
             </MudTabPanel>
-
             @if (_currentUserRole is WorkspaceRoleDto.Owner)
             {
-                <MudTabPanel Text="Invites" Icon="@Icons.Material.Filled.VpnKey">
+                <MudTabPanel Text="Invites">
                     <WorkspaceInvites WorkspaceId="WorkspaceId" CurrentUserRole="_currentUserRole"/>
                 </MudTabPanel>
             }
-
         </MudTabs>
-    </MudContainer>
+    </div>
 }
 
 @code {
     [Parameter] public Guid WorkspaceId { get; set; }
-
     private WorkspaceRoleDto? _currentUserRole;
     private Guid? _currentUserId;
+
+    private readonly (string bg, string color)[] _avatarColors =
+    [
+        ("#FBCBBD", "#8A3B24"), ("#B5D4F5", "#1E4F8A"), ("#CFC9FC", "#3E3882"), ("#F4C0D4", "#802A4B"), ("#A3E5C7", "#1C613D")
+    ];
+
+    private string GetAvatarStyle(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return $"background-color: {_avatarColors[0].bg}; color: {_avatarColors[0].color};";
+        int index = Math.Abs(name.GetHashCode()) % _avatarColors.Length;
+        return $"background-color: {_avatarColors[index].bg}; color: {_avatarColors[index].color};";
+    }
 
     protected override async Task OnInitializedAsync()
     {
         WorkspaceStore.StateChanged += OnStoreStateChanged;
         await ProfileStore.EnsureLoadedAsync();
         _currentUserId = ProfileStore.Profile?.Id;
+    }
 
+    protected override async Task OnParametersSetAsync()
+    {
         await WorkspaceStore.LoadWorkspaceDetailsAsync(WorkspaceId);
         ResolveCurrentUserRole();
     }
 
-    public void Dispose()
-    {
-        WorkspaceStore.StateChanged -= OnStoreStateChanged;
-    }
+    public void Dispose() => WorkspaceStore.StateChanged -= OnStoreStateChanged;
 
     private void OnStoreStateChanged()
     {
@@ -97,8 +112,7 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
     {
         if (_currentUserId.HasValue && WorkspaceStore.CurrentWorkspace is { } ws)
         {
-            _currentUserRole = ws.Members
-                .FirstOrDefault(m => m.UserId == _currentUserId.Value)?.Role;
+            _currentUserRole = ws.Members.FirstOrDefault(m => m.UserId == _currentUserId.Value)?.Role;
         }
     }
 

@@ -1,18 +1,23 @@
-﻿@inherits LayoutComponentBase
-@implements IDisposable
-@inject IProfileStore ProfileStore
+﻿@using WebApp.Components.AppSidebar
+@inherits LayoutComponentBase
+@inject IWorkspaceStore WorkspaceStore
 @inject ICurrentUserService CurrentUserService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IJSRuntime JsRuntime
+@inject NavigationManager NavigationManager
 
-<MudThemeProvider @ref="_themeProvider" @bind-IsDarkMode="_isDarkMode" Theme="@_appTheme"/>
+<MudThemeProvider @ref="_themeProvider" @bind-IsDarkMode="_isDarkMode" Theme="@_trelloTheme"/>
 <MudPopoverProvider/>
 <MudDialogProvider/>
 <MudSnackbarProvider/>
 
 <MudLayout>
-    <AppNavBar IsDarkMode="_isDarkMode" OnThemeToggled="ToggleTheme"/>
-    <MudMainContent>
+    <AppSidebar IsDarkMode="_isDarkMode"
+                OnThemeToggled="ToggleTheme"
+                OnSignIn="BeginSignIn"
+                OnSignOut="BeginSignOut"/>
+
+    <MudMainContent Class="custom-main-content">
         @Body
     </MudMainContent>
 </MudLayout>
@@ -21,55 +26,24 @@
     private bool _isDarkMode;
     private MudThemeProvider _themeProvider = null!;
 
-    private readonly MudTheme _appTheme = new()
+    private readonly MudTheme _trelloTheme = new()
     {
         PaletteLight = new PaletteLight
         {
-            Primary = "#5C58D6",
-            Secondary = "#6F767E", 
-            Background = "#F9FAFB",
-            DrawerBackground = "#F9FAFB",
-            Surface = "#FFFFFF",
-            AppbarBackground = "#F9FAFB",
-            AppbarText = "#1A1D1F",
-            TextPrimary = "#1A1D1F",
-            TextSecondary = "#6F767E",
-            LinesDefault = "#EFEFEF",
-            Divider = "#EFEFEF",
-            Info = "#5C58D6",
-            Success = "#27AE60",
-            Warning = "#F2C94C",
-            Error = "#EB5757"
+            Primary = "#5C58D6", Secondary = "#6F767E", Background = "#F9FAFB", DrawerBackground = "#F9FAFB",
+            Surface = "#FFFFFF", AppbarBackground = "#F9FAFB", AppbarText = "#1A1D1F", TextPrimary = "#1A1D1F",
+            TextSecondary = "#6F767E", LinesDefault = "#EFEFEF", Divider = "#EFEFEF", Info = "#5C58D6",
+            Success = "#27AE60", Warning = "#F2C94C", Error = "#EB5757"
         },
         PaletteDark = new PaletteDark
         {
-            Primary = "#6C63FF",
-            Secondary = "#8C939D",
-            Background = "#181A20",
-            DrawerBackground = "#22242A",
-            Surface = "#22242A",
-            AppbarBackground = "#22242A",
-            AppbarText = "#FFFFFF",
-            TextPrimary = "#FFFFFF",
-            TextSecondary = "#8C939D",
-            LinesDefault = "#2D3038",
-            Divider = "#2D3038",
-            Info = "#6C63FF",
-            Success = "#27AE60",
-            Warning = "#F2C94C",
-            Error = "#EB5757"
+            Primary = "#6C63FF", Secondary = "#8C939D", Background = "#181A20", DrawerBackground = "#22242A",
+            Surface = "#22242A", AppbarBackground = "#22242A", AppbarText = "#FFFFFF", TextPrimary = "#FFFFFF",
+            TextSecondary = "#8C939D", LinesDefault = "#2D3038", Divider = "#2D3038", Info = "#6C63FF",
+            Success = "#27AE60", Warning = "#F2C94C", Error = "#EB5757"
         },
-        Typography = new Typography
-        {
-            Default = new DefaultTypography
-            {
-                FontFamily = ["Inter", "sans-serif"]
-            }
-        }
+        Typography = new Typography { Default = new DefaultTypography { FontFamily = ["Inter", "sans-serif"] } }
     };
-
-    protected override void OnInitialized() =>
-        ProfileStore.StateChanged += OnStoreStateChanged;
 
     protected override async Task OnInitializedAsync()
     {
@@ -77,6 +51,10 @@
         if (authState.User.Identity?.IsAuthenticated == true)
         {
             await CurrentUserService.InitializeAsync();
+            if (!WorkspaceStore.IsLoaded)
+            {
+                await WorkspaceStore.LoadUserWorkspacesAsync();
+            }
         }
     }
 
@@ -97,7 +75,6 @@
         await JsRuntime.InvokeVoidAsync("updateBodyTheme", _isDarkMode);
     }
 
-    public void Dispose() => ProfileStore.StateChanged -= OnStoreStateChanged;
-
-    private void OnStoreStateChanged() => InvokeAsync(StateHasChanged);
+    private void BeginSignIn() => NavigationManager.NavigateTo("authentication/login");
+    private void BeginSignOut() => NavigationManager.NavigateToLogout("authentication/logout", "./");
 }

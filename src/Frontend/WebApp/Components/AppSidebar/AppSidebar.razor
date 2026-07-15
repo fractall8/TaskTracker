@@ -1,0 +1,156 @@
+﻿@implements IDisposable
+@inject IProfileStore ProfileStore
+@inject IWorkspaceStore WorkspaceStore
+@inject NavigationManager NavigationManager
+
+<MudDrawer Open="true" Elevation="0" Variant="DrawerVariant.Persistent" Width="280px"
+           Style="border-right: 1px solid rgba(100, 110, 120, 0.2); background-color: var(--mud-palette-drawer-background); overflow-x: hidden;">
+
+    <div class="sidebar-wrapper">
+        <div class="brand">
+            <div class="brand-mark"></div>
+            <span class="brand-name">Spaces</span>
+        </div>
+
+        <NavLink href="/dashboard" class="nav-item" Match="NavLinkMatch.All">
+            <MudIcon Icon="@Icons.Material.Filled.Home" Size="Size.Small"/>
+            All workspaces
+        </NavLink>
+
+        <div class="side-section-head mt-4">
+            <button class="side-toggle" @onclick="ToggleWorkspaces">
+                <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small"
+                         Style="@($"transform: {(_wsExpanded ? "none" : "rotate(-90deg)")}; transition: transform .15s")"/>
+                <span class="ml-1">WORKSPACES</span>
+            </button>
+            <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small" Class="icon-plain"
+                           OnClick="@(() => NavigationManager.NavigateTo("/dashboard"))"/>
+        </div>
+
+        @if (_wsExpanded && WorkspaceStore.Workspaces != null)
+        {
+            <div class="ws-list">
+                @foreach (var ws in WorkspaceStore.Workspaces)
+                {
+                    <NavLink href="@($"/workspaces/{ws.Id}")" class="ws-row" ActiveClass="active">
+                        <span class="dot" style="@GetDotStyle(ws.Name)"></span>
+                        <span class="ws-name">@ws.Name</span>
+                    </NavLink>
+                }
+            </div>
+        }
+
+        <div class="side-spacer"></div>
+
+        <div class="theme-toggle-container" @onclick="HandleThemeToggle">
+            <div class="d-flex align-center gap-3">
+                <MudIcon Icon="@Icons.Material.Outlined.LightMode" Size="Size.Small"/>
+                <span>Theme</span>
+            </div>
+
+            <div class="pill-toggle @(IsDarkMode ? "dark" : "light")">
+                <div class="pill-bg-slider"></div>
+                <div class="icon-wrapper">
+                    <MudIcon Icon="@Icons.Material.Outlined.LightMode" Class="sun-icon"/>
+                </div>
+                <div class="icon-wrapper">
+                    <MudIcon Icon="@Icons.Material.Outlined.DarkMode" Class="moon-icon"/>
+                </div>
+            </div>
+        </div>
+
+        <AuthorizeView Context="authState">
+            <Authorized>
+                <div class="profile-container">
+                    @if (_isMenuOpen)
+                    {
+                        <div class="menu-backdrop" @onclick="CloseMenu"></div>
+
+                        <div class="custom-profile-menu">
+                            <a href="/profile" class="custom-menu-item" @onclick="CloseMenu">
+                                <MudIcon Icon="@Icons.Material.Outlined.Person" Size="Size.Small"/>
+                                <span>Profile</span>
+                            </a>
+                            <div class="custom-menu-divider"></div>
+                            <div class="custom-menu-item text-danger" @onclick="OnSignOut">
+                                <MudIcon Icon="@Icons.Material.Outlined.Logout" Size="Size.Small" Color="Color.Error"/>
+                                <span style="color: var(--mud-palette-error);">Log out</span>
+                            </div>
+                        </div>
+                    }
+
+                    <button class="profile-row-btn w-100" @onclick="ToggleMenu">
+                        <div class="profile-row">
+                            <div class="avatar-round"
+                                 style="background-color: var(--mud-palette-primary); color: white;">
+                                @(ProfileStore.Profile?.DisplayName?.FirstOrDefault().ToString().ToUpper() ?? "U")
+                            </div>
+                            <div class="profile-meta">
+                                <p class="profile-name">@ProfileStore.Profile?.DisplayName</p>
+                                <p class="profile-email">@ProfileStore.Profile?.Email</p>
+                            </div>
+                            <MudIcon
+                                Icon="@(_isMenuOpen ? Icons.Material.Filled.KeyboardArrowDown : Icons.Material.Filled.KeyboardArrowUp)"
+                                Size="Size.Small" Style="color: var(--mud-palette-text-secondary);"/>
+                        </div>
+                    </button>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <div class="pa-2">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" OnClick="OnSignIn">
+                        Log In
+                    </MudButton>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+</MudDrawer>
+
+@code {
+    [Parameter] public bool IsDarkMode { get; set; }
+    [Parameter] public EventCallback OnThemeToggled { get; set; }
+    [Parameter] public EventCallback OnSignIn { get; set; }
+    [Parameter] public EventCallback OnSignOut { get; set; }
+
+    private bool _wsExpanded = true;
+    private bool _isMenuOpen = false;
+
+    private void ToggleWorkspaces() => _wsExpanded = !_wsExpanded;
+    private void ToggleMenu() => _isMenuOpen = !_isMenuOpen;
+    private void CloseMenu() => _isMenuOpen = false;
+
+    private async Task HandleThemeToggle()
+    {
+        if (OnThemeToggled.HasDelegate)
+        {
+            await OnThemeToggled.InvokeAsync();
+        }
+    }
+
+    private readonly string[] _dotColors =
+    [
+        "#D85A30", "#378ADD", "#7F77DD", "#D4537E", "#1D9E75"
+    ];
+
+    private string GetDotStyle(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return $"background-color: {_dotColors[0]};";
+        int index = Math.Abs(name.GetHashCode()) % _dotColors.Length;
+        return $"background-color: {_dotColors[index]};";
+    }
+
+    protected override void OnInitialized()
+    {
+        ProfileStore.StateChanged += OnStoreStateChanged;
+        WorkspaceStore.StateChanged += OnStoreStateChanged;
+    }
+
+    public void Dispose()
+    {
+        ProfileStore.StateChanged -= OnStoreStateChanged;
+        WorkspaceStore.StateChanged -= OnStoreStateChanged;
+    }
+
+    private void OnStoreStateChanged() => InvokeAsync(StateHasChanged);
+}
