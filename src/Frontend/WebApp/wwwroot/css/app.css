@@ -23,4 +23,5 @@ html, body {
     --mud-palette-lines-default: #DFE1E6;
     --mud-palette-error: #DE350B;
     --mud-palette-error-hover: #BF2600;
+    --mud-palette-success: #27AE60;
 }

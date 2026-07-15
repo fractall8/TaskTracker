@@ -5,7 +5,7 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IJSRuntime JsRuntime
 
-<MudThemeProvider @ref="_themeProvider" @bind-IsDarkMode="_isDarkMode" Theme="@_trelloTheme"/>
+<MudThemeProvider @ref="_themeProvider" @bind-IsDarkMode="_isDarkMode" Theme="@_appTheme"/>
 <MudPopoverProvider/>
 <MudDialogProvider/>
 <MudSnackbarProvider/>
@@ -21,43 +21,50 @@
     private bool _isDarkMode;
     private MudThemeProvider _themeProvider = null!;
 
-    private readonly MudTheme _trelloTheme = new MudTheme()
+    private readonly MudTheme _appTheme = new()
     {
         PaletteLight = new PaletteLight
         {
-            Primary = "#0052CC",
-            Secondary = "#172B4D",
-            Background = "#FFFFFF",
-            DrawerBackground = "#F4F5F7", 
+            Primary = "#5C58D6",
+            Secondary = "#6F767E", 
+            Background = "#F9FAFB",
+            DrawerBackground = "#F9FAFB",
             Surface = "#FFFFFF",
-            AppbarBackground = "#FFFFFF",
-            AppbarText = "#172B4D",
-            TextPrimary = "#172B4D",
-            TextSecondary = "#5E6C84",
-            LinesDefault = "#DFE1E6",
-            Divider = "#DFE1E6",
-            Info = "#0052CC",
-            Success = "#00875A",
-            Warning = "#FF991F",
-            Error = "#DE350B"
+            AppbarBackground = "#F9FAFB",
+            AppbarText = "#1A1D1F",
+            TextPrimary = "#1A1D1F",
+            TextSecondary = "#6F767E",
+            LinesDefault = "#EFEFEF",
+            Divider = "#EFEFEF",
+            Info = "#5C58D6",
+            Success = "#27AE60",
+            Warning = "#F2C94C",
+            Error = "#EB5757"
         },
         PaletteDark = new PaletteDark
         {
-            Primary = "#579DFF",
-            Secondary = "#B6C2CF",
-            Background = "#161A1D",
-            DrawerBackground = "#22272B", 
-            Surface = "#2C333A",
-            AppbarBackground = "#1D2125",
-            AppbarText = "#9FADBC",
-            TextPrimary = "#B6C2CF",
-            TextSecondary = "#8C9BAB",
-            LinesDefault = "#A6C5E229",
-            Divider = "#A6C5E229",
-            Info = "#579DFF",
-            Success = "#216E4E",
-            Warning = "#A54800",
-            Error = "#AE2E24"
+            Primary = "#6C63FF",
+            Secondary = "#8C939D",
+            Background = "#181A20",
+            DrawerBackground = "#22242A",
+            Surface = "#22242A",
+            AppbarBackground = "#22242A",
+            AppbarText = "#FFFFFF",
+            TextPrimary = "#FFFFFF",
+            TextSecondary = "#8C939D",
+            LinesDefault = "#2D3038",
+            Divider = "#2D3038",
+            Info = "#6C63FF",
+            Success = "#27AE60",
+            Warning = "#F2C94C",
+            Error = "#EB5757"
+        },
+        Typography = new Typography
+        {
+            Default = new DefaultTypography
+            {
+                FontFamily = ["Inter", "sans-serif"]
+            }
         }
     };
 
