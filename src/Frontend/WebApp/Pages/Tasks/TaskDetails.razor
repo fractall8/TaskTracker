@@ -3,6 +3,8 @@
 @using Contracts.Enums
 @using Contracts.Requests.Tasks
 @using Services.Abstractions.Tasks
+@using WebApp.Components.TaskAttachment
+@using WebApp.Components.TaskComments
 @using WebApp.Shared.Dialogs
 @inject ITaskApiService TaskApi
 @inject IBoardDetailsStore BoardDetailsStore
@@ -10,195 +12,133 @@
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 
-<style>
-    .task-scroll-area::-webkit-scrollbar {
-        width: 8px;
-    }
-
-    .task-scroll-area::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    .task-scroll-area::-webkit-scrollbar-thumb {
-        background: var(--mud-palette-lines-default);
-        border-radius: 8px;
-    }
-
-    .task-scroll-area::-webkit-scrollbar-thumb:hover {
-        background: var(--mud-palette-text-secondary);
-    }
-</style>
-
-<MudContainer MaxWidth="MaxWidth.Large" Class="pt-6 px-4 d-flex flex-column"
-              Style="height: calc(100vh - 64px); overflow: hidden;">
+<main class="main task-main">
+    <button class="crumb crumb-btn" @onclick="@(() => Navigation.NavigateTo($"/boards/{BoardId}"))">
+        <MudIcon Icon="@Icons.Material.Filled.ChevronLeft" Size="Size.Small"/>
+        Back to board
+    </button>
 
     @if (_isLoading || (BoardDetailsStore.IsLoading && BoardDetailsStore.Board == null))
     {
-        <div class="d-flex justify-center align-center flex-grow-1">
+        <div class="d-flex justify-center mt-8">
             <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large"/>
         </div>
     }
     else if (_task != null)
     {
-        <div class="mb-4 flex-shrink-0">
-            <MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
-                       Color="Color.Default"
-                       OnClick="@(() => Navigation.NavigateTo($"/boards/{BoardId}"))">
-                Back to Board
-            </MudButton>
-        </div>
-
         @if (IsArchived)
         {
-            <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Class="mb-4 rounded-lg flex-shrink-0"
+            <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Class="mb-6 rounded-lg"
                       Icon="@Icons.Material.Filled.Archive"
                       Style="border-width: 2px; background-color: var(--mud-palette-surface);">
                 This board is archived. The task and its details are in Read-Only mode.
             </MudAlert>
         }
 
-        <div class="d-flex flex-column flex-md-row gap-6 flex-grow-1 overflow-hidden w-100 pb-4">
-
-            <div class="d-flex flex-column flex-grow-1 overflow-hidden" style="min-width: 0;">
-
-                <div class="d-flex justify-space-between align-start mb-4 gap-4 flex-shrink-0 w-100">
-
-                    <div style="flex-grow: 1; min-width: 0;">
-                        <MudText Typo="Typo.h4" Class="fw-bold"
-                                 Style="color: var(--mud-palette-text-primary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word;">
-                            @_task.Title
-                        </MudText>
-                    </div>
-
+        <div class="task-detail-grid">
+            <div class="task-detail-main">
+                <div class="task-detail-head">
+                    <h1>@_task.Title</h1>
                     @if (CanManageTasks)
                     {
-                        <MudButton StartIcon="@Icons.Material.Outlined.Edit"
-                                   Variant="Variant.Outlined"
-                                   Color="Color.Default"
-                                   Size="Size.Small"
-                                   Class="flex-shrink-0"
-                                   Style="white-space: nowrap;"
-                                   OnClick="OpenEditTaskDialog">
-                            Edit Task
-                        </MudButton>
+                        <button class="icon-btn sm ghost" aria-label="Edit task info" @onclick="OpenEditTaskDialog">
+                            <MudIcon Icon="@Icons.Material.Outlined.Edit" Size="Size.Small"/>
+                        </button>
                     }
                 </div>
 
-                <div class="flex-grow-1 overflow-y-auto task-scroll-area pr-2">
-                    <MudPaper Elevation="0" Class="pa-4 mb-6 rounded-lg"
-                              Style="border: 1px solid var(--mud-palette-lines-default); background-color: var(--mud-palette-drawer-background);">
-                        <MudText Typo="Typo.h6" Class="mb-2"
-                                 Style="color: var(--mud-palette-text-primary); font-weight: 600;">Description
-                        </MudText>
-                        @if (!string.IsNullOrWhiteSpace(_task.Description))
-                        {
-                            <MudText Typo="Typo.body1"
-                                     Style="white-space: pre-wrap; word-break: break-word; color: var(--mud-palette-text-primary);">@_task.Description</MudText>
-                        }
-                        else
-                        {
-                            <MudText Typo="Typo.body2"
-                                     Style="color: var(--mud-palette-text-secondary); font-style: italic;">No
-                                description
-                                provided.
-                            </MudText>
-                        }
-                    </MudPaper>
+                <section class="task-section">
+                    <p class="task-section-title">Description</p>
+                    @if (!string.IsNullOrWhiteSpace(_task.Description))
+                    {
+                        <p class="task-desc-full">@_task.Description</p>
+                    }
+                    else
+                    {
+                        <p class="task-desc-placeholder">No description yet. Click the edit icon to add one.</p>
+                    }
+                </section>
 
+                <div class="task-section mt-8">
                     <TaskAttachment BoardId="BoardId" TaskId="TaskId" Attachments="_task.Attachments"
                                     IsReadOnly="IsArchived"/>
+                </div>
 
-                    <MudDivider Class="my-8"/>
-
+                <div class="task-section mt-8">
                     <TaskComments BoardId="BoardId" TaskId="TaskId" IsReadOnly="IsArchived"/>
                 </div>
             </div>
 
-            <div class="flex-shrink-0" style="width: 100%; max-width: 320px; overflow-y: auto;">
-                <MudPaper Elevation="0" Class="pa-4 rounded-lg"
-                          Style="border: 1px solid var(--mud-palette-lines-default); background-color: var(--mud-palette-drawer-background);">
-                    <MudText Typo="Typo.subtitle1" Class="fw-bold mb-4" Style="color: var(--mud-palette-text-primary);">
-                        Task Details
-                    </MudText>
-
-                    <div class="d-flex flex-column gap-4">
-                        <div>
-                            <MudText Typo="Typo.caption"
-                                     Style="color: var(--mud-palette-text-secondary); font-weight: 600; text-transform: uppercase;">
-                                Reporter
-                            </MudText>
-                            <div class="d-flex align-center gap-2 mt-1">
-                                <MudAvatar Size="Size.Small" Color="Color.Primary" Style="font-size: 12px;">
-                                    @if (!string.IsNullOrEmpty(_task.ReporterAvatarUrl))
-                                    {
-                                        <MudImage Src="@_task.ReporterAvatarUrl"/>
-                                    }
-                                    else
-                                    {
-                                        @((_task.ReporterName?.FirstOrDefault() ?? 'U').ToString().ToUpper())
-                                    }
-                                </MudAvatar>
-                                <MudText Typo="Typo.body2"
-                                         Style="color: var(--mud-palette-text-primary); font-weight: 500;">
-                                    @(_task.ReporterName ?? "Unknown User")
-                                </MudText>
-                            </div>
-                        </div>
-
-                        <MudDivider/>
-
-                        <div>
-                            <MudText Typo="Typo.caption"
-                                     Style="color: var(--mud-palette-text-secondary); font-weight: 600; text-transform: uppercase;">
-                                Assignee
-                            </MudText>
-                            @if (_task.AssigneeId.HasValue)
+            <aside class="task-detail-side">
+                <div class="side-meta-row">
+                    <p class="info-label">Created by</p>
+                    <div class="cell-member">
+                        <div class="avatar-round @GetColorClass(_task.ReporterName)">
+                            @if (!string.IsNullOrEmpty(_task.ReporterAvatarUrl))
                             {
-                                <div class="d-flex align-center gap-2 mt-1">
-                                    <MudAvatar Size="Size.Small" Color="Color.Secondary" Style="font-size: 12px;">
-                                        @if (!string.IsNullOrEmpty(_task.AssigneeAvatarUrl))
-                                        {
-                                            <MudImage Src="@_task.AssigneeAvatarUrl"/>
-                                        }
-                                        else
-                                        {
-                                            @((_task.AssigneeName?.FirstOrDefault() ?? 'U').ToString().ToUpper())
-                                        }
-                                    </MudAvatar>
-                                    <MudText Typo="Typo.body2"
-                                             Style="color: var(--mud-palette-text-primary); font-weight: 500;">
-                                        @(_task.AssigneeName ?? "Unknown User")
-                                    </MudText>
-                                </div>
+                                <img src="@_task.ReporterAvatarUrl" alt="Avatar"
+                                     style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"/>
                             }
                             else
                             {
-                                <MudText Typo="Typo.body2" Class="mt-1"
-                                         Style="color: var(--mud-palette-text-secondary); font-style: italic;">
-                                    Unassigned
-                                </MudText>
+                                @GetInitials(_task.ReporterName)
                             }
                         </div>
-
-                        <MudDivider/>
-
-                        <div>
-                            <MudText Typo="Typo.caption"
-                                     Style="color: var(--mud-palette-text-secondary); font-weight: 600; text-transform: uppercase;">
-                                Due Date
-                            </MudText>
-                            <MudText Typo="Typo.body2" Class="mt-1"
-                                     Style="color: var(--mud-palette-text-primary); font-weight: 500;">
-                                @(_task.DueDate.HasValue ? _task.DueDate.Value.ToString("MMM dd, yyyy") : "None")
-                            </MudText>
-                        </div>
+                        <span class="info-value" style="font-size: 13px">@(_task.ReporterName ?? "Unknown User")</span>
                     </div>
-                </MudPaper>
-            </div>
+                </div>
 
+                <div class="side-meta-row mt-2">
+                    <p class="info-label">Assignee</p>
+                    <button class="fake-select" style="width: 100%; justify-content: space-between;"
+                            @onclick="OpenEditTaskDialog" disabled="@(!CanManageTasks)">
+                        <span style="display: flex; align-items: center; gap: 8px;">
+                            @if (_task.AssigneeId.HasValue)
+                            {
+                                <span class="avatar-round tiny @GetColorClass(_task.AssigneeName)">
+                                    @if (!string.IsNullOrEmpty(_task.AssigneeAvatarUrl))
+                                    {
+                                        <img src="@_task.AssigneeAvatarUrl" alt="Avatar"
+                                             style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"/>
+                                    }
+                                    else
+                                    {
+                                        @GetInitials(_task.AssigneeName)
+                                    }
+                                </span>
+                                @(_task.AssigneeName ?? "Unknown User")
+                            }
+                            else
+                            {
+                                <span>Unassigned</span>
+                            }
+                        </span>
+                        @if (CanManageTasks)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small"/>
+                        }
+                    </button>
+                </div>
+
+                <div class="side-meta-row mt-2">
+                    <p class="info-label">Due date</p>
+                    <button class="fake-select" style="width: 100%; justify-content: space-between;"
+                            @onclick="OpenEditTaskDialog" disabled="@(!CanManageTasks)">
+                        <span style="display: flex; align-items: center; gap: 8px;">
+                            <MudIcon Icon="@Icons.Material.Outlined.CalendarToday" Size="Size.Small"/>
+                            @{ var due = GetDueInfo(_task.DueDate); }
+                            <span class="due-text due-@due.tone">@due.text</span>
+                        </span>
+                        @if (CanManageTasks)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small"/>
+                        }
+                    </button>
+                </div>
+            </aside>
         </div>
     }
-</MudContainer>
+</main>
 
 @code {
     [Parameter] public Guid BoardId { get; set; }
@@ -209,6 +149,34 @@
 
     private bool IsArchived => BoardDetailsStore.Board?.IsArchived == true;
     private bool CanManageTasks => !IsArchived && BoardDetailsStore.Board?.BoardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
+
+    private string GetColorClass(string? name)
+    {
+        if (string.IsNullOrEmpty(name)) return "bg-purple";
+        var colors = new[] { "bg-purple", "bg-blue", "bg-teal", "bg-coral", "bg-pink" };
+        return colors[Math.Abs(name.GetHashCode()) % colors.Length];
+    }
+
+    private string GetInitials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "U";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0][..1].ToUpper();
+        return (parts[0][..1] + parts[1][..1]).ToUpper();
+    }
+
+    private (string text, string tone) GetDueInfo(DateTimeOffset? dueDate)
+    {
+        if (!dueDate.HasValue) return ("No due date", "muted");
+        var today = DateTimeOffset.UtcNow.Date;
+        var due = dueDate.Value.Date;
+        var diff = (int)(due - today).TotalDays;
+
+        if (diff < 0) return ($"Overdue by {-diff} day{(-diff == 1 ? "" : "s")}", "danger");
+        if (diff == 0) return ("Due today", "danger");
+        if (diff <= 2) return (diff == 1 ? "Due tomorrow" : $"Due in {diff} days", "danger");
+        return ($"Due in {diff} days", "green");
+    }
 
     protected override async Task OnInitializedAsync()
     {

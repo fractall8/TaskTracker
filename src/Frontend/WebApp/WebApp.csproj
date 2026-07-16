@@ -34,7 +34,10 @@
 
     <ItemGroup>
         <AdditionalFiles Include="Components\BoardColumn\BoardColumn.razor" />
+        <AdditionalFiles Include="Components\BoardExportControls\BoardExportControls.razor" />
+        <AdditionalFiles Include="Components\TaskAttachment\TaskAttachment.razor" />
         <AdditionalFiles Include="Components\TaskCard\TaskCard.razor" />
+        <AdditionalFiles Include="Components\TaskComments\TaskComments.razor" />
         <AdditionalFiles Include="Pages\Home\Home.razor"/>
         <AdditionalFiles Include="Pages\Shared\NotFound.razor"/>
     </ItemGroup>
