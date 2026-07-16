@@ -1,0 +1,81 @@
+﻿.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 15px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--mud-palette-lines-default);
+    background: transparent;
+    color: var(--mud-palette-text-primary);
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.btn:hover:not(:disabled) {
+    background: var(--mud-palette-action-default-hover);
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: transparent;
+}
+
+.btn-warning {
+    color: var(--mud-palette-warning);
+}
+
+.btn-warning:hover:not(:disabled) {
+    background: rgba(242, 201, 76, 0.1);
+    border-color: var(--mud-palette-warning);
+}
+
+.btn-success {
+    background: var(--mud-palette-success);
+    color: #fff;
+    border-color: var(--mud-palette-success);
+}
+
+.btn-success:hover:not(:disabled) {
+    background: var(--mud-palette-success);
+    color: #fff;
+    filter: brightness(0.9);
+}
+
+.btn-error {
+    color: var(--mud-palette-error);
+}
+
+.btn-error:hover:not(:disabled) {
+    background: rgba(235, 87, 87, 0.1);
+    border-color: var(--mud-palette-error);
+}
+
+.btn-info {
+    color: var(--mud-palette-info);
+}
+
+.badge-warning {
+    background: rgba(242, 201, 76, 0.15);
+    color: var(--mud-palette-warning);
+    border: 1px solid var(--mud-palette-warning);
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+}
+
+::deep .spin-icon {
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}

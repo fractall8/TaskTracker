@@ -1,0 +1,103 @@
+@using Contracts.DTOs
+@using Contracts.Requests.Tasks
+@using WebApp.Shared.Dialogs
+@inject IBoardDetailsStore Store
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@inject IProfileStore ProfileStore
+
+<div class="task-card" style="cursor: @(CanMoveTasks ? "grab" : "default");" @onclick="NavigateToTaskDetails">
+
+    <div class="task-card-top">
+        <p class="task-title">
+            @Task.Title
+            @if (Task.AssigneeId.HasValue && Task.AssigneeId == ProfileStore.Profile?.Id)
+            {
+                <span class="tag-you ms-2" title="Assigned to you">You</span>
+            }
+        </p>
+
+        @if (CanManageTasks)
+        {
+            <div class="card-actions">
+                <button class="icon-btn sm ghost" aria-label="Edit task"
+                        @onclick="OpenEditTaskDialog" @onclick:stopPropagation="true">
+                    <MudIcon Icon="@Icons.Material.Outlined.Edit" Size="Size.Small"/>
+                </button>
+
+                <button class="icon-btn sm ghost" aria-label="Delete task"
+                        @onclick="ConfirmDeleteTask" @onclick:stopPropagation="true">
+                    <MudIcon Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error"/>
+                </button>
+            </div>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Task.Description))
+    {
+        <p class="task-desc">@Task.Description</p>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public TaskDto Task { get; set; } = null!;
+    [Parameter] public Guid BoardId { get; set; }
+    [Parameter] public bool CanManageTasks { get; set; }
+    [Parameter] public bool CanMoveTasks { get; set; } = true;
+
+    private async Task ConfirmDeleteTask()
+    {
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            "Delete Task",
+            $"Are you sure you want to delete '{Task.Title}'?",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            try
+            {
+                await Store.DeleteTaskAsync(Task.Id);
+                Snackbar.Add("Task deleted", Severity.Info);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenEditTaskDialog()
+    {
+        var parameters = new DialogParameters { ["Task"] = Task, ["Boardid"] = BoardId };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+
+        var dialog = await DialogService.ShowAsync<TaskDialog>("Edit Task", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result!.Canceled)
+        {
+            try
+            {
+                if (result.Data is UpdateTaskRequest request)
+                {
+                    await Store.UpdateTaskAsync(Task.Id, request);
+                    Snackbar.Add("Task updated", Severity.Success);
+                }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+    }
+
+    private void NavigateToTaskDetails()
+    {
+        if (Store.BoardId.HasValue)
+        {
+            Navigation.NavigateTo($"/boards/{Store.BoardId.Value}/tasks/{Task.Id}");
+        }
+    }
+
+}

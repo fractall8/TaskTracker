@@ -33,6 +33,8 @@
     </ItemGroup>
 
     <ItemGroup>
+        <AdditionalFiles Include="Components\BoardColumn\BoardColumn.razor" />
+        <AdditionalFiles Include="Components\TaskCard\TaskCard.razor" />
         <AdditionalFiles Include="Pages\Home\Home.razor"/>
         <AdditionalFiles Include="Pages\Shared\NotFound.razor"/>
     </ItemGroup>

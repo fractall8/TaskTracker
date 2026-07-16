@@ -1,31 +1,31 @@
 @using Contracts.DTOs
 @using Contracts.Requests.Tasks
 @using WebApp.Shared.Dialogs
-@inject IBoardDetailsStore Store
+@inject IBoardDetailsStore BoardDetailsStore
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
-<MudPaper Elevation="0"
-          Class="@($"pa-3 d-flex flex-column rounded-lg column-grab {(IsDragged ? "column-drag-active" : "")} {(IsDropTarget ? "column-drop-target" : "")}")"
-          Width="320px"
-          Style="max-height: 100%; flex-shrink: 0; background-color: var(--mud-palette-drawer-background); border: 1px solid var(--mud-palette-lines-default);"
-          draggable="@(CanManageColumns ? "true" : "false")"
-          @ondragstart="HandleColumnDragStart"
-          @ondragenter="HandleColumnDragEnter"
-          @ondragover:preventDefault="true"
-          @ondrop="HandleColumnDrop"
-          @ondragend="HandleColumnDragEnd">
+<div class="column @(IsDragged ? "column-drag-active" : "") @(IsDropTarget ? "column-drop-target" : "")"
+     draggable="@(CanManageColumns ? "true" : "false")"
+     @ondragstart="HandleColumnDragStart"
+     @ondragenter="HandleColumnDragEnter"
+     @ondragover:preventDefault="true"
+     @ondrop="HandleColumnDrop"
+     @ondragend="HandleColumnDragEnd">
 
-    <div class="d-flex justify-space-between align-center mb-3">
-        <MudText Typo="Typo.h6"
-                 Style="font-weight: 600; pointer-events: none; color: var(--mud-palette-text-primary);">@Column.Name</MudText>
+    <div class="column-head">
+        <span class="column-title">
+            @Column.Name
+            <span class="count">@BoardDetailsStore.Tasks.Count(t => t.ColumnId == Column.Id)</span>
+        </span>
 
         @if (CanManageColumns)
         {
             <MudMenu Icon="@Icons.Material.Filled.MoreHoriz" AnchorOrigin="Origin.BottomRight"
-                     TransformOrigin="Origin.TopRight" Dense="true">
+                     TransformOrigin="Origin.TopRight" Dense="true" Size="Size.Small">
                 <MudMenuItem OnClick="OpenEditColumnDialog" Icon="@Icons.Material.Filled.Edit">Edit</MudMenuItem>
-                <MudMenuItem OnClick="DeleteColumn" Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error">Delete
+                <MudMenuItem OnClick="DeleteColumn" Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error">
+                    Delete
                 </MudMenuItem>
             </MudMenu>
         }
@@ -34,20 +34,16 @@
     <MudDropZone T="TaskDto"
                  Identifier="@Column.Id.ToString()"
                  AllowReorder="true"
-                 Class="d-flex flex-column flex-grow-1"
-                 Style="overflow-y: auto; overflow-x: hidden; min-height: 60px; padding-bottom: 2px; padding-top: 4px;"/>
+                 Class="task-list"/>
 
     @if (CanManageTasks)
     {
-        <MudButton StartIcon="@Icons.Material.Filled.Add"
-                   FullWidth="true"
-                   Class="mt-2 text-start"
-                   Style="justify-content: flex-start; color: var(--mud-palette-text-secondary); background-color: transparent;"
-                   OnClick="OpenCreateTaskDialog">
-            Add a new task
-        </MudButton>
+        <button class="add-task-btn" @onclick="OpenCreateTaskDialog">
+            <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small"/>
+            Add a task
+        </button>
     }
-</MudPaper>
+</div>
 
 <MudMessageBox @ref="_deleteColumnBox" Title="Delete Column?">
     <MessageContent>
@@ -69,12 +65,9 @@
 
 @code {
     [Parameter, EditorRequired] public ColumnDto Column { get; set; } = null!;
-
     [Parameter, EditorRequired] public Guid BoardId { get; set; }
-
     [Parameter] public bool IsDragged { get; set; }
     [Parameter] public bool IsDropTarget { get; set; }
-
     [Parameter] public bool CanManageColumns { get; set; }
     [Parameter] public bool CanManageTasks { get; set; }
 
@@ -93,12 +86,7 @@
     private async Task OpenEditColumnDialog()
     {
         var parameters = new DialogParameters { ["InitialName"] = Column.Name };
-        var options = new DialogOptions
-        {
-            CloseOnEscapeKey = true,
-            MaxWidth = MaxWidth.Small,
-            FullWidth = true
-        };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
 
         var dialog = await DialogService.ShowAsync<ColumnDialog>("Edit Column", parameters, options);
         var result = await dialog.Result;
@@ -108,7 +96,7 @@
             try
             {
                 var newName = result.Data?.ToString() ?? string.Empty;
-                await Store.UpdateColumnNameAsync(Column.Id, newName);
+                await BoardDetailsStore.UpdateColumnNameAsync(Column.Id, newName);
                 Snackbar.Add("Column updated successfully", Severity.Success);
             }
             catch (Exception ex)
@@ -126,7 +114,7 @@
         {
             try
             {
-                await Store.DeleteColumnAsync(Column.Id);
+                await BoardDetailsStore.DeleteColumnAsync(Column.Id);
                 Snackbar.Add("Column and all its content deleted", Severity.Info);
             }
             catch (Exception ex)
@@ -148,7 +136,7 @@
             try
             {
                 var request = (CreateTaskRequest)result.Data!;
-                await Store.CreateTaskAsync(Column.Id, request);
+                await BoardDetailsStore.CreateTaskAsync(Column.Id, request);
                 Snackbar.Add("Task created successfully", Severity.Success);
             }
             catch (Exception ex)

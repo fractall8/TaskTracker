@@ -1,0 +1,214 @@
+﻿.board-main {
+    padding: 24px 32px 0;
+    height: calc(100vh - 64px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-family: "Inter", sans-serif;
+}
+
+.crumb {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--mud-palette-text-secondary);
+    font-size: 13px;
+    margin-bottom: 18px;
+    border: none;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    font-weight: 500;
+    flex-shrink: 0;
+    align-self: flex-start;
+}
+
+.crumb:hover {
+    color: var(--mud-palette-text-primary);
+}
+
+.board-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.board-head-left {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+}
+
+.board-head-left h1 {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 500;
+    color: var(--mud-palette-text-primary);
+}
+
+.board-head-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    font-size: 14px;
+    color: #fff;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 15px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--mud-palette-lines-default);
+    background: transparent;
+    color: var(--mud-palette-text-primary);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn:hover {
+    background: var(--mud-palette-action-default-hover);
+}
+
+.search-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--mud-palette-lines-default);
+    background: var(--mud-palette-surface);
+    border-radius: 8px;
+    padding: 0 12px;
+    height: 36px;
+    width: 220px;
+    color: var(--mud-palette-text-secondary);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-input:focus-within {
+    border-color: var(--mud-palette-primary);
+    box-shadow: 0 0 0 1px var(--mud-palette-primary);
+}
+
+.search-input input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 13px;
+    color: var(--mud-palette-text-primary);
+    width: 100%;
+}
+
+.search-input input::placeholder {
+    color: var(--mud-palette-text-secondary);
+    opacity: 0.7;
+}
+
+.board-drop-container {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: hidden;
+    width: 100%;
+}
+
+.board-columns {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    overflow-x: auto;
+    padding-bottom: 14px;
+    flex-grow: 1;
+    height: 100%;
+}
+
+.board-columns::-webkit-scrollbar {
+    height: 8px;
+}
+
+.board-columns::-webkit-scrollbar-thumb {
+    background: var(--mud-palette-lines-default);
+    border-radius: 4px;
+}
+
+.board-columns::-webkit-scrollbar-thumb:hover {
+    background: var(--mud-palette-text-secondary);
+}
+
+.bg-purple {
+    background: var(--mud-palette-primary);
+}
+
+.bg-blue {
+    background: #378ADD;
+}
+
+.bg-teal {
+    background: #1D9E75;
+}
+
+.bg-coral {
+    background: #D85A30;
+}
+
+.bg-pink {
+    background: #D4537E;
+}
+
+.bg-gray {
+    background: var(--mud-palette-secondary);
+}
+
+::deep .column-add {
+    width: 272px;
+    flex-shrink: 0;
+    border: 1.5px dashed var(--mud-palette-lines-default);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+    height: max-content;
+}
+
+::deep .column-add:hover {
+    background-color: var(--mud-palette-action-default-hover);
+    border-color: var(--mud-palette-primary);
+}
+
+::deep .add-column-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--mud-palette-text-secondary);
+    font-size: 13.5px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0;
+    text-align: left;
+}
+
+::deep .column-add:hover .add-column-btn {
+    color: var(--mud-palette-text-primary);
+}
