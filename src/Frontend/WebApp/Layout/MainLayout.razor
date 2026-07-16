@@ -1,4 +1,5 @@
 ﻿@using WebApp.Components.AppSidebar
+@using WebApp.Theme
 @inherits LayoutComponentBase
 @inject IWorkspaceStore WorkspaceStore
 @inject ICurrentUserService CurrentUserService
@@ -6,7 +7,7 @@
 @inject IJSRuntime JsRuntime
 @inject NavigationManager NavigationManager
 
-<MudThemeProvider @ref="_themeProvider" @bind-IsDarkMode="_isDarkMode" Theme="@_trelloTheme"/>
+<MudThemeProvider @ref="_themeProvider" @bind-IsDarkMode="_isDarkMode" Theme="@TaskTrackerTheme.DefaultTheme"/>
 <MudPopoverProvider/>
 <MudDialogProvider/>
 <MudSnackbarProvider/>
@@ -25,26 +26,7 @@
 @code {
     private bool _isDarkMode;
     private MudThemeProvider _themeProvider = null!;
-
-    private readonly MudTheme _trelloTheme = new()
-    {
-        PaletteLight = new PaletteLight
-        {
-            Primary = "#5C58D6", Secondary = "#6F767E", Background = "#F9FAFB", DrawerBackground = "#F9FAFB",
-            Surface = "#FFFFFF", AppbarBackground = "#F9FAFB", AppbarText = "#1A1D1F", TextPrimary = "#1A1D1F",
-            TextSecondary = "#6F767E", LinesDefault = "#EFEFEF", Divider = "#EFEFEF", Info = "#5C58D6",
-            Success = "#27AE60", Warning = "#F2C94C", Error = "#EB5757"
-        },
-        PaletteDark = new PaletteDark
-        {
-            Primary = "#6C63FF", Secondary = "#8C939D", Background = "#181A20", DrawerBackground = "#22242A",
-            Surface = "#22242A", AppbarBackground = "#22242A", AppbarText = "#FFFFFF", TextPrimary = "#FFFFFF",
-            TextSecondary = "#8C939D", LinesDefault = "#2D3038", Divider = "#2D3038", Info = "#6C63FF",
-            Success = "#27AE60", Warning = "#F2C94C", Error = "#EB5757"
-        },
-        Typography = new Typography { Default = new DefaultTypography { FontFamily = ["Inter", "sans-serif"] } }
-    };
-
+    
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
