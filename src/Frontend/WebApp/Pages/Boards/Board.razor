@@ -31,16 +31,6 @@
         </div>
 
         <div class="board-head-right">
-            <BoardExportControls/>
-
-            @if (_workspaceRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
-            {
-                <button class="btn" @onclick="OpenManageMembersDialog">
-                    <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small"/>
-                    Members
-                </button>
-            }
-
             <div class="search-input">
                 <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Small"/>
                 <input placeholder="Search tasks..."
@@ -48,6 +38,16 @@
                        @oninput="OnSearchInput"
                        disabled="@(BoardDetailsStore.Board == null)"/>
             </div>
+            
+            @if (_workspaceRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
+            {
+                <button class="btn" @onclick="OpenManageMembersDialog">
+                    <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small"/>
+                    Members
+                </button>
+            }
+            
+            <BoardExportControls/>
         </div>
     </div>
 

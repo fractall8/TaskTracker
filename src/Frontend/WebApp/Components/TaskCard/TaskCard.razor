@@ -10,13 +10,19 @@
 <div class="task-card" style="cursor: @(CanMoveTasks ? "grab" : "default");" @onclick="NavigateToTaskDetails">
 
     <div class="task-card-top">
-        <p class="task-title">
-            @Task.Title
+
+        <div class="d-flex align-start gap-1" style="min-width: 0;">
             @if (Task.AssigneeId.HasValue && Task.AssigneeId == ProfileStore.Profile?.Id)
             {
-                <span class="tag-you ms-2" title="Assigned to you">You</span>
+                <MudTooltip Text="Assigned to you" Placement="Placement.Top">
+                    <MudIcon Icon="@Icons.Material.Filled.HowToReg"
+                             Color="Color.Primary"
+                             Style="font-size: 15px; margin-top: 1px;"
+                             Class="flex-shrink-0"/>
+                </MudTooltip>
             }
-        </p>
+            <p class="task-title">@Task.Title</p>
+        </div>
 
         @if (CanManageTasks)
         {

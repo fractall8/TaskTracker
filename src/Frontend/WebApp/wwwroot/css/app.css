@@ -19,10 +19,10 @@ html, body {
 :root {
     --mud-palette-primary: #5C58D6;
     --mud-palette-secondary: #6F767E;
-    --mud-palette-background: #F9FAFB;
+    --mud-palette-background: #FFFFFF;
     --mud-palette-surface: #FFFFFF;
-    --mud-palette-drawer-background: #F9FAFB;
-    --mud-palette-appbar-background: #F9FAFB;
+    --mud-palette-drawer-background: #FAFAFA;
+    --mud-palette-appbar-background: #FFFFFF;
     --mud-palette-appbar-text: #1A1D1F;
     --mud-palette-text-primary: #1A1D1F;
     --mud-palette-text-secondary: #6F767E;
@@ -38,10 +38,10 @@ html, body {
 .dark-mode {
     --mud-palette-primary: #6C63FF;
     --mud-palette-secondary: #8C939D;
-    --mud-palette-background: #181A20;
-    --mud-palette-surface: #22242A;
-    --mud-palette-drawer-background: #22242A;
-    --mud-palette-appbar-background: #22242A;
+    --mud-palette-background: #17181C;
+    --mud-palette-surface: #17181C;
+    --mud-palette-drawer-background: #1B1C20;
+    --mud-palette-appbar-background: #17181C;
     --mud-palette-appbar-text: #FFFFFF;
     --mud-palette-text-primary: #FFFFFF;
     --mud-palette-text-secondary: #8C939D;

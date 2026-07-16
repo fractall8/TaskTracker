@@ -30,12 +30,7 @@
 .card-actions {
     display: flex;
     gap: 2px;
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.task-card:hover .card-actions {
-    opacity: 1;
+    flex-shrink: 0;
 }
 
 .task-desc {
@@ -77,18 +72,4 @@
 
 .icon-btn.ghost {
     border-color: transparent;
-}
-
-::deep .tag-you {
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--mud-palette-primary);
-    border: 1px solid var(--mud-palette-primary);
-    border-radius: 999px;
-    padding: 1px 7px;
-    display: inline-flex;
-    align-items: center;
-    vertical-align: middle;
-    background-color: rgba(92, 88, 214, 0.05);
-    margin-top: -2px;
 }

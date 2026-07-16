@@ -5,6 +5,9 @@
     flex-direction: column;
     overflow: hidden;
     font-family: "Inter", sans-serif;
+
+    background-color: var(--mud-palette-background);
+    min-height: 100vh;
 }
 
 .crumb {
@@ -132,11 +135,11 @@
 .board-columns {
     display: flex;
     gap: 14px;
+    height: 100%;
     align-items: flex-start;
     overflow-x: auto;
     padding-bottom: 14px;
     flex-grow: 1;
-    height: 100%;
 }
 
 .board-columns::-webkit-scrollbar {

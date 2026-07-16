@@ -151,6 +151,8 @@
 
 @media (max-width: 600px) {
     .dashboard-container {
+        background-color: var(--mud-palette-background);
+        min-height: 100vh;
         padding: 24px;
     }
 

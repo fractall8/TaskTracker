@@ -17,14 +17,12 @@
             All workspaces
         </NavLink>
 
-        <div class="side-section-head mt-4">
+        <div class="side-section-head">
             <button class="side-toggle" @onclick="ToggleWorkspaces">
                 <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small"
                          Style="@($"transform: {(_wsExpanded ? "none" : "rotate(-90deg)")}; transition: transform .15s")"/>
-                <span class="ml-1">WORKSPACES</span>
+                <span class="ml-1">Workspaces</span>
             </button>
-            <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small" Class="icon-plain"
-                           OnClick="@(() => NavigationManager.NavigateTo("/dashboard"))"/>
         </div>
 
         @if (_wsExpanded)
@@ -93,29 +91,35 @@
                         </div>
                     }
 
-                    <button class="profile-row-btn w-100" @onclick="ToggleMenu" disabled="@(ProfileStore.Profile == null)" 
+                    <button class="profile-row-btn w-100" @onclick="ToggleMenu"
+                            disabled="@(ProfileStore.Profile == null)"
                             style="display: block; border: none; background: transparent; padding: 0; text-align: left;">
                         <div class="profile-row">
                             @if (ProfileStore.Profile == null || ProfileStore.IsLoading)
                             {
-                                <MudSkeleton SkeletonType="SkeletonType.Circle" Width="30px" Height="30px" Class="flex-shrink-0" Animation="Animation.Wave" />
-                                
+                                <MudSkeleton SkeletonType="SkeletonType.Circle" Width="30px" Height="30px"
+                                             Class="flex-shrink-0" Animation="Animation.Wave"/>
+
                                 <div class="profile-meta">
-                                    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="100%" Height="32px" Class="rounded" Animation="Animation.Wave" />
+                                    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="100%" Height="32px"
+                                                 Class="rounded" Animation="Animation.Wave"/>
                                 </div>
                             }
                             else
                             {
-                                <div class="avatar-round" style="background-color: var(--mud-palette-primary); color: white;">
+                                <div class="avatar-round"
+                                     style="background-color: var(--mud-palette-primary); color: white;">
                                     @(ProfileStore.Profile?.DisplayName?.FirstOrDefault().ToString().ToUpper() ?? ProfileStore.Profile?.Email?.FirstOrDefault().ToString().ToUpper() ?? "U")
                                 </div>
-                                
+
                                 <div class="profile-meta">
                                     <p class="profile-name">@ProfileStore.Profile?.DisplayName</p>
                                     <p class="profile-email">@ProfileStore.Profile?.Email</p>
                                 </div>
-                                
-                                <MudIcon Icon="@(_isMenuOpen ? Icons.Material.Filled.KeyboardArrowDown : Icons.Material.Filled.KeyboardArrowUp)" Size="Size.Small" Style="color: var(--mud-palette-text-secondary);"/>
+
+                                <MudIcon
+                                    Icon="@(_isMenuOpen ? Icons.Material.Filled.KeyboardArrowDown : Icons.Material.Filled.KeyboardArrowUp)"
+                                    Size="Size.Small" Style="color: var(--mud-palette-text-secondary);"/>
                             }
                         </div>
                     </button>
