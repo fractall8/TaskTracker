@@ -2,8 +2,9 @@
 @using Contracts.DTOs
 @using Contracts.Requests.Comments
 @using Services.Abstractions.Tasks
+@using WebApp.Shared.Toast
 @inject ITaskApiService TaskApi
-@inject ISnackbar Snackbar
+@inject CustomToastService Toast
 @inject IDialogService DialogService
 @inject IProfileStore ProfileStore
 
@@ -158,7 +159,7 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to load comments: {ex.Message}", Severity.Error);
+            Toast.ShowError($"Failed to load comments: {ex.Message}");
             _comments = new List<CommentDto>();
         }
         finally
@@ -182,7 +183,7 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to post comment: {ex.Message}", Severity.Error);
+            Toast.ShowError($"Failed to post comment: {ex.Message}");
         }
         finally
         {
@@ -224,11 +225,11 @@
             }
 
             CancelEdit();
-            Snackbar.Add("Comment updated", Severity.Success);
+            Toast.ShowSuccess("Comment updated");
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to update comment: {ex.Message}", Severity.Error);
+            Toast.ShowError($"Failed to update comment: {ex.Message}");
         }
         finally
         {
@@ -249,11 +250,11 @@
             {
                 await TaskApi.DeleteCommentAsync(BoardId, TaskId, comment.Id);
                 _comments?.Remove(comment);
-                Snackbar.Add("Comment deleted", Severity.Info);
+                Toast.ShowInfo("Comment deleted");
             }
             catch (Exception ex)
             {
-                Snackbar.Add(ex.Message, Severity.Error);
+                Toast.ShowError(ex.Message);
             }
         }
     }

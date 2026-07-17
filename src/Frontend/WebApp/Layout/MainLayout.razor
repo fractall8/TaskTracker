@@ -1,4 +1,5 @@
 ﻿@using WebApp.Components.AppSidebar
+@using WebApp.Shared.Components
 @using WebApp.Theme
 @inherits LayoutComponentBase
 @inject IWorkspaceStore WorkspaceStore
@@ -11,6 +12,7 @@
 <MudPopoverProvider/>
 <MudDialogProvider/>
 <MudSnackbarProvider/>
+<ToastContainer />
 
 <MudLayout>
     <AppSidebar IsDarkMode="_isDarkMode"

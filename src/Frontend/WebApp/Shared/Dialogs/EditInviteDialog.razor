@@ -1,5 +1,6 @@
 ﻿@using Contracts.Requests.Workspaces
-@inject ISnackbar Snackbar
+@using WebApp.Shared.Toast
+@inject CustomToastService Toast
 
 <MudDialog>
     <DialogContent>
@@ -49,7 +50,7 @@
             
             if (newOffset <= DateTimeOffset.UtcNow)
             {
-                Snackbar.Add("Expiration date must be in the future.", Severity.Warning);
+                Toast.ShowWarning("Expiration date must be in the future.");
                 return;
             }
 

@@ -7,12 +7,13 @@
 @using WebApp.Components.BoardExportControls
 @using WebApp.Components.TaskCard
 @using WebApp.Shared.Dialogs
+@using WebApp.Shared.Toast
 @inject IBoardDetailsStore BoardDetailsStore
 @inject IWorkspaceStore WorkspaceStore
 @inject IProfileStore ProfileStore
 @inject NavigationManager Navigation
 @inject IDialogService DialogService
-@inject ISnackbar Snackbar
+@inject CustomToastService Toast
 @inject IBoardExportStatusHubService ExportHubService
 
 <PageTitle>@(BoardDetailsStore.Board?.Name ?? "Board") - TaskTracker</PageTitle>
@@ -183,7 +184,7 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add(ex.Message, Severity.Error);
+            Toast.ShowError(ex.Message);
         }
     }
 
@@ -244,7 +245,7 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to move task: {ex.Message}", Severity.Error);
+            Toast.ShowError($"Failed to move task: {ex.Message}");
             _dropContainer?.Refresh();
         }
     }
@@ -277,7 +278,7 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add(ex.Message, Severity.Error);
+            Toast.ShowError(ex.Message);
             _dropContainer?.Refresh();
         }
     }
@@ -308,11 +309,11 @@
             {
                 var columnName = result.Data?.ToString() ?? string.Empty;
                 await BoardDetailsStore.CreateColumnAsync(columnName);
-                Snackbar.Add("Column created successfully", Severity.Success);
+                Toast.ShowSuccess("Column created successfully");
             }
             catch (Exception ex)
             {
-                Snackbar.Add(ex.Message, Severity.Error);
+                Toast.ShowError(ex.Message);
             }
         }
     }

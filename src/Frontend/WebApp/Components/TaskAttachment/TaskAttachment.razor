@@ -1,8 +1,9 @@
 ﻿@using Contracts.DTOs
 @using Refit
 @using Services.Abstractions.Tasks
+@using WebApp.Shared.Toast
 @inject ITaskApiService TaskApi
-@inject ISnackbar Snackbar
+@inject CustomToastService Toast
 
 <div class="task-section-head-row">
     @if (Attachments != null && Attachments.Count > 1)
@@ -121,7 +122,7 @@
 
         if (file.Size > maxAllowedSize)
         {
-            Snackbar.Add("File is too large (max 10MB).", Severity.Warning);
+            Toast.ShowWarning("File is too large (max 10MB).");
             return;
         }
 
@@ -137,13 +138,13 @@
             var newAttachment = await TaskApi.UploadAttachmentAsync(BoardId, TaskId, streamPart);
 
             Attachments.Add(newAttachment);
-            Snackbar.Add("File uploaded successfully", Severity.Success);
+            Toast.ShowSuccess("File uploaded successfully");
 
             _isExpanded = true;
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Upload failed: {ex.Message}", Severity.Error);
+            Toast.ShowError($"Upload failed: {ex.Message}");
         }
         finally
         {

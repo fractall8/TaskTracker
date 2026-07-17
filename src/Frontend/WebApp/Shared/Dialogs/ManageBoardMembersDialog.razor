@@ -1,9 +1,10 @@
 ﻿@implements IDisposable
 @using Contracts.DTOs
 @using Contracts.Enums
+@using WebApp.Shared.Toast
 @inject IBoardMembersStore Store
 @inject IWorkspaceStore WorkspaceStore
-@inject ISnackbar Snackbar
+@inject CustomToastService Toast
 
 <MudDialog>
     <DialogContent>
@@ -207,7 +208,7 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Search failed: {ex.Message}", Severity.Error);
+            Toast.ShowError($"Search failed: {ex.Message}");
             return Array.Empty<WorkspaceMemberDto>();
         }
     }
@@ -221,7 +222,7 @@
             await Store.AddMemberAsync(BoardId, _selectedUser.Id, _selectedRole);
             _selectedUser = null;
             _selectedRole = BoardRoleDto.User;
-            Snackbar.Add("Member added successfully.", Severity.Success);
+            Toast.ShowSuccess("Member added successfully.");
         }
         catch
         {
@@ -234,7 +235,7 @@
         try
         {
             await Store.UpdateRoleAsync(BoardId, member.WorkspaceMemberId, newRole);
-            Snackbar.Add("Role updated successfully.", Severity.Success);
+            Toast.ShowSuccess("Role updated successfully.");
         }
         catch
         {
@@ -247,7 +248,7 @@
         try
         {
             await Store.RemoveMemberAsync(BoardId, member.WorkspaceMemberId);
-            Snackbar.Add("Member removed from board.", Severity.Info);
+            Toast.ShowInfo("Member removed from board.");
         }
         catch
         {

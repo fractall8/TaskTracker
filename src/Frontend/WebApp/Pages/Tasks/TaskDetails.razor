@@ -6,10 +6,11 @@
 @using WebApp.Components.TaskAttachment
 @using WebApp.Components.TaskComments
 @using WebApp.Shared.Dialogs
+@using WebApp.Shared.Toast
 @inject ITaskApiService TaskApi
 @inject IBoardDetailsStore BoardDetailsStore
 @inject NavigationManager Navigation
-@inject ISnackbar Snackbar
+@inject CustomToastService Toast
 @inject IDialogService DialogService
 
 <main class="main task-main">
@@ -197,7 +198,7 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to load task: {ex.Message}", Severity.Error);
+            Toast.ShowError($"Failed to load task: {ex.Message}");
         }
         finally
         {
@@ -228,11 +229,11 @@
                     var currentAttachments = _task?.Attachments;
 
                     _task = updatedTask with { Attachments = currentAttachments ?? new List<AttachmentDto>() };
-                    Snackbar.Add("Task updated", Severity.Success);
+                    Toast.ShowSuccess("Task updated");
                 }
                 catch (Exception ex)
                 {
-                    Snackbar.Add(ex.Message, Severity.Error);
+                    Toast.ShowError(ex.Message);
                 }
             }
             else if (result.Data?.ToString() == "DELETE")
@@ -247,12 +248,12 @@
                     try
                     {
                         await TaskApi.DeleteTaskAsync(BoardId, TaskId);
-                        Snackbar.Add("Task deleted", Severity.Success);
+                        Toast.ShowSuccess("Task deleted");
                         Navigation.NavigateTo($"/boards/{BoardId}");
                     }
                     catch (Exception ex)
                     {
-                        Snackbar.Add($"Failed to delete task: {ex.Message}", Severity.Error);
+                        Toast.ShowError($"Failed to delete task: {ex.Message}");
                     }
                 }
             }

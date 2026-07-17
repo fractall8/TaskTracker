@@ -1,12 +1,13 @@
 ﻿@inject IWorkspaceStore WorkspaceStore
 @inject IBoardApiService BoardApiService
 @inject IDialogService DialogService
-@inject ISnackbar Snackbar
+@inject CustomToastService Toast
 @inject NavigationManager Navigation
 @using Contracts.DTOs
 @using Contracts.Enums
 @using Contracts.Requests.Boards
 @using WebApp.Shared.Dialogs
+@using WebApp.Shared.Toast
 
 <div class="toolbar">
     <div class="search-input">
@@ -158,7 +159,7 @@ else
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to load boards: {ex.Message}", Severity.Error);
+            Toast.ShowError($"Failed to load boards: {ex.Message}");
             _boards = [];
         }
         finally
@@ -233,12 +234,12 @@ else
             try
             {
                 await BoardApiService.CreateBoardAsync(WorkspaceId, request);
-                Snackbar.Add("Board created.", Severity.Success);
+                Toast.ShowSuccess("Board created.");
                 await LoadBoardsAsync();
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Failed to create board: {ex.Message}", Severity.Error);
+                Toast.ShowError($"Failed to create board: {ex.Message}");
             }
         }
     }
@@ -254,12 +255,12 @@ else
             try
             {
                 await BoardApiService.UpdateBoardAsync(board.Id, request);
-                Snackbar.Add("Board updated.", Severity.Success);
+                Toast.ShowSuccess("Board updated.");
                 await LoadBoardsAsync();
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Failed to update board: {ex.Message}", Severity.Error);
+                Toast.ShowError($"Failed to update board: {ex.Message}");
             }
         }
     }
@@ -284,12 +285,12 @@ else
             try
             {
                 await BoardApiService.DeleteBoardAsync(board.Id);
-                Snackbar.Add("Board deleted.", Severity.Success);
+                Toast.ShowSuccess("Board deleted.");
                 await LoadBoardsAsync();
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Failed to delete board: {ex.Message}", Severity.Error);
+                Toast.ShowError($"Failed to delete board: {ex.Message}");
             }
         }
     }
@@ -314,12 +315,12 @@ else
             try
             {
                 await BoardApiService.LeaveBoardAsync(board.Id);
-                Snackbar.Add("Left board successfully.", Severity.Success);
+                Toast.ShowSuccess("Left board successfully.");
                 await LoadBoardsAsync();
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Failed to leave board: {ex.Message}", Severity.Error);
+                Toast.ShowError($"Failed to leave board: {ex.Message}");
             }
         }
     }

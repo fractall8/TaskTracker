@@ -1,7 +1,8 @@
 ﻿@inject IWorkspaceStore WorkspaceStore
-@inject ISnackbar Snackbar
+@inject CustomToastService Toast
 @inject NavigationManager Navigation
 @using Contracts.DTOs
+@using WebApp.Shared.Toast
 
 <div class="toolbar" style="justify-content: flex-end;">
     <div style="display: flex; align-items: center; gap: 14px;">
@@ -106,7 +107,7 @@ else
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to load archived boards: {ex.Message}", Severity.Error);
+            Toast.ShowError($"Failed to load archived boards: {ex.Message}");
         }
         finally
         {

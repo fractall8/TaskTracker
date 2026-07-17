@@ -3,12 +3,13 @@
 @implements IDisposable
 @inject IWorkspaceStore WorkspaceStore
 @inject IDialogService DialogService
-@inject ISnackbar Snackbar
+@inject CustomToastService Toast
 @inject NavigationManager Navigation
 @using Contracts.DTOs
 @using Contracts.Enums
 @using Contracts.Requests.Workspaces
 @using WebApp.Shared.Dialogs
+@using WebApp.Shared.Toast
 
 <PageTitle>Workspaces - TaskTracker</PageTitle>
 
@@ -155,11 +156,11 @@
             try
             {
                 await WorkspaceStore.CreateWorkspaceAsync(request);
-                Snackbar.Add("Workspace created successfully.", Severity.Success);
+                Toast.ShowSuccess("Workspace created successfully.");
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Failed to create workspace: {ex.Message}", Severity.Error);
+                Toast.ShowError($"Failed to create workspace: {ex.Message}");
             }
         }
     }
@@ -175,11 +176,11 @@
             try
             {
                 await WorkspaceStore.UpdateWorkspaceAsync(workspace.Id, new UpdateWorkspaceRequest(request.Name, request.Description));
-                Snackbar.Add("Workspace updated successfully.", Severity.Success);
+                Toast.ShowSuccess("Workspace updated successfully.");
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Failed to update workspace: {ex.Message}", Severity.Error);
+                Toast.ShowError($"Failed to update workspace: {ex.Message}");
             }
         }
     }
@@ -204,11 +205,11 @@
             try
             {
                 await WorkspaceStore.DeleteWorkspaceAsync(workspace.Id);
-                Snackbar.Add("Workspace deleted.", Severity.Success);
+                Toast.ShowSuccess("Workspace deleted.");
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Failed to delete workspace: {ex.Message}", Severity.Error);
+                Toast.ShowError($"Failed to delete workspace: {ex.Message}");
             }
         }
     }

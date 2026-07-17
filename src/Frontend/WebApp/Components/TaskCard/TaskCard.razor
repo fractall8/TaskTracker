@@ -1,9 +1,10 @@
 @using Contracts.DTOs
 @using Contracts.Requests.Tasks
 @using WebApp.Shared.Dialogs
+@using WebApp.Shared.Toast
 @inject IBoardDetailsStore Store
 @inject IDialogService DialogService
-@inject ISnackbar Snackbar
+@inject CustomToastService Toast
 @inject NavigationManager Navigation
 @inject IProfileStore ProfileStore
 
@@ -70,11 +71,11 @@
             try
             {
                 await Store.DeleteTaskAsync(Task.Id);
-                Snackbar.Add("Task deleted.", Severity.Success);
+                Toast.ShowSuccess("Task deleted.");
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Failed to delete task: {ex.Message}", Severity.Error);
+                Toast.ShowError($"Failed to delete task: {ex.Message}");
             }
         }
     }
@@ -94,12 +95,12 @@
                 if (result.Data is UpdateTaskRequest request)
                 {
                     await Store.UpdateTaskAsync(Task.Id, request);
-                    Snackbar.Add("Task updated", Severity.Success);
+                    Toast.ShowSuccess("Task updated");
                 }
             }
             catch (Exception ex)
             {
-                Snackbar.Add(ex.Message, Severity.Error);
+                Toast.ShowError(ex.Message);
             }
         }
     }

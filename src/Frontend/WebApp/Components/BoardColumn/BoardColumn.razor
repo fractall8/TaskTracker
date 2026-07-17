@@ -1,9 +1,10 @@
 @using Contracts.DTOs
 @using Contracts.Requests.Tasks
 @using WebApp.Shared.Dialogs
+@using WebApp.Shared.Toast
 @inject IBoardDetailsStore BoardDetailsStore
 @inject IDialogService DialogService
-@inject ISnackbar Snackbar
+@inject CustomToastService Toast
 
 <div class="column @(IsDragged ? "column-drag-active" : "") @(IsDropTarget ? "column-drop-target" : "")"
      draggable="@(CanManageColumns ? "true" : "false")"
@@ -77,11 +78,11 @@
             {
                 var newName = result.Data?.ToString() ?? string.Empty;
                 await BoardDetailsStore.UpdateColumnNameAsync(Column.Id, newName);
-                Snackbar.Add("Column updated successfully", Severity.Success);
+                Toast.ShowSuccess("Column updated successfully");
             }
             catch (Exception ex)
             {
-                Snackbar.Add(ex.Message, Severity.Error);
+                Toast.ShowError(ex.Message);
             }
         }
     }
@@ -106,11 +107,11 @@
             try
             {
                 await BoardDetailsStore.DeleteColumnAsync(Column.Id);
-                Snackbar.Add("Column and all its content deleted.", Severity.Success);
+                Toast.ShowSuccess("Column and all its content deleted.");
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Failed to delete column: {ex.Message}", Severity.Error);
+                Toast.ShowError($"Failed to delete column: {ex.Message}");
             }
         }
     }
@@ -128,11 +129,11 @@
             {
                 var request = (CreateTaskRequest)result.Data!;
                 await BoardDetailsStore.CreateTaskAsync(Column.Id, request);
-                Snackbar.Add("Task created successfully", Severity.Success);
+                Toast.ShowSuccess("Task created successfully");
             }
             catch (Exception ex)
             {
-                Snackbar.Add(ex.Message, Severity.Error);
+                Toast.ShowError(ex.Message);
             }
         }
     }

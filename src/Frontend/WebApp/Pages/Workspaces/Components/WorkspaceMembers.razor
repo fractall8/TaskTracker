@@ -1,9 +1,10 @@
 ﻿@inject IWorkspaceStore WorkspaceStore
 @inject IDialogService DialogService
-@inject ISnackbar Snackbar
+@inject CustomToastService Toast
 @using Contracts.DTOs
 @using Contracts.Enums
 @using WebApp.Shared.Dialogs
+@using WebApp.Shared.Toast
 
 <table class="data-table">
     <thead>
@@ -103,11 +104,11 @@
         try
         {
             await WorkspaceStore.ChangeMemberRoleAsync(WorkspaceId, userId, newRole);
-            Snackbar.Add("Role updated.", Severity.Success);
+            Toast.ShowSuccess("Role updated.");
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to update role: {ex.Message}", Severity.Error);
+            Toast.ShowError($"Failed to update role: {ex.Message}");
         }
     }
 
@@ -129,11 +130,11 @@
             try
             {
                 await WorkspaceStore.RemoveMemberAsync(WorkspaceId, userId);
-                Snackbar.Add("Member removed.", Severity.Success);
+                Toast.ShowSuccess("Member removed.");
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Failed to remove member: {ex.Message}", Severity.Error);
+                Toast.ShowError($"Failed to remove member: {ex.Message}");
             }
         }
     }

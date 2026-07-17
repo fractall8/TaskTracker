@@ -1,12 +1,13 @@
 ﻿@inject IWorkspaceStore WorkspaceStore
 @inject IDialogService DialogService
-@inject ISnackbar Snackbar
+@inject CustomToastService Toast
 @inject IJSRuntime Js
 @inject NavigationManager Navigation
 @using Contracts.DTOs
 @using Contracts.Enums
 @using Contracts.Requests.Workspaces
 @using WebApp.Shared.Dialogs
+@using WebApp.Shared.Toast
 
 <div class="toolbar" style="justify-content: flex-end;">
     <button class="btn ghost" aria-label="Refresh invites" @onclick="LoadInvitesAsync" disabled="@_loading">
@@ -116,7 +117,7 @@ else
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to load invites: {ex.Message}", Severity.Error);
+            Toast.ShowError($"Failed to load invites: {ex.Message}");
         }
         finally
         {
@@ -133,13 +134,13 @@ else
             var result = await WorkspaceStore.InviteUserAsync(WorkspaceId, request);
             if (result != null)
             {
-                Snackbar.Add("Invite link generated.", Severity.Success);
+                Toast.ShowSuccess("Invite link generated.");
                 await LoadInvitesAsync();
             }
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to generate: {ex.Message}", Severity.Error);
+            Toast.ShowError($"Failed to generate: {ex.Message}");
         }
     }
 
@@ -159,12 +160,12 @@ else
             try
             {
                 await WorkspaceStore.UpdateInviteExpirationAsync(WorkspaceId, invite.Id, request);
-                Snackbar.Add("Expiration date updated.", Severity.Success);
+                Toast.ShowSuccess("Expiration date updated.");
                 await LoadInvitesAsync();
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Failed to update: {ex.Message}", Severity.Error);
+                Toast.ShowError($"Failed to update: {ex.Message}");
             }
         }
     }
@@ -187,12 +188,12 @@ else
             try
             {
                 await WorkspaceStore.RevokeInviteAsync(WorkspaceId, inviteId);
-                Snackbar.Add("Invite revoked.", Severity.Success);
+                Toast.ShowSuccess("Invite revoked.");
                 await LoadInvitesAsync();
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Failed to revoke: {ex.Message}", Severity.Error);
+                Toast.ShowError($"Failed to revoke: {ex.Message}");
             }
         }
     }
@@ -202,7 +203,7 @@ else
     private async Task CopyToClipboardAsync(string text)
     {
         await Js.InvokeVoidAsync("navigator.clipboard.writeText", text);
-        Snackbar.Add("Link copied.", Severity.Info);
+        Toast.ShowInfo("Link copied.");
     }
 
 }

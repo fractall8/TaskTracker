@@ -1,6 +1,8 @@
 @using System.ComponentModel.DataAnnotations
 @using Contracts.DTOs
 @using Contracts.Requests.Tasks
+@using WebApp.Shared.Toast
+@inject CustomToastService Toast
 
 <MudDialog Style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
     <TitleContent>
@@ -117,7 +119,7 @@
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Failed to load board members: {ex.Message}", Severity.Error);
+                Toast.ShowError($"Failed to load board members: {ex.Message}");
             }
         }
     }

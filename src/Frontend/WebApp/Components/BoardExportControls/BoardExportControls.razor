@@ -1,12 +1,13 @@
 ﻿@using Contracts.DTOs
 @using Contracts.Enums
 @using WebApp.Shared.Dialogs
+@using WebApp.Shared.Toast
 @implements IDisposable
 
 @inject IBoardDetailsStore BoardDetailsStore
 @inject IBoardApiService BoardApi
 @inject IDialogService DialogService
-@inject ISnackbar Snackbar
+@inject CustomToastService Toast
 @inject IJSRuntime Js
 
 @if (BoardDetailsStore.Board is { } board)
@@ -100,11 +101,11 @@
             {
                 await BoardApi.ArchiveAndExportBoardAsync(BoardDetailsStore.Board!.Id, exportOptions);
                 BoardDetailsStore.SetBoardArchived(exportOptions);
-                Snackbar.Add("Board archived and export queued successfully.", Severity.Success);
+                Toast.ShowSuccess("Board archived and export queued successfully.");
             }
             catch (Exception ex)
             {
-                Snackbar.Add(ex.Message, Severity.Error);
+                Toast.ShowError(ex.Message);
             }
         }
     }
@@ -121,11 +122,11 @@
             {
                 await BoardApi.ReExportBoardAsync(BoardDetailsStore.Board!.Id, exportOptions);
                 BoardDetailsStore.SetBoardReExporting(exportOptions);
-                Snackbar.Add("Re-export started. The archive will be updated in the background.", Severity.Info);
+                Toast.ShowInfo("Re-export started. The archive will be updated in the background.");
             }
             catch (Exception ex)
             {
-                Snackbar.Add(ex.Message, Severity.Error);
+                Toast.ShowError(ex.Message);
             }
         }
     }
@@ -141,7 +142,7 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add(ex.Message, Severity.Error);
+            Toast.ShowError(ex.Message);
         }
     }
 

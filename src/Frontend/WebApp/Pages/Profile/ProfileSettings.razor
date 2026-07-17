@@ -2,7 +2,8 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @implements IDisposable
 @inject IProfileStore ProfileStore
-@inject ISnackbar Snackbar
+@inject CustomToastService Toast
+@using WebApp.Shared.Toast
 @using Refit
 
 <PageTitle>Profile Settings - TaskTracker</PageTitle>
@@ -167,12 +168,12 @@
         try
         {
             await ProfileStore.UpdateDisplayNameAsync(_displayName);
-            Snackbar.Add("Profile updated successfully.", Severity.Success);
+            Toast.ShowSuccess("Profile updated successfully.");
             _isEditingName = false;
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to update profile: {ex.Message}", Severity.Error);
+            Toast.ShowError($"Failed to update profile: {ex.Message}");
         }
         finally
         {
@@ -192,7 +193,7 @@
             var actualSizeMb = file.Size / (1024.0 * 1024.0);
             var maxSizeMb = maxFileSize / (1024 * 1024);
 
-            Snackbar.Add($"Failed to upload avatar: Supplied file with size {actualSizeMb:F2} MB exceeds the maximum of {maxSizeMb} MB.", Severity.Error);
+            Toast.ShowError($"Failed to upload avatar: Supplied file with size {actualSizeMb:F2} MB exceeds the maximum of {maxSizeMb} MB.");
             return;
         }
 
@@ -203,11 +204,11 @@
             var streamPart = new StreamPart(stream, file.Name, file.ContentType);
 
             await ProfileStore.UploadAvatarAsync(streamPart);
-            Snackbar.Add("Avatar uploaded successfully.", Severity.Success);
+            Toast.ShowSuccess("Avatar uploaded successfully.");
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to upload avatar: {ex.Message}", Severity.Error);
+            Toast.ShowError($"Failed to upload avatar: {ex.Message}");
         }
         finally
         {
@@ -221,11 +222,11 @@
         try
         {
             await ProfileStore.DeleteAvatarAsync();
-            Snackbar.Add("Avatar removed.", Severity.Info);
+            Toast.ShowSuccess("Avatar removed.");
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to remove avatar: {ex.Message}", Severity.Error);
+            Toast.ShowError($"Failed to remove avatar: {ex.Message}");
         }
         finally
         {
