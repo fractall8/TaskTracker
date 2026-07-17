@@ -1,7 +1,6 @@
 ﻿@implements IDisposable
 @inject IProfileStore ProfileStore
 @inject IWorkspaceStore WorkspaceStore
-@inject NavigationManager NavigationManager
 
 <MudDrawer Open="true" Elevation="0" Variant="DrawerVariant.Persistent" Width="280px"
            Style="border-right: 1px solid rgba(100, 110, 120, 0.2); background-color: var(--mud-palette-drawer-background); overflow-x: hidden;">
@@ -107,9 +106,16 @@
                             }
                             else
                             {
-                                <div class="avatar-round"
-                                     style="background-color: var(--mud-palette-primary); color: white;">
-                                    @(ProfileStore.Profile?.DisplayName?.FirstOrDefault().ToString().ToUpper() ?? ProfileStore.Profile?.Email?.FirstOrDefault().ToString().ToUpper() ?? "U")
+                                <div class="avatar-round" style="background-color: var(--mud-palette-primary); color: white;">
+                                    @if (!string.IsNullOrEmpty(ProfileStore.Profile?.AvatarUrl))
+                                    {
+                                        <img src="@ProfileStore.Profile.AvatarUrl" alt="Avatar" 
+                                             style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" />
+                                    }
+                                    else
+                                    {
+                                        @(ProfileStore.Profile?.DisplayName?.FirstOrDefault().ToString().ToUpper() ?? ProfileStore.Profile?.Email?.FirstOrDefault().ToString().ToUpper() ?? "U")
+                                    }
                                 </div>
 
                                 <div class="profile-meta">

@@ -4,157 +4,345 @@
 @using WebApp.Shared.Toast
 @inject IBoardMembersStore Store
 @inject IWorkspaceStore WorkspaceStore
+@inject IDialogService DialogService
 @inject CustomToastService Toast
 
-<MudDialog>
+<MudDialog Style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); max-width: 600px;">
+    <TitleContent>
+        <span style="font-size: 16px; font-weight: 600; color: var(--mud-palette-text-primary);">
+            Manage Board Members
+        </span>
+    </TitleContent>
     <DialogContent>
         @if (!string.IsNullOrEmpty(Store.ErrorMessage))
         {
-            <MudAlert Severity="Severity.Error" Class="mb-3">@Store.ErrorMessage</MudAlert>
+            <div class="d-flex align-center gap-2 mb-4"
+                 style="padding: 12px; border-radius: 8px; background-color: rgba(235, 87, 87, 0.1); color: var(--mud-palette-error);">
+                <MudIcon Icon="@Icons.Material.Outlined.ErrorOutline" Size="Size.Small"/>
+                <span style="font-size: 13.5px;">@Store.ErrorMessage</span>
+            </div>
         }
 
-        <div class="d-flex align-center gap-3 mb-6">
-            <MudAutocomplete T="WorkspaceMemberDto"
-                             Label="Search workspace members..."
-                             Value="@_selectedUser"
-                             ValueChanged="@(u => _selectedUser = u)"
-                             SearchFunc="SearchWorkspaceUsers"
-                             ToStringFunc="@(u => u == null ? string.Empty : (string.IsNullOrEmpty(u.DisplayName) ? u.Email : $"{u.DisplayName} ({u.Email})"))"
-                             Variant="Variant.Outlined"
-                             Margin="Margin.Dense"
-                             Clearable="true"
-                             ShowDropDownIcon="false"
-                             Disabled="Store.IsProcessing"
-                             ShowProgressIndicator="true"
-                             DebounceInterval="500"
-                             Class="flex-grow-1">
-                <ItemTemplate Context="user">
-                    <div class="d-flex align-center gap-2">
-                        <MudAvatar Size="Size.Small" Color="Color.Primary">
-                            @if (!string.IsNullOrEmpty(user.AvatarUrl))
-                            {
-                                <MudImage Src="@user.AvatarUrl"/>
-                            }
-                            else
-                            {
-                                @(user.DisplayName?.FirstOrDefault() ?? user.Email.FirstOrDefault())
-                            }
-                        </MudAvatar>
-                        <div>
-                            <MudText Typo="Typo.body2">@(user.DisplayName ?? user.Email)</MudText>
-                            @if (!string.IsNullOrEmpty(user.DisplayName))
-                            {
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">@user.Email</MudText>
-                            }
-                        </div>
-                    </div>
-                </ItemTemplate>
-            </MudAutocomplete>
+        <div class="d-flex align-center gap-3 mb-6" style="position: relative;">
+            <div class="flex-grow-1" style="position: relative;">
+                <input type="text" class="form-input" style="width: 100%;"
+                       placeholder="Search workspace members..."
+                       value="@_searchQuery" @oninput="HandleSearchNative"
+                       disabled="@Store.IsProcessing"/>
 
-            <MudSelect T="BoardRoleDto"
-                       @bind-Value="_selectedRole"
-                       Margin="Margin.Dense"
-                       Variant="Variant.Outlined"
-                       Style="width: 150px; flex-shrink: 0;"
-                       Disabled="Store.IsProcessing">
+                @if (_showDropdown)
+                {
+                    <div class="autocomplete-dropdown">
+                        @if (_isSearching)
+                        {
+                            <div class="dropdown-msg">Searching...</div>
+                        }
+                        else if (!_searchResults.Any())
+                        {
+                            <div class="dropdown-msg">No members found in workspace.</div>
+                        }
+                        else
+                        {
+                            @foreach (var user in _searchResults)
+                            {
+                                <div class="dropdown-item" @onclick="@(() => SelectUser(user))">
+                                    <div
+                                        class="avatar-round sm flex-shrink-0 @GetColorClass(user.DisplayName ?? user.Email)">
+                                        @if (!string.IsNullOrEmpty(user.AvatarUrl))
+                                        {
+                                            <img src="@user.AvatarUrl" alt="Avatar"
+                                                 style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"/>
+                                        }
+                                        else
+                                        {
+                                            @(string.IsNullOrWhiteSpace(user.DisplayName) ? user.Email.FirstOrDefault().ToString().ToUpper() : user.DisplayName.FirstOrDefault().ToString().ToUpper())
+                                        }
+                                    </div>
+                                    <div class="item-info" style="min-width: 0;">
+                                        <div class="item-name text-truncate">@(user.DisplayName ?? user.Email)</div>
+                                        @if (!string.IsNullOrEmpty(user.DisplayName))
+                                        {
+                                            <div class="item-email text-truncate">@user.Email</div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                }
+            </div>
+
+            <select class="fake-select" style="width: 140px; flex-shrink: 0;" @bind="_selectedRole"
+                    disabled="@Store.IsProcessing">
                 @foreach (var role in Enum.GetValues<BoardRoleDto>())
                 {
-                    <MudSelectItem Value="@role">@role.ToString()</MudSelectItem>
+                    <option value="@role">@role.ToString()</option>
                 }
-            </MudSelect>
+            </select>
 
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       OnClick="AddNewMember"
-                       Disabled="@(_selectedUser == null || Store.IsProcessing)"
-                       Style="height: 40px; flex-shrink: 0;">
+            <button class="btn btn-primary" @onclick="AddNewMember"
+                    disabled="@(_selectedUser == null || Store.IsProcessing)"
+                    style="height: 40px; flex-shrink: 0;">
                 Add
-            </MudButton>
+            </button>
         </div>
 
-        <MudDivider Class="mb-4"/>
+        <MudDivider Class="mb-4" Style="border-color: var(--mud-palette-lines-default);"/>
 
         @if (Store.IsLoading)
         {
-            <div class="d-flex justify-center my-4">
+            <div class="d-flex justify-center my-6">
                 <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
             </div>
         }
         else
         {
-            <MudTable Items="@Store.Members" Dense="true" Hover="true" Elevation="0" Class="mb-4">
-                <HeaderContent>
-                    <MudTh>User</MudTh>
-                    <MudTh>Role</MudTh>
-                    <MudTh Style="width: 50px;"></MudTh>
-                </HeaderContent>
-
-                <RowTemplate Context="member">
-                    <MudTd DataLabel="User">
-                        <div class="d-flex align-center gap-3">
-                            <MudAvatar Size="Size.Small" Color="Color.Primary">
-                                @if (!string.IsNullOrEmpty(member.AvatarUrl))
+            <div style="max-height: 400px; overflow-y: auto;">
+                <table class="dialog-table">
+                    <thead>
+                    <tr>
+                        <th>User</th>
+                        <th style="width: 150px;">Role</th>
+                        <th style="width: 40px;"></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var member in Store.Members)
+                    {
+                        <tr class="@(member.Email == CurrentUserEmail ? "row-you" : "")">
+                            <td>
+                                <div class="d-flex align-center gap-3" style="min-width: 0;">
+                                    <div
+                                        class="avatar-round sm flex-shrink-0 @GetColorClass(member.DisplayName ?? member.Email)">
+                                        @if (!string.IsNullOrEmpty(member.AvatarUrl))
+                                        {
+                                            <img src="@member.AvatarUrl" alt="Avatar"
+                                                 style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"/>
+                                        }
+                                        else
+                                        {
+                                            @(string.IsNullOrWhiteSpace(member.DisplayName) ? member.Email.FirstOrDefault().ToString().ToUpper() : member.DisplayName.FirstOrDefault().ToString().ToUpper())
+                                        }
+                                    </div>
+                                    <div class="d-flex flex-column" style="min-width: 0; overflow: hidden;">
+                                        <div class="d-flex align-center gap-2">
+                                                <span class="member-name text-truncate"
+                                                      style="font-size: 14.5px; font-weight: 500; line-height: 1.2;">
+                                                    @(member.DisplayName ?? member.Email)
+                                                </span>
+                                            @if (member.Email == CurrentUserEmail)
+                                            {
+                                                <span class="tag-you flex-shrink-0">You</span>
+                                            }
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(member.DisplayName))
+                                        {
+                                            <span class="member-email text-truncate"
+                                                  style="font-size: 13px; color: var(--mud-palette-text-secondary); margin-top: 2px;">
+                                                    @member.Email
+                                                </span>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <select
+                                    class="fake-select @(Store.IsProcessing || !CanChangeRole(member) ? "disabled" : "")"
+                                    style="width: 100%;"
+                                    disabled="@(Store.IsProcessing || !CanChangeRole(member))"
+                                    @onchange="@((ChangeEventArgs e) => OnRoleChanged(member, Enum.Parse<BoardRoleDto>(e.Value?.ToString()!)))">
+                                    <option value="User" selected="@(member.BoardRole == BoardRoleDto.User)">User
+                                    </option>
+                                    <option value="ScrumMaster"
+                                            selected="@(member.BoardRole == BoardRoleDto.ScrumMaster)">Scrum Master
+                                    </option>
+                                    <option value="Admin" selected="@(member.BoardRole == BoardRoleDto.Admin)">Admin
+                                    </option>
+                                </select>
+                            </td>
+                            <td style="text-align: right;">
+                                @if (CanRemoveMember(member))
                                 {
-                                    <MudImage Src="@member.AvatarUrl"/>
+                                    <button class="icon-btn sm ghost" aria-label="Remove member"
+                                            disabled="@Store.IsProcessing"
+                                            @onclick="@(() => RemoveMember(member))">
+                                        <MudIcon Icon="@Icons.Material.Outlined.PersonRemove" Size="Size.Small"
+                                                 Style="color: var(--mud-palette-error);"/>
+                                    </button>
                                 }
                                 else
                                 {
-                                    @(member.DisplayName?.FirstOrDefault() ?? member.Email.FirstOrDefault())
+                                    <button class="icon-btn sm ghost" disabled="true" aria-label="Cannot remove">
+                                        <MudIcon Icon="@Icons.Material.Outlined.Lock" Size="Size.Small"/>
+                                    </button>
                                 }
-                            </MudAvatar>
-                            <div>
-                                <MudText Typo="Typo.body2" Class="font-weight-bold">
-                                    @(member.DisplayName ?? member.Email)
-                                </MudText>
-                                @if (!string.IsNullOrEmpty(member.DisplayName))
-                                {
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@member.Email</MudText>
-                                }
-                            </div>
-                        </div>
-                    </MudTd>
-                    <MudTd DataLabel="Role">
-                        <MudSelect T="BoardRoleDto"
-                                   Value="@member.BoardRole"
-                                   ValueChanged="@(role => OnRoleChanged(member, role))"
-                                   Margin="Margin.Dense"
-                                   Variant="Variant.Outlined"
-                                   Disabled="@(Store.IsProcessing || !CanChangeRole(member))">
-                            @foreach (var role in Enum.GetValues<BoardRoleDto>())
-                            {
-                                <MudSelectItem Value="@role">@role.ToString()</MudSelectItem>
-                            }
-                        </MudSelect>
-                    </MudTd>
-                    <MudTd DataLabel="Actions">
-                        @if (CanRemoveMember(member))
-                        {
-                            <MudTooltip Text="Remove from board">
-                                <MudIconButton Icon="@Icons.Material.Filled.RemoveCircleOutline"
-                                               Color="Color.Error"
-                                               Size="Size.Small"
-                                               Disabled="Store.IsProcessing"
-                                               OnClick="@(() => RemoveMember(member))"/>
-                            </MudTooltip>
-                        }
-                        else
-                        {
-                            <MudTooltip Text="You don't have permission to remove this user">
-                                <MudIconButton Icon="@Icons.Material.Filled.Lock"
-                                               Color="Color.Surface"
-                                               Size="Size.Small"
-                                               Disabled="true"/>
-                            </MudTooltip>
-                        }
-                    </MudTd>
-                </RowTemplate>
-            </MudTable>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
         }
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Close" Disabled="Store.IsProcessing">Close</MudButton>
+        <div style="padding: 8px 16px;">
+            <button class="btn" @onclick="Close" disabled="@Store.IsProcessing">Close</button>
+        </div>
     </DialogActions>
 </MudDialog>
+
+<style>
+    .fake-select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        width: 100%;
+        height: 40px;
+        padding: 0 32px 0 12px;
+        font-size: 14px;
+        font-family: inherit;
+        color: var(--mud-palette-text-primary);
+        background-color: var(--mud-palette-surface);
+        border: 1px solid var(--mud-palette-lines-default);
+        border-radius: 8px;
+        cursor: pointer;
+        outline: none;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        background-size: 16px;
+    }
+
+    .fake-select:hover:not(:disabled) {
+        border-color: rgba(150, 150, 150, 0.4);
+    }
+
+    .fake-select:focus {
+        border-color: var(--mud-palette-primary);
+        box-shadow: 0 0 0 1px var(--mud-palette-primary);
+    }
+
+    .fake-select:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background-color: rgba(150, 150, 150, 0.05);
+    }
+
+    .fake-select option {
+        background-color: var(--mud-palette-surface);
+        color: var(--mud-palette-text-primary);
+    }
+
+    .dialog-table .fake-select {
+        height: 36px;
+        background-color: transparent;
+    }
+
+    .dialog-table .fake-select:focus {
+        background-color: var(--mud-palette-surface);
+    }
+
+    .dialog-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+
+    .dialog-table th {
+        text-align: left;
+        padding: 8px 12px 12px 12px;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--mud-palette-text-secondary);
+        border-bottom: 1px solid var(--mud-palette-lines-default);
+    }
+
+    .dialog-table td {
+        padding: 12px;
+        vertical-align: middle;
+        border-bottom: 1px solid rgba(150, 150, 150, 0.1);
+    }
+
+    .dialog-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .text-truncate {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .autocomplete-dropdown {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background-color: var(--mud-palette-surface);
+        border: 1px solid var(--mud-palette-lines-default);
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        max-height: 250px;
+        overflow-y: auto;
+        z-index: 1000;
+        padding: 8px 0;
+    }
+
+    .dropdown-msg {
+        padding: 12px 16px;
+        font-size: 13.5px;
+        color: var(--mud-palette-text-secondary);
+        text-align: center;
+    }
+
+    .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 16px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .dropdown-item:hover {
+        background-color: var(--mud-palette-action-default-hover);
+    }
+
+    .dropdown-item .item-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .dropdown-item .item-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--mud-palette-text-primary);
+        line-height: 1.2;
+    }
+
+    .dropdown-item .item-email {
+        font-size: 12.5px;
+        color: var(--mud-palette-text-secondary);
+        margin-top: 2px;
+    }
+
+    .avatar-round.sm {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+
+    .flex-shrink-0 {
+        flex-shrink: 0 !important;
+    }
+</style>
 
 @code {
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
@@ -162,7 +350,13 @@
     [Parameter] public Guid WorkspaceId { get; set; }
     [Parameter] public Guid BoardId { get; set; }
     [Parameter] public string CurrentUserEmail { get; set; } = string.Empty;
-    [Parameter] public WorkspaceRoleDto CurrentUserWorkspaceRole { get; set; } 
+    [Parameter] public WorkspaceRoleDto CurrentUserWorkspaceRole { get; set; }
+
+    private string _searchQuery = "";
+    private bool _showDropdown = false;
+    private bool _isSearching = false;
+    private List<WorkspaceMemberDto> _searchResults = new();
+    private CancellationTokenSource? _searchCts;
 
     private WorkspaceMemberDto? _selectedUser;
     private BoardRoleDto _selectedRole = BoardRoleDto.User;
@@ -179,38 +373,55 @@
         Store.Reset();
     }
 
-    private bool CanChangeRole(BoardMemberDto targetMember)
+    private async Task HandleSearchNative(ChangeEventArgs e)
     {
-        if (targetMember.Email == CurrentUserEmail) return false;
-        
-        if (targetMember.WorkspaceRole is WorkspaceRoleDto.Owner or WorkspaceRoleDto.Admin) return false;
+        _searchQuery = e.Value?.ToString() ?? "";
+        _selectedUser = null;
 
-        return true; 
-    }
+        if (string.IsNullOrWhiteSpace(_searchQuery))
+        {
+            _showDropdown = false;
+            _searchResults.Clear();
+            return;
+        }
 
-    private bool CanRemoveMember(BoardMemberDto targetMember)
-    {
-        if (targetMember.Email == CurrentUserEmail) return false;
-        if (CurrentUserWorkspaceRole == WorkspaceRoleDto.Owner) return true;
-        if (targetMember.WorkspaceRole is WorkspaceRoleDto.Owner or WorkspaceRoleDto.Admin) return false;
+        _showDropdown = true;
+        _isSearching = true;
 
-        return true; 
-    }
+        _searchCts?.Cancel();
+        _searchCts = new CancellationTokenSource();
+        var ct = _searchCts.Token;
 
-    private async Task<IEnumerable<WorkspaceMemberDto>> SearchWorkspaceUsers(string value, CancellationToken ct)
-    {
         try
         {
-            var users = await WorkspaceStore.GetWorkspaceUsersAsync(WorkspaceId, value, ct);
-            var existingMemberIds = Store.Members.Select(m => m.WorkspaceMemberId).ToHashSet();
-            var filteredUsers = users.Where(u => !existingMemberIds.Contains(u.Id)).ToList();
-            return filteredUsers;
+            await Task.Delay(500, ct);
+
+            if (!ct.IsCancellationRequested)
+            {
+                var users = await WorkspaceStore.GetWorkspaceUsersAsync(WorkspaceId, _searchQuery, ct);
+                var existingMemberIds = Store.Members.Select(m => m.WorkspaceMemberId).ToHashSet();
+                _searchResults = users.Where(u => !existingMemberIds.Contains(u.Id)).ToList();
+            }
         }
-        catch (Exception ex)
+        catch (TaskCanceledException)
         {
-            Toast.ShowError($"Search failed: {ex.Message}");
-            return Array.Empty<WorkspaceMemberDto>();
+            // skip
         }
+        finally
+        {
+            if (!ct.IsCancellationRequested)
+            {
+                _isSearching = false;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private void SelectUser(WorkspaceMemberDto user)
+    {
+        _selectedUser = user;
+        _searchQuery = user.DisplayName ?? user.Email;
+        _showDropdown = false;
     }
 
     private async Task AddNewMember()
@@ -220,8 +431,11 @@
         try
         {
             await Store.AddMemberAsync(BoardId, _selectedUser.Id, _selectedRole);
+
             _selectedUser = null;
+            _searchQuery = "";
             _selectedRole = BoardRoleDto.User;
+
             Toast.ShowSuccess("Member added successfully.");
         }
         catch
@@ -245,15 +459,51 @@
 
     private async Task RemoveMember(BoardMemberDto member)
     {
-        try
+        var parameters = new DialogParameters<ConfirmDeleteDialog>
         {
-            await Store.RemoveMemberAsync(BoardId, member.WorkspaceMemberId);
-            Toast.ShowInfo("Member removed from board.");
-        }
-        catch
+            { x => x.Title, "Remove member" },
+            { x => x.ContentText, $"Are you sure you want to remove {member.DisplayName ?? member.Email} from this board?" },
+            { x => x.ConfirmText, "Remove" }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
         {
-            // skip
+            try
+            {
+                await Store.RemoveMemberAsync(BoardId, member.WorkspaceMemberId);
+                Toast.ShowInfo("Member removed from board.");
+            }
+            catch
+            {
+                // skip
+            }
         }
+    }
+
+    private string GetColorClass(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return "bg-purple";
+        var colors = new[] { "bg-purple", "bg-blue", "bg-teal", "bg-coral", "bg-pink" };
+        return colors[Math.Abs(name.GetHashCode()) % colors.Length];
+    }
+
+    private bool CanChangeRole(BoardMemberDto targetMember)
+    {
+        if (targetMember.Email == CurrentUserEmail) return false;
+        if (targetMember.WorkspaceRole is WorkspaceRoleDto.Owner or WorkspaceRoleDto.Admin) return false;
+        return true;
+    }
+
+    private bool CanRemoveMember(BoardMemberDto targetMember)
+    {
+        if (targetMember.Email == CurrentUserEmail) return false;
+        if (CurrentUserWorkspaceRole == WorkspaceRoleDto.Owner) return true;
+        if (targetMember.WorkspaceRole is WorkspaceRoleDto.Owner or WorkspaceRoleDto.Admin) return false;
+        return true;
     }
 
     private void Close() => MudDialog.Close();

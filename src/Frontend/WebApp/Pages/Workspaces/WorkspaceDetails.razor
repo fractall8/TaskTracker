@@ -77,7 +77,11 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
             }
             else if (_activeTab == "members")
             {
-                <WorkspaceMembers WorkspaceId="WorkspaceId" Workspace="workspace" CurrentUserRole="_currentUserRole" CurrentUserId="_currentUserId"/>
+                <WorkspaceMembers WorkspaceId="WorkspaceId"
+                                  Workspace="workspace"
+                                  CurrentUserRole="_currentUserRole"
+                                  CurrentUserId="_currentUserId"
+                                  OnRefreshRequested="HandleMembersRefresh" />
             }
             else if (_activeTab == "invites" && _currentUserRole is WorkspaceRoleDto.Owner)
             {
@@ -122,6 +126,11 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
         InvokeAsync(StateHasChanged);
     }
 
+    private async Task HandleMembersRefresh()
+    {
+        await WorkspaceStore.LoadWorkspaceDetailsAsync(WorkspaceId);
+    }
+    
     private void ResolveCurrentUserRole()
     {
         if (_currentUserId.HasValue && WorkspaceStore.CurrentWorkspace is { } ws)

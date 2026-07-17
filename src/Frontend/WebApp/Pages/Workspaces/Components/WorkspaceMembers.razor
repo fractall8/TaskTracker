@@ -6,69 +6,99 @@
 @using WebApp.Shared.Dialogs
 @using WebApp.Shared.Toast
 
-<table class="data-table">
-    <thead>
-    <tr>
-        <th>Member</th>
-        <th>Joined</th>
-        <th>Role</th>
-        <th></th>
-    </tr>
-    </thead>
-    <tbody>
-    @foreach (var member in FilteredMembers)
-    {
-        <tr class="@(member.UserId == CurrentUserId ? "row-you" : "")">
-            <td>
-                <div class="cell-member">
-                    <div class="avatar-round @GetColorClass(member.DisplayName ?? member.Email)">
-                        @if (!string.IsNullOrEmpty(member.AvatarUrl))
-                        {
-                            <img src="@member.AvatarUrl" alt="Avatar"
-                                 style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"/>
-                        }
-                        else
-                        {
-                            @(string.IsNullOrWhiteSpace(member.DisplayName) ? member.Email.FirstOrDefault().ToString().ToUpper() : member.DisplayName.FirstOrDefault().ToString().ToUpper())
-                        }
-                    </div>
-                    <div>
-                        <p class="member-name">
-                            @(member.DisplayName ?? member.Email)
-                            @if (member.UserId == CurrentUserId)
-                            {
-                                <span class="tag-you">You</span>
-                            }
-                        </p>
-                        @if (!string.IsNullOrWhiteSpace(member.DisplayName))
-                        {
-                            <p class="member-email">@member.Email</p>
-                        }
-                    </div>
-                </div>
-            </td>
-            <td class="muted">@member.JoinedAt.ToLocalTime().ToString("MMM dd, yyyy", System.Globalization.CultureInfo.InvariantCulture)</td>
-            <td>
-                <select
-                    class="fake-select @(member.UserId == CurrentUserId || !CanEditRole(member.Role) ? "disabled" : "")"
-                    disabled="@(member.UserId == CurrentUserId || !CanEditRole(member.Role))"
-                    @onchange="@((ChangeEventArgs e) => ChangeMemberRole(member.UserId, Enum.Parse<WorkspaceRoleDto>(e.Value.ToString())))">
-                    <option value="Member" selected="@(member.Role == WorkspaceRoleDto.Member)">Member</option>
-                    <option value="Admin" selected="@(member.Role == WorkspaceRoleDto.Admin)">Admin</option>
-                    <option value="Owner" selected="@(member.Role == WorkspaceRoleDto.Owner)" disabled="true">Owner
-                    </option>
-                </select>
-            </td>
-            <td class="actions">
-                <button class="icon-btn sm ghost" disabled="@(member.UserId == CurrentUserId || !CanRemoveMember())"
-                        aria-label="Remove member" @onclick="@(() => RemoveMember(member.UserId, member.Email))">
-                    <MudIcon Icon="@Icons.Material.Outlined.PersonRemove" Size="Size.Small"/>
-                </button>
-            </td>
+<div class="toolbar d-flex align-center justify-space-between mb-4">
+    <div style="width: 280px; position: relative;">
+        <MudIcon Icon="@Icons.Material.Outlined.Search" Size="Size.Small"
+                 Style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--mud-palette-text-secondary); pointer-events: none;"/>
+        <input type="text" class="form-input" placeholder="Search members..."
+               value="@_searchTerm" @oninput="OnSearchChangedNative"
+               style="padding-left: 38px; width: 100%;" disabled="@_loading"/>
+    </div>
+
+    <button class="btn ghost" aria-label="Refresh members" @onclick="RefreshMembersAsync" disabled="@_loading">
+        <MudIcon Icon="@Icons.Material.Filled.Refresh" Size="Size.Small"/>
+        Refresh
+    </button>
+</div>
+
+@if (_loading && !_members.Any())
+{
+    <div class="d-flex justify-center mt-8">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+    </div>
+}
+else
+{
+    <table class="data-table">
+        <thead>
+        <tr>
+            <th>Member</th>
+            <th>Joined</th>
+            <th>Role</th>
+            <th></th>
         </tr>
-    }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+        @foreach (var member in _members)
+        {
+            <tr class="@(member.UserId == CurrentUserId ? "row-you" : "")">
+                <td>
+                    <div class="cell-member">
+                        <div class="avatar-round @GetColorClass(member.DisplayName ?? member.Email)">
+                            @if (!string.IsNullOrEmpty(member.AvatarUrl))
+                            {
+                                <img src="@member.AvatarUrl" alt="Avatar"
+                                     style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"/>
+                            }
+                            else
+                            {
+                                @(string.IsNullOrWhiteSpace(member.DisplayName) ? member.Email.FirstOrDefault().ToString().ToUpper() : member.DisplayName.FirstOrDefault().ToString().ToUpper())
+                            }
+                        </div>
+                        <div>
+                            <p class="member-name">
+                                @(member.DisplayName ?? member.Email)
+                                @if (member.UserId == CurrentUserId)
+                                {
+                                    <span class="tag-you">You</span>
+                                }
+                            </p>
+                            @if (!string.IsNullOrWhiteSpace(member.DisplayName))
+                            {
+                                <p class="member-email">@member.Email</p>
+                            }
+                        </div>
+                    </div>
+                </td>
+                <td class="muted">@member.JoinedAt.ToLocalTime().ToString("MMM dd, yyyy", System.Globalization.CultureInfo.InvariantCulture)</td>
+                <td>
+                    <select
+                        class="fake-select @(member.UserId == CurrentUserId || !CanEditRole(member.Role) ? "disabled" : "")"
+                        disabled="@(member.UserId == CurrentUserId || !CanEditRole(member.Role))"
+                        @onchange="@((ChangeEventArgs e) => ChangeMemberRole(member.UserId, Enum.Parse<WorkspaceRoleDto>(e.Value.ToString()!)))">
+                        <option value="Member" selected="@(member.Role == WorkspaceRoleDto.Member)">Member</option>
+                        <option value="Admin" selected="@(member.Role == WorkspaceRoleDto.Admin)">Admin</option>
+                        <option value="Owner" selected="@(member.Role == WorkspaceRoleDto.Owner)" disabled="true">Owner
+                        </option>
+                    </select>
+                </td>
+                <td class="actions">
+                    <button class="icon-btn sm ghost" disabled="@(member.UserId == CurrentUserId || !CanRemoveMember())"
+                            aria-label="Remove member" @onclick="@(() => RemoveMember(member.UserId, member.Email))">
+                        <MudIcon Icon="@Icons.Material.Outlined.PersonRemove" Size="Size.Small"/>
+                    </button>
+                </td>
+            </tr>
+        }
+        @if (!_members.Any())
+        {
+            <tr>
+                <td colspan="4" style="text-align: center;" class="muted">No members found.</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
 
 @code {
     [Parameter] public Guid WorkspaceId { get; set; }
@@ -76,24 +106,86 @@
     [Parameter] public WorkspaceRoleDto? CurrentUserRole { get; set; }
     [Parameter] public Guid? CurrentUserId { get; set; }
 
-    private string _searchTerm = "";
+    [Parameter] public EventCallback OnRefreshRequested { get; set; }
 
-    private IEnumerable<WorkspaceMemberDto> FilteredMembers =>
-        string.IsNullOrWhiteSpace(_searchTerm)
-            ? Workspace.Members
-            : Workspace.Members.Where(m => (m.DisplayName?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                                           m.Email.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase));
+    private string _searchTerm = "";
+    private bool _loading;
+    private List<WorkspaceMemberDto> _members = new();
+
+    private CancellationTokenSource? _searchCts;
+
+    protected override void OnParametersSet()
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm) && Workspace?.Members != null && !_members.Any())
+        {
+            _members = Workspace.Members.ToList();
+        }
+    }
+
+    private async Task OnSearchChangedNative(ChangeEventArgs e)
+    {
+        _searchTerm = e.Value?.ToString() ?? "";
+
+        _searchCts?.Cancel();
+        _searchCts = new CancellationTokenSource();
+        var ct = _searchCts.Token;
+
+        try
+        {
+            await Task.Delay(500, ct); // 500 ms for deault
+
+            if (!ct.IsCancellationRequested)
+            {
+                await PerformSearchAsync(ct);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            // skip
+        }
+    }
+
+    private async Task PerformSearchAsync(CancellationToken ct = default)
+    {
+        _loading = true;
+        StateHasChanged();
+
+        try
+        {
+            var term = string.IsNullOrWhiteSpace(_searchTerm) ? null : _searchTerm;
+            var result = await WorkspaceStore.GetWorkspaceUsersAsync(WorkspaceId, term, ct);
+            _members = result ?? new List<WorkspaceMemberDto>();
+        }
+        catch (TaskCanceledException)
+        {
+            // skip
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Failed to load members: {ex.Message}");
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshMembersAsync()
+    {
+        await PerformSearchAsync();
+
+        if (OnRefreshRequested.HasDelegate)
+        {
+            await OnRefreshRequested.InvokeAsync();
+        }
+    }
 
     private string GetColorClass(string name)
     {
         if (string.IsNullOrEmpty(name)) return "bg-purple";
         var colors = new[] { "bg-purple", "bg-blue", "bg-teal", "bg-coral", "bg-pink" };
         return colors[Math.Abs(name.GetHashCode()) % colors.Length];
-    }
-
-    private void OnSearchChangedNative(ChangeEventArgs e)
-    {
-        _searchTerm = e.Value?.ToString() ?? "";
     }
 
     private bool CanEditRole(WorkspaceRoleDto targetRole) => CurrentUserRole is WorkspaceRoleDto.Owner && targetRole != WorkspaceRoleDto.Owner;
@@ -105,6 +197,8 @@
         {
             await WorkspaceStore.ChangeMemberRoleAsync(WorkspaceId, userId, newRole);
             Toast.ShowSuccess("Role updated.");
+
+            await RefreshMembersAsync();
         }
         catch (Exception ex)
         {
@@ -131,6 +225,8 @@
             {
                 await WorkspaceStore.RemoveMemberAsync(WorkspaceId, userId);
                 Toast.ShowSuccess("Member removed.");
+
+                await RefreshMembersAsync();
             }
             catch (Exception ex)
             {
