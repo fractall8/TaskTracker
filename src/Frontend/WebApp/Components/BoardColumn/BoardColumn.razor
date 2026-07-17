@@ -45,24 +45,6 @@
     }
 </div>
 
-<MudMessageBox @ref="_deleteColumnBox" Title="Delete Column?">
-    <MessageContent>
-        <MudText>Are you sure you want to delete '<b>@Column.Name</b>'?</MudText>
-        <br/>
-        <div
-            style="color: var(--mud-palette-error); font-weight: bold; background-color: var(--mud-palette-drawer-background); padding: 12px; border-radius: 8px; border-left: 4px solid var(--mud-palette-error);">
-            ⚠️ WARNING: This action cannot be undone. All tasks, comments, and attachments inside this column will be
-            DELETED.
-        </div>
-    </MessageContent>
-    <YesButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Error">Delete</MudButton>
-    </YesButton>
-    <CancelButton>
-        <MudButton Variant="Variant.Text" Color="Color.Default">Cancel</MudButton>
-    </CancelButton>
-</MudMessageBox>
-
 @code {
     [Parameter, EditorRequired] public ColumnDto Column { get; set; } = null!;
     [Parameter, EditorRequired] public Guid BoardId { get; set; }
@@ -75,8 +57,6 @@
     [Parameter] public EventCallback<ColumnDto> OnColumnDragEnter { get; set; }
     [Parameter] public EventCallback<ColumnDto> OnColumnDrop { get; set; }
     [Parameter] public EventCallback OnColumnDragEnd { get; set; }
-
-    private MudMessageBox? _deleteColumnBox;
 
     private async Task HandleColumnDragStart() => await OnColumnDragStart.InvokeAsync(Column);
     private async Task HandleColumnDragEnter() => await OnColumnDragEnter.InvokeAsync(Column);
@@ -108,18 +88,29 @@
 
     private async Task DeleteColumn()
     {
-        bool? result = await _deleteColumnBox!.ShowAsync();
+        var taskCount = BoardDetailsStore.Tasks.Count(t => t.ColumnId == Column.Id);
 
-        if (result == true)
+        var parameters = new DialogParameters<ConfirmDeleteDialog>
+        {
+            { x => x.Title, "Delete column" },
+            { x => x.ContentText, $"Delete the \"{Column.Name}\" column and all {taskCount} task(s) in it?" },
+            { x => x.ConfirmText, "Delete column" }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
         {
             try
             {
                 await BoardDetailsStore.DeleteColumnAsync(Column.Id);
-                Snackbar.Add("Column and all its content deleted", Severity.Info);
+                Snackbar.Add("Column and all its content deleted.", Severity.Success);
             }
             catch (Exception ex)
             {
-                Snackbar.Add(ex.Message, Severity.Error);
+                Snackbar.Add($"Failed to delete column: {ex.Message}", Severity.Error);
             }
         }
     }

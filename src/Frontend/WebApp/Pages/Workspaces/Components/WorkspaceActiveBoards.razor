@@ -11,7 +11,7 @@
 <div class="toolbar">
     <div class="search-input">
         <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Small"/>
-        <input placeholder="Search boards" value="@_searchTerm" @oninput="OnSearchInput" />
+        <input placeholder="Search boards" value="@_searchTerm" @oninput="OnSearchInput"/>
     </div>
     <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
         <div class="pg-size">
@@ -196,7 +196,7 @@ else
                     await _searchCts.CancelAsync();
                     _searchCts.Dispose();
                 }
-                
+
                 _searchCts = new CancellationTokenSource();
                 await LoadBoardsAsync(_searchCts.Token);
             }
@@ -267,8 +267,19 @@ else
     private async Task DeleteBoard(BoardPreviewDto board)
     {
         var safeBoardName = board.Name.Length > 40 ? board.Name[..40] + "..." : board.Name;
-        bool? result = await DialogService.ShowMessageBoxAsync("Delete Confirmation", $"Delete board '{safeBoardName}'?", yesText: "Delete", cancelText: "Cancel");
-        if (result == true)
+
+        var parameters = new DialogParameters<ConfirmDeleteDialog>
+        {
+            { x => x.Title, "Delete board" },
+            { x => x.ContentText, $"Delete \"{safeBoardName}\"? All of its lists and cards will be permanently removed." },
+            { x => x.ConfirmText, "Delete board" }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
         {
             try
             {
@@ -286,8 +297,19 @@ else
     private async Task LeaveBoard(BoardPreviewDto board)
     {
         var safeBoardName = board.Name.Length > 40 ? board.Name[..40] + "..." : board.Name;
-        bool? result = await DialogService.ShowMessageBoxAsync("Leave Board", $"Leave board '{safeBoardName}'?", yesText: "Leave", cancelText: "Cancel");
-        if (result == true)
+
+        var parameters = new DialogParameters<ConfirmDeleteDialog>
+        {
+            { x => x.Title, "Leave board" },
+            { x => x.ContentText, $"Are you sure you want to leave \"{safeBoardName}\"? You will lose access to this board." },
+            { x => x.ConfirmText, "Leave board" }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
         {
             try
             {

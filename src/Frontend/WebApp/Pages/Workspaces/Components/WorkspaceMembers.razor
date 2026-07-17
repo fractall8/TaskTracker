@@ -3,6 +3,7 @@
 @inject ISnackbar Snackbar
 @using Contracts.DTOs
 @using Contracts.Enums
+@using WebApp.Shared.Dialogs
 
 <table class="data-table">
     <thead>
@@ -47,18 +48,20 @@
             </td>
             <td class="muted">@member.JoinedAt.ToLocalTime().ToString("MMM dd, yyyy", System.Globalization.CultureInfo.InvariantCulture)</td>
             <td>
-                <select class="fake-select @(member.UserId == CurrentUserId || !CanEditRole(member.Role) ? "disabled" : "")"
-                        disabled="@(member.UserId == CurrentUserId || !CanEditRole(member.Role))"
-                        @onchange="@((ChangeEventArgs e) => ChangeMemberRole(member.UserId, Enum.Parse<WorkspaceRoleDto>(e.Value.ToString())))">
+                <select
+                    class="fake-select @(member.UserId == CurrentUserId || !CanEditRole(member.Role) ? "disabled" : "")"
+                    disabled="@(member.UserId == CurrentUserId || !CanEditRole(member.Role))"
+                    @onchange="@((ChangeEventArgs e) => ChangeMemberRole(member.UserId, Enum.Parse<WorkspaceRoleDto>(e.Value.ToString())))">
                     <option value="Member" selected="@(member.Role == WorkspaceRoleDto.Member)">Member</option>
                     <option value="Admin" selected="@(member.Role == WorkspaceRoleDto.Admin)">Admin</option>
-                    <option value="Owner" selected="@(member.Role == WorkspaceRoleDto.Owner)" disabled="true">Owner</option>
+                    <option value="Owner" selected="@(member.Role == WorkspaceRoleDto.Owner)" disabled="true">Owner
+                    </option>
                 </select>
             </td>
             <td class="actions">
-                <button class="icon-btn sm ghost" disabled="@(member.UserId == CurrentUserId || !CanRemoveMember())" 
+                <button class="icon-btn sm ghost" disabled="@(member.UserId == CurrentUserId || !CanRemoveMember())"
                         aria-label="Remove member" @onclick="@(() => RemoveMember(member.UserId, member.Email))">
-                    <MudIcon Icon="@Icons.Material.Outlined.PersonRemove" Size="Size.Small" />
+                    <MudIcon Icon="@Icons.Material.Outlined.PersonRemove" Size="Size.Small"/>
                 </button>
             </td>
         </tr>
@@ -110,8 +113,18 @@
 
     private async Task RemoveMember(Guid userId, string email)
     {
-        var confirmed = await DialogService.ShowMessageBoxAsync("Remove Member", $"Remove {email} from this workspace?", yesText: "Remove", cancelText: "Cancel");
-        if (confirmed == true)
+        var parameters = new DialogParameters<ConfirmDeleteDialog>
+        {
+            { x => x.Title, "Remove member" },
+            { x => x.ContentText, $"Remove {email} from this workspace? They will lose access to all boards inside it." },
+            { x => x.ConfirmText, "Remove" }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
         {
             try
             {

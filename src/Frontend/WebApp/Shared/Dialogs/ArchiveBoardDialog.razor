@@ -1,34 +1,50 @@
 ﻿@using Contracts.DTOs
 
-<MudDialog>
+<MudDialog Style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
     <TitleContent>
-        <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-primary);">
-            <MudIcon Icon="@Icons.Material.Filled.Archive" Class="mr-2 mb-n1" />
+        <span style="font-size: 16px; font-weight: 600; color: var(--mud-palette-text-primary);">
             Archive Board
-        </MudText>
+        </span>
     </TitleContent>
     <DialogContent>
-        <MudText Typo="Typo.body2" Class="mb-4">
+        <p style="margin: 0 0 16px 0; font-size: 13.5px; color: var(--mud-palette-text-secondary); line-height: 1.5;">
             Archiving will make this board read-only. You can also generate a downloadable ZIP archive of its contents.
-        </MudText>
-        
-        <MudText Typo="Typo.subtitle2" Class="mb-2">Include in export:</MudText>
-        <div class="d-flex flex-column gap-2">
-            <MudCheckBox @bind-Value="_model.IncludeDescriptions" Label="Task descriptions" Color="Color.Primary" Dense="true" />
-            <MudCheckBox @bind-Value="_model.IncludeComments" Label="Comments" Color="Color.Primary" Dense="true" />
-            <MudCheckBox @bind-Value="_model.IncludeAttachments" Label="Task attachments" Color="Color.Primary" Dense="true" />
-            <MudCheckBox @bind-Value="_model.IncludeMembers" Label="Board members" Color="Color.Primary" Dense="true" />
+        </p>
+
+        <p style="margin: 0 0 10px 0; font-size: 13px; font-weight: 600; color: var(--mud-palette-text-primary);">
+            Include in export:
+        </p>
+
+        <div class="d-flex flex-column gap-3">
+            <label class="checkbox-field">
+                <input type="checkbox" @bind="_model.IncludeDescriptions"/>
+                <span>Task descriptions</span>
+            </label>
+            <label class="checkbox-field">
+                <input type="checkbox" @bind="_model.IncludeComments"/>
+                <span>Comments</span>
+            </label>
+            <label class="checkbox-field">
+                <input type="checkbox" @bind="_model.IncludeAttachments"/>
+                <span>Task attachments</span>
+            </label>
+            <label class="checkbox-field">
+                <input type="checkbox" @bind="_model.IncludeMembers"/>
+                <span>Board members</span>
+            </label>
         </div>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Warning" Variant="Variant.Filled" OnClick="Submit">Archive & Export</MudButton>
+        <div style="display: flex; gap: 8px; width: 100%; justify-content: flex-end; padding: 0 8px 8px 8px;">
+            <button type="button" class="btn" @onclick="Cancel">Cancel</button>
+            <button type="button" class="btn btn-danger" @onclick="Submit">Archive & Export</button>
+        </div>
     </DialogActions>
 </MudDialog>
 
 @code {
     [CascadingParameter] public IMudDialogInstance MudDialog { get; set; } = null!;
-    
+
     private readonly ExportOptionsFormModel _model = new();
 
     private void Cancel() => MudDialog.Cancel();
@@ -51,4 +67,5 @@
         public bool IncludeAttachments { get; set; } = true;
         public bool IncludeMembers { get; set; } = true;
     }
+
 }

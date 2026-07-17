@@ -54,21 +54,27 @@
 
     private async Task ConfirmDeleteTask()
     {
-        bool? result = await DialogService.ShowMessageBoxAsync(
-            "Delete Task",
-            $"Are you sure you want to delete '{Task.Title}'?",
-            yesText: "Delete", cancelText: "Cancel");
+        var parameters = new DialogParameters<ConfirmDeleteDialog>
+        {
+            { x => x.Title, "Delete task" },
+            { x => x.ContentText, $"Delete \"{Task.Title}\"? This can't be undone." },
+            { x => x.ConfirmText, "Delete task" }
+        };
 
-        if (result == true)
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
         {
             try
             {
                 await Store.DeleteTaskAsync(Task.Id);
-                Snackbar.Add("Task deleted", Severity.Info);
+                Snackbar.Add("Task deleted.", Severity.Success);
             }
             catch (Exception ex)
             {
-                Snackbar.Add(ex.Message, Severity.Error);
+                Snackbar.Add($"Failed to delete task: {ex.Message}", Severity.Error);
             }
         }
     }

@@ -53,3 +53,196 @@ html, body {
     --mud-palette-error: #EB5757;
     --mud-palette-action-default-hover: rgba(255, 255, 255, 0.05);
 }
+
+/* global styls for dialogs */
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--mud-palette-text-secondary);
+    font-weight: 500;
+    text-align: left;
+}
+
+.form-input {
+    width: 100%;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 13.5px;
+    color: var(--mud-palette-text-primary);
+    background: var(--mud-palette-surface);
+    font-weight: 400;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    resize: vertical;
+}
+
+.form-input:focus {
+    border-color: var(--mud-palette-primary);
+    box-shadow: 0 0 0 1px var(--mud-palette-primary);
+}
+
+.form-input::placeholder {
+    color: var(--mud-palette-text-secondary);
+    opacity: 0.6;
+}
+
+.validation-error {
+    color: var(--mud-palette-error);
+    font-size: 11.5px;
+    margin-top: -2px;
+}
+
+.checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.checkbox-field input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--mud-palette-primary);
+    cursor: pointer;
+}
+
+.checkbox-field span {
+    font-size: 13.5px;
+    color: var(--mud-palette-text-primary);
+}
+
+/* Global Button Styles for Modals and App */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 500;
+    border: 1px solid var(--mud-palette-lines-default);
+    background: var(--mud-palette-surface);
+    color: var(--mud-palette-text-primary);
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s, filter 0.2s;
+}
+
+.btn:hover:not(:disabled) {
+    background: var(--mud-palette-action-default-hover);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn.ghost {
+    border-color: transparent;
+    background: transparent;
+}
+
+.btn-primary {
+    background: var(--mud-palette-primary);
+    color: #fff;
+    border-color: var(--mud-palette-primary);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--mud-palette-primary);
+    color: #fff;
+    filter: brightness(0.85);
+}
+
+.btn-danger {
+    background: var(--mud-palette-error);
+    color: #fff;
+    border-color: var(--mud-palette-error);
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: var(--mud-palette-error);
+    color: #fff;
+    filter: brightness(0.85);
+}
+
+/* Modern Snackbar (Toast) Overrides - Tinted Style */
+.mud-snackbar {
+    border-radius: 12px !important;
+    font-family: "Inter", sans-serif !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1) !important;
+    min-width: 300px !important;
+    padding: 6px 8px !important;
+    backdrop-filter: blur(8px);
+}
+
+.mud-snackbar .mud-icon-root {
+    background: transparent !important;
+    width: 22px !important;
+    height: 22px !important;
+    margin-right: 10px !important;
+}
+
+.mud-snackbar-content-message {
+    font-size: 13.5px !important;
+    font-weight: 500 !important;
+    line-height: 1.5 !important;
+    padding-left: 0 !important;
+    color: var(--mud-palette-text-primary) !important;
+}
+
+.mud-snackbar-success {
+    background-color: rgba(39, 174, 96, 0.12) !important;
+    border: 1px solid rgba(39, 174, 96, 0.4) !important;
+}
+
+.mud-snackbar-success .mud-icon-root {
+    color: var(--mud-palette-success) !important;
+}
+
+.mud-snackbar-error {
+    background-color: rgba(235, 87, 87, 0.12) !important;
+    border: 1px solid rgba(235, 87, 87, 0.4) !important;
+}
+
+.mud-snackbar-error .mud-icon-root {
+    color: var(--mud-palette-error) !important;
+}
+
+.mud-snackbar-info {
+    background-color: rgba(92, 88, 214, 0.12) !important;
+    border: 1px solid rgba(92, 88, 214, 0.4) !important;
+}
+
+.mud-snackbar-info .mud-icon-root {
+    color: var(--mud-palette-info) !important;
+}
+
+.mud-snackbar-warning {
+    background-color: rgba(242, 201, 76, 0.15) !important;
+    border: 1px solid rgba(242, 201, 76, 0.5) !important;
+}
+
+.mud-snackbar-warning .mud-icon-root {
+    color: #d97706 !important;
+}
+
+.dark-mode .mud-snackbar-warning .mud-icon-root {
+    color: var(--mud-palette-warning) !important;
+}
+
+.mud-snackbar-action button {
+    color: var(--mud-palette-text-secondary) !important;
+    border-radius: 6px !important;
+    transition: background-color 0.2s, color 0.2s !important;
+}
+
+.mud-snackbar-action button:hover {
+    background-color: var(--mud-palette-action-default-hover) !important;
+    color: var(--mud-palette-text-primary) !important;
+}

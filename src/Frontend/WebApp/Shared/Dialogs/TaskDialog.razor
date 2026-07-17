@@ -2,98 +2,87 @@
 @using Contracts.DTOs
 @using Contracts.Requests.Tasks
 
-<MudDialog>
+<MudDialog Style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
     <TitleContent>
-        <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-primary);">
-            <MudIcon Icon="@(IsEditMode ? Icons.Material.Filled.Edit : Icons.Material.Filled.Add)" Class="mr-2 mb-n1"/>
-            @(IsEditMode ? "Edit Task" : "New Task")
-        </MudText>
+        <span style="font-size: 16px; font-weight: 600; color: var(--mud-palette-text-primary);">
+            @(IsEditMode ? "Edit task" : "Create task")
+        </span>
     </TitleContent>
     <DialogContent>
-        <MudForm @ref="_form" Model="@_model" ValidationDelay="0">
-            <MudTextField @bind-Value="_model.Title"
-                          For="@(() => _model.Title)"
-                          Label="Task Title"
-                          Required="true"
-                          RequiredError="Title is required"
-                          Variant="Variant.Outlined"
-                          Margin="Margin.Dense"
-                          MaxLength="100"
-                          Class="mb-3"/>
+        <EditForm Model="@_model" OnValidSubmit="Submit">
+            <DataAnnotationsValidator />
 
-            <MudTextField @bind-Value="_model.Description"
-                          For="@(() => _model.Description)"
-                          Label="Description (Optional)"
-                          Variant="Variant.Outlined"
-                          Margin="Margin.Dense"
-                          Lines="@(IsEditMode ? 5 : 3)"
-                          MaxLength="500"
-                          Class="mb-3"/>
+            <label class="form-field">
+                <span>Title</span>
+                <InputText @bind-Value="_model.Title" class="form-input" placeholder="e.g. Draft landing page copy" />
+                <ValidationMessage For="@(() => _model.Title)" class="validation-error" />
+            </label>
 
-            <MudSelect T="Guid?"
-                       @bind-Value="_model.AssigneeId"
-                       For="@(() => _model.AssigneeId)"
-                       Label="Assignee (Optional)"
-                       Variant="Variant.Outlined"
-                       Margin="Margin.Dense"
-                       Clearable="true">
-                <MudSelectItem T="Guid?" Value="@((Guid?)null)">— Unassigned —</MudSelectItem>
+            <label class="form-field mt-3">
+                <span>Description (Optional)</span>
+                <InputTextArea @bind-Value="_model.Description" class="form-input" rows="@(IsEditMode ? 5 : 3)" placeholder="Add more detail" />
+                <ValidationMessage For="@(() => _model.Description)" class="validation-error" />
+            </label>
 
-                @foreach (var member in BoardMembersStore.Members)
-                {
-                    <MudSelectItem T="Guid?" Value="@((Guid?)member.UserId)">
-                        <div class="d-flex align-center gap-2">
-                            <MudAvatar Size="Size.Small" Color="Color.Primary"
-                                       Style="width: 24px; height: 24px; font-size: 12px;">
-                                @{
-                                    var displayName = !string.IsNullOrWhiteSpace(member.DisplayName) ? member.DisplayName : member.Email;
-                                    var initial = displayName.FirstOrDefault().ToString().ToUpper();
-                                }
-                                @if (!string.IsNullOrEmpty(member.AvatarUrl))
-                                {
-                                    <MudImage Src="@member.AvatarUrl"/>
-                                }
-                                else
-                                {
-                                    @initial
-                                }
-                            </MudAvatar>
-                            <MudText Typo="Typo.body2" Class="text-truncate">
-                                @if (!string.IsNullOrWhiteSpace(member.DisplayName))
-                                {
-                                    @member.DisplayName
-                                    <span class="ms-1"
-                                          style="color: var(--mud-palette-text-secondary); font-size: 0.85em;">(@member.Email)</span>
-                                }
-                                else
-                                {
-                                    @member.Email
-                                }
-                            </MudText>
-                        </div>
-                    </MudSelectItem>
-                }
-            </MudSelect>
-        </MudForm>
+            <label class="form-field mt-3">
+                <span>Assignee (Optional)</span>
+                <MudSelect T="Guid?"
+                           @bind-Value="_model.AssigneeId"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Clearable="true"
+                           Placeholder="— Unassigned —"
+                           Style="background: var(--mud-palette-surface); border-radius: 8px;">
+                    <MudSelectItem T="Guid?" Value="@((Guid?)null)">— Unassigned —</MudSelectItem>
+
+                    @foreach (var member in BoardMembersStore.Members)
+                    {
+                        <MudSelectItem T="Guid?" Value="@((Guid?)member.UserId)">
+                            <div class="d-flex align-center gap-2">
+                                <MudAvatar Size="Size.Small" Color="Color.Primary" Style="width: 24px; height: 24px; font-size: 12px;">
+                                    @{
+                                        var displayName = !string.IsNullOrWhiteSpace(member.DisplayName) ? member.DisplayName : member.Email;
+                                        var initial = displayName.FirstOrDefault().ToString().ToUpper();
+                                    }
+                                    @if (!string.IsNullOrEmpty(member.AvatarUrl)) { <MudImage Src="@member.AvatarUrl"/> }
+                                    else { @initial }
+                                </MudAvatar>
+                                <MudText Typo="Typo.body2" Class="text-truncate">
+                                    @if (!string.IsNullOrWhiteSpace(member.DisplayName))
+                                    {
+                                        @member.DisplayName <span class="ms-1" style="color: var(--mud-palette-text-secondary); font-size: 0.85em;">(@member.Email)</span>
+                                    }
+                                    else { @member.Email }
+                                </MudText>
+                            </div>
+                        </MudSelectItem>
+                    }
+                </MudSelect>
+            </label>
+
+            <div class="d-flex w-100 justify-space-between align-center mt-6 mb-2">
+                <div>
+                    @if (IsEditMode)
+                    {
+                        <button type="button" class="btn ghost" style="color: var(--mud-palette-error);" @onclick="Delete">Delete task</button>
+                    }
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn" @onclick="Cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" disabled="@BoardMembersStore.IsLoading">
+                        @if (BoardMembersStore.IsLoading)
+                        {
+                            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>
+                        }
+                        else
+                        {
+                            @(IsEditMode ? "Save changes" : "Create task")
+                        }
+                    </button>
+                </div>
+            </div>
+        </EditForm>
     </DialogContent>
-    <DialogActions>
-        @if (IsEditMode)
-        {
-            <MudButton Color="Color.Error" Variant="Variant.Text" OnClick="Delete" Class="mr-auto">Delete</MudButton>
-        }
-        <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit"
-                   Disabled="BoardMembersStore.IsLoading">
-            @if (BoardMembersStore.IsLoading)
-            {
-                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>
-            }
-            else
-            {
-                @(IsEditMode ? "Save" : "Create")
-            }
-        </MudButton>
-    </DialogActions>
 </MudDialog>
 
 @code {
@@ -105,7 +94,6 @@
     [Inject] private IBoardMembersStore BoardMembersStore { get; set; } = null!;
     [Inject] private ISnackbar Snackbar { get; set; } = null!;
 
-    private MudForm? _form;
     private TaskFormModel _model = new();
 
     private bool IsEditMode => Task is not null;
@@ -143,36 +131,28 @@
 
     private void Delete() => MudDialog?.Close(DialogResult.Ok("DELETE"));
 
-    private async Task Submit()
+    private void Submit()
     {
-        if (_form is not null)
+        if (IsEditMode)
         {
-            await _form.ValidateAsync();
-
-            if (_form.IsValid)
-            {
-                if (IsEditMode)
-                {
-                    var updateRequest = new UpdateTaskRequest(
-                        Title: _model.Title,
-                        Description: string.IsNullOrWhiteSpace(_model.Description) ? null : _model.Description,
-                        DueDate: Task!.DueDate,
-                        AssigneeId: _model.AssigneeId,
-                        ColumnId: Task.ColumnId
-                    );
-                    MudDialog?.Close(DialogResult.Ok(updateRequest));
-                }
-                else
-                {
-                    var createRequest = new CreateTaskRequest(
-                        Title: _model.Title,
-                        Description: string.IsNullOrWhiteSpace(_model.Description) ? null : _model.Description,
-                        DueDate: null,
-                        AssigneeId: _model.AssigneeId
-                    );
-                    MudDialog?.Close(DialogResult.Ok(createRequest));
-                }
-            }
+            var updateRequest = new UpdateTaskRequest(
+                Title: _model.Title,
+                Description: string.IsNullOrWhiteSpace(_model.Description) ? null : _model.Description,
+                DueDate: Task!.DueDate,
+                AssigneeId: _model.AssigneeId,
+                ColumnId: Task.ColumnId
+            );
+            MudDialog?.Close(DialogResult.Ok(updateRequest));
+        }
+        else
+        {
+            var createRequest = new CreateTaskRequest(
+                Title: _model.Title,
+                Description: string.IsNullOrWhiteSpace(_model.Description) ? null : _model.Description,
+                DueDate: null,
+                AssigneeId: _model.AssigneeId
+            );
+            MudDialog?.Close(DialogResult.Ok(createRequest));
         }
     }
 

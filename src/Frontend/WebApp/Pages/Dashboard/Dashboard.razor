@@ -115,6 +115,7 @@
 </div>
 
 @code {
+
     private readonly (string bg, string color)[] _avatarColors =
     [
         ("#FBCBBD", "#8A3B24"),
@@ -186,12 +187,19 @@
     private async Task DeleteWorkspace(WorkspaceDto workspace)
     {
         var safeName = workspace.Name.Length > 40 ? workspace.Name[..40] + "..." : workspace.Name;
-        var confirmed = await DialogService.ShowMessageBoxAsync(
-            "Delete Confirmation",
-            $"Are you sure you want to delete '{safeName}'? All boards, columns and tasks inside will be permanently removed.",
-            yesText: "Delete", cancelText: "Cancel");
 
-        if (confirmed == true)
+        var parameters = new DialogParameters<ConfirmDeleteDialog>
+        {
+            { x => x.Title, "Delete workspace" },
+            { x => x.ContentText, $"Are you sure you want to delete \"{safeName}\"? All of its boards, columns and tasks will be permanently removed." },
+            { x => x.ConfirmText, "Delete workspace" }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
         {
             try
             {

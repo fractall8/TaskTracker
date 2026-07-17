@@ -171,8 +171,18 @@ else
 
     private async Task RevokeInvite(Guid inviteId)
     {
-        var confirmed = await DialogService.ShowMessageBoxAsync("Revoke Invite", "Revoke this invite?", yesText: "Revoke", cancelText: "Cancel");
-        if (confirmed == true)
+        var parameters = new DialogParameters<ConfirmDeleteDialog>
+        {
+            { x => x.Title, "Cancel invite" },
+            { x => x.ContentText, "Cancel this invite? The link will stop working immediately." },
+            { x => x.ConfirmText, "Cancel invite" }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
         {
             try
             {
@@ -186,7 +196,7 @@ else
             }
         }
     }
-
+    
     private string GetInviteUrl(string token) => $"{Navigation.BaseUri.TrimEnd('/')}/accept-invite?token={token}";
 
     private async Task CopyToClipboardAsync(string text)

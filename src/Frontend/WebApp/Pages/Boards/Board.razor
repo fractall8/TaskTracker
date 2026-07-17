@@ -4,6 +4,7 @@
 @using Contracts.Enums
 @using Services.Abstractions.Hubs
 @using WebApp.Components.BoardColumn
+@using WebApp.Components.BoardExportControls
 @using WebApp.Components.TaskCard
 @using WebApp.Shared.Dialogs
 @inject IBoardDetailsStore BoardDetailsStore
@@ -38,7 +39,7 @@
                        @oninput="OnSearchInput"
                        disabled="@(BoardDetailsStore.Board == null)"/>
             </div>
-            
+
             @if (_workspaceRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
             {
                 <button class="btn" @onclick="OpenManageMembersDialog">
@@ -46,28 +47,29 @@
                     Members
                 </button>
             }
-            
+
             <BoardExportControls/>
         </div>
     </div>
 
     @if (!string.IsNullOrEmpty(BoardDetailsStore.ErrorMessage))
     {
-        <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mb-4 flex-shrink-0 rounded-lg">
-            @BoardDetailsStore.ErrorMessage
-        </MudAlert>
+        <div class="error-alert mb-4">
+            <MudIcon Icon="@Icons.Material.Outlined.ErrorOutline" Size="Size.Small" Class="error-alert-icon"/>
+            <span>@BoardDetailsStore.ErrorMessage</span>
+        </div>
     }
 
     @if (BoardDetailsStore.Board is { IsArchived: true })
     {
-        <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Class="mb-4 rounded-lg"
-                  Icon="@Icons.Material.Filled.Archive"
-                  Style="border-width: 2px; background-color: var(--mud-palette-surface);">
-            <MudText Typo="Typo.h6" Class="fw-bold">Archived Board</MudText>
-            <MudText Typo="Typo.body2">This board is in Read-Only mode. You can view tasks and download the archive, but
-                no changes can be made.
-            </MudText>
-        </MudAlert>
+        <div class="archive-alert mb-4">
+            <MudIcon Icon="@Icons.Material.Outlined.Archive" Class="archive-alert-icon"/>
+            <div class="archive-alert-content">
+                <h4>Archived Board</h4>
+                <p>This board is in Read-Only mode. You can view tasks and download the archive, but no changes can be
+                    made.</p>
+            </div>
+        </div>
     }
 
     @if (BoardDetailsStore.IsLoading && BoardDetailsStore.Board == null)
