@@ -146,21 +146,24 @@
     padding-left: 0;
 }
 
-::deep .due-text {
+.due-text {
     font-weight: 500;
 }
 
-::deep .due-text.due-danger {
+.due-danger {
     color: var(--mud-palette-error);
 }
 
-::deep .due-text.due-green {
-    color: var(--mud-palette-success);
+.due-warning {
+    color: var(--mud-palette-warning);
 }
 
-::deep .due-text.due-muted {
+.due-default {
+    color: var(--mud-palette-text-primary);
+}
+
+.due-muted {
     color: var(--mud-palette-text-secondary);
-    font-weight: 400;
 }
 
 ::deep .avatar-round {

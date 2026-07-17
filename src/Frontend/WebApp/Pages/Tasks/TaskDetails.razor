@@ -121,18 +121,38 @@
                     </button>
                 </div>
 
-                <div class="side-meta-row mt-2">
+                <div class="side-meta-row mt-2" style="position: relative;">
                     <p class="info-label">Due date</p>
-                    <button class="fake-select" style="width: 100%; justify-content: space-between;"
-                            @onclick="OpenEditTaskDialog" disabled="@(!CanManageTasks)">
+
+                    <div style="position: absolute; width: 0; height: 0; overflow: hidden;">
+                        <MudDatePicker @ref="_datePicker"
+                                       Date="_task.DueDate?.ToLocalTime().Date"
+                                       DateChanged="OnDueDateChanged"
+                                       PickerVariant="PickerVariant.Dialog"
+                                       Clearable="true"/>
+                    </div>
+
+                    <button class="fake-select"
+                            style="width: 100%; justify-content: space-between; height: auto; min-height: 36px; padding-top: 6px; padding-bottom: 6px;"
+                            @onclick="OpenDatePickerAsync" disabled="@(!CanManageTasks)">
                         <span style="display: flex; align-items: center; gap: 8px;">
-                            <MudIcon Icon="@Icons.Material.Outlined.CalendarToday" Size="Size.Small"/>
+                            <MudIcon Icon="@Icons.Material.Outlined.CalendarToday" Size="Size.Small"
+                                     Style="flex-shrink: 0;"/>
                             @{ var due = GetDueInfo(_task.DueDate); }
-                            <span class="due-text due-@due.tone">@due.text</span>
+
+                            <span class="d-flex flex-column align-start text-left" style="line-height: 1.3;">
+                                <span class="due-text due-@due.tone">@due.dateStr</span>
+                                @if (!string.IsNullOrEmpty(due.statusStr))
+                                {
+                                    <span class="due-@due.tone"
+                                          style="font-size: 11.5px; opacity: 0.85;">@due.statusStr</span>
+                                }
+                            </span>
                         </span>
                         @if (CanManageTasks)
                         {
-                            <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small"/>
+                            <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small"
+                                     Style="flex-shrink: 0;"/>
                         }
                     </button>
                 </div>
@@ -147,6 +167,8 @@
 
     private TaskDto? _task;
     private bool _isLoading = true;
+
+    private MudDatePicker _datePicker = null!;
 
     private bool IsArchived => BoardDetailsStore.Board?.IsArchived == true;
     private bool CanManageTasks => !IsArchived && BoardDetailsStore.Board?.BoardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
@@ -166,17 +188,21 @@
         return (parts[0][..1] + parts[1][..1]).ToUpper();
     }
 
-    private (string text, string tone) GetDueInfo(DateTimeOffset? dueDate)
+    private (string dateStr, string statusStr, string tone) GetDueInfo(DateTimeOffset? dueDate)
     {
-        if (!dueDate.HasValue) return ("No due date", "muted");
-        var today = DateTimeOffset.UtcNow.Date;
-        var due = dueDate.Value.Date;
+        if (!dueDate.HasValue) return ("No due date", "", "muted");
+
+        var today = DateTimeOffset.Now.Date;
+        var due = dueDate.Value.ToLocalTime().Date;
         var diff = (int)(due - today).TotalDays;
 
-        if (diff < 0) return ($"Overdue by {-diff} day{(-diff == 1 ? "" : "s")}", "danger");
-        if (diff == 0) return ("Due today", "danger");
-        if (diff <= 2) return (diff == 1 ? "Due tomorrow" : $"Due in {diff} days", "danger");
-        return ($"Due in {diff} days", "green");
+        var dateStr = due.ToString("MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture);
+
+        if (diff < 0) return (dateStr, $"Overdue by {-diff} day{(-diff == 1 ? "" : "s")}", "danger");
+        if (diff == 0) return (dateStr, "Due today", "warning");
+        if (diff <= 2) return (dateStr, diff == 1 ? "Due tomorrow" : $"Due in {diff} days", "default");
+
+        return (dateStr, $"Due in {diff} days", "default");
     }
 
     protected override async Task OnInitializedAsync()
@@ -198,11 +224,47 @@
         }
         catch (Exception ex)
         {
-            Toast.ShowError($"Failed to load task: {ex.Message}");
+            Toast.ShowError(ex.Message);
         }
         finally
         {
             _isLoading = false;
+        }
+    }
+
+    private async Task OpenDatePickerAsync()
+    {
+        await _datePicker.OpenAsync();
+    }
+
+    private async Task OnDueDateChanged(DateTime? newDate)
+    {
+        if (_task == null) return;
+
+        DateTimeOffset? newOffset = null;
+        if (newDate.HasValue)
+        {
+            var localDate = DateTime.SpecifyKind(newDate.Value.Date, DateTimeKind.Local);
+            newOffset = new DateTimeOffset(localDate).ToUniversalTime();
+        }
+
+        if (_task.DueDate == newOffset) return;
+
+        try
+        {
+            var request = new UpdateTaskDueDateRequest(newOffset);
+            var updatedTask = await BoardDetailsStore.UpdateTaskDueDateAsync(TaskId, request);
+
+            if (updatedTask != null)
+            {
+                var currentAttachments = _task.Attachments;
+                _task = updatedTask with { Attachments = currentAttachments ?? new List<AttachmentDto>() };
+                Toast.ShowSuccess("Due date updated");
+            }
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError(ex.Message);
         }
     }
 
@@ -225,10 +287,8 @@
             {
                 try
                 {
-                    var updatedTask = await TaskApi.UpdateTaskAsync(BoardId, TaskId, request);
-                    var currentAttachments = _task?.Attachments;
-
-                    _task = updatedTask with { Attachments = currentAttachments ?? new List<AttachmentDto>() };
+                    await BoardDetailsStore.UpdateTaskAsync(TaskId, request);
+                    await LoadTaskAsync();
                     Toast.ShowSuccess("Task updated");
                 }
                 catch (Exception ex)
@@ -247,13 +307,13 @@
                 {
                     try
                     {
-                        await TaskApi.DeleteTaskAsync(BoardId, TaskId);
+                        await BoardDetailsStore.DeleteTaskAsync(TaskId);
                         Toast.ShowSuccess("Task deleted");
                         Navigation.NavigateTo($"/boards/{BoardId}");
                     }
                     catch (Exception ex)
                     {
-                        Toast.ShowError($"Failed to delete task: {ex.Message}");
+                        Toast.ShowError(ex.Message);
                     }
                 }
             }
