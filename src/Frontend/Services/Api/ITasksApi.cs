@@ -29,6 +29,9 @@ public interface ITasksApi
     Task<IApiResponse<TaskDto>> UpdateAsync(Guid boardId, Guid taskId, [Body] UpdateTaskRequest request,
         CancellationToken ct = default);
 
+    [Patch("/api/boards/{boardId}/tasks/{taskId}/due-date")]
+    Task<IApiResponse<TaskDto>> UpdateDueDateAsync(Guid boardId, Guid taskId, [Body] UpdateTaskDueDateRequest request, CancellationToken ct = default);
+
     [Delete("/api/boards/{boardId}/tasks/{taskId}")]
     Task<IApiResponse> DeleteAsync(Guid boardId, Guid taskId, CancellationToken ct = default);
 

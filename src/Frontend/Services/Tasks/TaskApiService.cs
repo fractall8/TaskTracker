@@ -34,6 +34,12 @@ public class TaskApiService(ITasksApi tasksApi) : ITaskApiService
         return await response.HandleResponseAsync();
     }
 
+    public async Task<TaskDto> UpdateTaskDueDateAsync(Guid boardId, Guid taskId, UpdateTaskDueDateRequest request, CancellationToken ct = default)
+    {
+        var response = await tasksApi.UpdateDueDateAsync(boardId, taskId, request, ct);
+        return await response.HandleResponseAsync();
+    }
+
     public async Task DeleteTaskAsync(Guid boardId, Guid taskId, CancellationToken ct = default)
     {
         var response = await tasksApi.DeleteAsync(boardId, taskId, ct);

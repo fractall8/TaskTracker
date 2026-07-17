@@ -29,7 +29,7 @@ public class GetTaskByIdQueryHandler(
         }
 
         var attachments = task.Attachments.Select(a => new AttachmentDto(
-            a.Id, a.FileName, a.FileUrl, a.SizeInBytes, a.CreatedAt, a.CreatedById)).ToList();
+            a.Id, a.FileName, a.FileUrl, a.SizeInBytes, a.CreatedAt, a.CreatedById)).ToList() ?? [];
 
         return new TaskDto(
             task.Id, task.Title, task.Description, task.Position, task.DueDate,

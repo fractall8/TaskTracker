@@ -221,6 +221,21 @@ public class BoardDetailsStore(IBoardApiService boardsApi, IColumnApiService col
         NotifyStateChanged();
     }
 
+    public async Task<TaskDto?> UpdateTaskDueDateAsync(Guid taskId, UpdateTaskDueDateRequest request, CancellationToken ct = default)
+    {
+        if (BoardId == null)
+        {
+            return null;
+        }
+
+        var updatedTask = await tasksApi.UpdateTaskDueDateAsync(BoardId.Value, taskId, request, ct);
+
+        Tasks = Tasks.Select(t => t.Id == taskId ? updatedTask : t).ToList();
+        NotifyStateChanged();
+
+        return updatedTask;
+    }
+
     public async Task DeleteTaskAsync(Guid taskId, CancellationToken ct = default)
     {
         if (BoardId == null)

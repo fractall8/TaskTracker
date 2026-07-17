@@ -74,6 +74,19 @@ public class TasksController(ISender sender) : ControllerBase
         return Ok(result);
     }
 
+    [HttpPatch("{taskId:guid}/due-date")]
+    public async Task<ActionResult<TaskDto>> UpdateDueDate(
+        [FromRoute] Guid boardId,
+        [FromRoute] Guid taskId,
+        [FromBody] UpdateTaskDueDateRequest request,
+        CancellationToken ct)
+    {
+        var command = new UpdateTaskDueDateCommand(boardId, taskId, request.DueDate);
+        var result = await sender.Send(command, ct);
+
+        return Ok(result);
+    }
+
     [HttpDelete("{taskId:guid}")]
     public async Task<IActionResult> Delete([FromRoute] Guid boardId, [FromRoute] Guid taskId, CancellationToken ct)
     {
