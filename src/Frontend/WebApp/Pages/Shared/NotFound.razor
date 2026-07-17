@@ -1,37 +1,105 @@
 ﻿@page "/not-found"
-@layout MainLayout
+@layout BlankLayout
 @inject NavigationManager NavigationManager
 
 <PageTitle>404 - Page Not Found</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="d-flex align-center justify-center" Style="min-height: 80vh;">
-    <div class="text-center">
-        <MudIcon Icon="@Icons.Material.Filled.BrokenImage" Color="Color.Primary" Style="font-size: 8rem;"
-                 Class="mb-4 opacity-75"/>
-
-        <MudText Typo="Typo.h1" Color="Color.Primary" Class="font-weight-bold mb-2">404</MudText>
-
-        <MudText Typo="Typo.h4" Class="mb-6 font-weight-medium" Style="color: var(--mud-palette-text-primary);">Oops!
-            Looks like you're lost.
-        </MudText>
-
-        <MudText Typo="Typo.body1" Class="mb-8 mx-auto"
-                 Style="color: var(--mud-palette-text-secondary); max-width: 500px;">
+<div class="not-found-container">
+    <div class="not-found-content">
+        <div class="icon-wrapper">
+            <MudIcon Icon="@Icons.Material.Outlined.NotListedLocation" Style="font-size: 40px;" />
+        </div>
+        
+        <h1 class="error-code">404</h1>
+        <h2 class="error-title">Page not found</h2>
+        
+        <p class="error-desc">
             The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.
-        </MudText>
+        </p>
 
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="GoHome"
-                   StartIcon="@Icons.Material.Filled.Home" Class="px-8 py-3 font-weight-bold rounded-lg shadow-sm">
+        <button class="btn btn-primary btn-lg" @onclick="GoHome">
+            <MudIcon Icon="@Icons.Material.Outlined.Home" Size="Size.Small" />
             Back to Home
-        </MudButton>
+        </button>
     </div>
-</MudContainer>
+</div>
+
+<style>
+    .not-found-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - 120px);
+        padding: 24px;
+        text-align: center;
+    }
+
+    .not-found-content {
+        max-width: 420px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        animation: fadeIn 0.4s ease-out forwards;
+    }
+
+    .icon-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background-color: rgba(92, 88, 214, 0.1);
+        color: var(--mud-palette-primary);
+        margin-bottom: 24px;
+        box-shadow: 0 8px 30px rgba(92, 88, 214, 0.15);
+    }
+
+    .error-code {
+        font-size: 56px;
+        font-weight: 800;
+        margin: 0 0 4px 0;
+        color: var(--mud-palette-text-primary);
+        line-height: 1.1;
+        letter-spacing: -1px;
+    }
+
+    .error-title {
+        font-size: 20px;
+        font-weight: 600;
+        margin: 0 0 16px 0;
+        color: var(--mud-palette-text-primary);
+    }
+
+    .error-desc {
+        font-size: 14.5px;
+        color: var(--mud-palette-text-secondary);
+        line-height: 1.6;
+        margin: 0 0 32px 0;
+    }
+
+    .btn-lg {
+        height: 44px;
+        padding: 0 24px;
+        font-size: 14.5px;
+        border-radius: 10px;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
 
 @code {
-
     private void GoHome()
     {
         NavigationManager.NavigateTo("/");
     }
-
 }

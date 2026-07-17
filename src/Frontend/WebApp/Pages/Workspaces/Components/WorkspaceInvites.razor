@@ -69,8 +69,10 @@ else
                         <span class="badge badge-green">Active</span>
                     }
                 </td>
-                <td class="muted">@invite.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy", System.Globalization.CultureInfo.InvariantCulture)</td>
-                <td class="muted">@invite.ExpiresAt.ToLocalTime().ToString("MMM dd, yyyy", System.Globalization.CultureInfo.InvariantCulture)</td>
+
+                <td class="muted">@invite.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy, HH:mm", System.Globalization.CultureInfo.InvariantCulture)</td>
+                <td class="muted">@invite.ExpiresAt.ToLocalTime().ToString("MMM dd, yyyy, HH:mm", System.Globalization.CultureInfo.InvariantCulture)</td>
+
                 <td class="actions">
                     <button class="icon-btn sm ghost" aria-label="Edit invite"
                             @onclick="@(() => OpenEditInviteDialog(invite))">
@@ -197,7 +199,7 @@ else
             }
         }
     }
-    
+
     private string GetInviteUrl(string token) => $"{Navigation.BaseUri.TrimEnd('/')}/accept-invite?token={token}";
 
     private async Task CopyToClipboardAsync(string text)
