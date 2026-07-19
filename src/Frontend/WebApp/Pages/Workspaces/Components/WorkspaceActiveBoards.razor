@@ -133,7 +133,7 @@ else
     private CancellationTokenSource? _searchCts;
     private CancellationTokenSource? _debounceCts;
 
-    private string GetColorClass(string name)
+    private string GetColorClass(string? name)
     {
         if (string.IsNullOrEmpty(name)) return "bg-purple";
         var colors = new[] { "bg-purple", "bg-blue", "bg-teal", "bg-coral", "bg-pink" };

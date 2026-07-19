@@ -33,6 +33,25 @@ html, body {
     --mud-palette-warning: #F2C94C;
     --mud-palette-error: #EB5757;
     --mud-palette-action-default-hover: rgba(26, 29, 31, 0.04);
+
+    --purple-bg: #EEEDFE;
+    --purple-text: #3C3489;
+    --blue-bg: #E6F1FB;
+    --blue-text: #0C447C;
+    --teal-bg: #E1F5EE;
+    --teal-text: #085041;
+    --coral-bg: #FAECE7;
+    --coral-text: #712B13;
+    --pink-bg: #FBEAF0;
+    --pink-text: #72243E;
+    --gray-bg: #F1EFE8;
+    --gray-text: #444441;
+
+    --purple-solid: var(--mud-palette-primary);
+    --blue-solid: #378ADD;
+    --teal-solid: #1D9E75;
+    --coral-solid: #D85A30;
+    --pink-solid: #D4537E;
 }
 
 .dark-mode {
@@ -52,9 +71,83 @@ html, body {
     --mud-palette-warning: #F2C94C;
     --mud-palette-error: #EB5757;
     --mud-palette-action-default-hover: rgba(255, 255, 255, 0.05);
+
+    --purple-bg: #332C77;
+    --purple-text: #CECBF6;
+    --blue-bg: #0F3A63;
+    --blue-text: #B5D4F4;
+    --teal-bg: #0B4438;
+    --teal-text: #9FE1CB;
+    --coral-bg: #5E240F;
+    --coral-text: #F5C4B3;
+    --pink-bg: #5E1D33;
+    --pink-text: #F4C0D1;
+    --gray-bg: #3A3A37;
+    --gray-text: #D3D1C7;
+
+    --purple-solid: var(--mud-palette-primary);
+    --blue-solid: #4A9BE4;
+    --teal-solid: #2EBA83;
+    --coral-solid: #E26D45;
+    --pink-solid: #E0668F;
 }
 
-/* global styls for dialogs */
+.bg-purple {
+    background-color: var(--purple-bg);
+    color: var(--purple-text);
+}
+
+.bg-blue {
+    background-color: var(--blue-bg);
+    color: var(--blue-text);
+}
+
+.bg-teal {
+    background-color: var(--teal-bg);
+    color: var(--teal-text);
+}
+
+.bg-coral {
+    background-color: var(--coral-bg);
+    color: var(--coral-text);
+}
+
+.bg-pink {
+    background-color: var(--pink-bg);
+    color: var(--pink-text);
+}
+
+.bg-gray {
+    background-color: var(--gray-bg);
+    color: var(--gray-text);
+}
+
+.bg-solid-purple {
+    background-color: var(--purple-solid);
+    color: #FFFFFF;
+}
+
+.bg-solid-blue {
+    background-color: var(--blue-solid);
+    color: #FFFFFF;
+}
+
+.bg-solid-teal {
+    background-color: var(--teal-solid);
+    color: #FFFFFF;
+}
+
+.bg-solid-coral {
+    background-color: var(--coral-solid);
+    color: #FFFFFF;
+}
+
+.bg-solid-pink {
+    background-color: var(--pink-solid);
+    color: #FFFFFF;
+}
+
+/* global styles for dialogs */
 
 .form-field {
     display: flex;

@@ -191,65 +191,7 @@
     font-weight: 500;
 }
 
-::deep .bg-purple {
-    background: var(--c-purple-bg, #EEEDFE);
-    color: var(--c-purple-txt, #3C3489);
-}
-
-::deep .bg-blue {
-    background: var(--c-blue-bg, #E6F1FB);
-    color: var(--c-blue-txt, #0C447C);
-}
-
-::deep .bg-teal {
-    background: var(--c-teal-bg, #E1F5EE);
-    color: var(--c-teal-txt, #085041);
-}
-
-::deep .bg-coral {
-    background: var(--c-coral-bg, #FAECE7);
-    color: var(--c-coral-txt, #712B13);
-}
-
-::deep .bg-pink {
-    background: var(--c-pink-bg, #FBEAF0);
-    color: var(--c-pink-txt, #72243E);
-}
-
-::deep .bg-gray {
-    background: var(--c-gray-bg, #F1EFE8);
-    color: var(--c-gray-txt, #444441);
-}
-
-:global(.dark-mode) ::deep .bg-purple, :global([data-theme="dark"]) ::deep .bg-purple {
-    background: #332C77;
-    color: #CECBF6;
-}
-
-:global(.dark-mode) ::deep .bg-blue, :global([data-theme="dark"]) ::deep .bg-blue {
-    background: #0F3A63;
-    color: #B5D4F4;
-}
-
-:global(.dark-mode) ::deep .bg-teal, :global([data-theme="dark"]) ::deep .bg-teal {
-    background: #0B4438;
-    color: #9FE1CB;
-}
-
-:global(.dark-mode) ::deep .bg-coral, :global([data-theme="dark"]) ::deep .bg-coral {
-    background: #5E240F;
-    color: #F5C4B3;
-}
-
-:global(.dark-mode) ::deep .bg-pink, :global([data-theme="dark"]) ::deep .bg-pink {
-    background: #5E1D33;
-    color: #F4C0D1;
-}
-
-:global(.dark-mode) ::deep .bg-gray, :global([data-theme="dark"]) ::deep .bg-gray {
-    background: #3A3A37;
-    color: #D3D1C7;
-}
+/* Видалено блоки .bg-purple, .bg-blue тощо та їхні .dark-mode версії */
 
 ::deep .btn {
     display: inline-flex;

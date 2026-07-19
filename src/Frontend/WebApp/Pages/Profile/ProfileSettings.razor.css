@@ -171,60 +171,6 @@
     border-color: transparent;
 }
 
-/* colors for avatars */
-.profile-page {
-    --c-purple-bg: #EEEDFE;
-    --c-purple-txt: #3C3489;
-    --c-coral-bg: #FAECE7;
-    --c-coral-txt: #712B13;
-    --c-blue-bg: #E6F1FB;
-    --c-blue-txt: #0C447C;
-    --c-teal-bg: #E1F5EE;
-    --c-teal-txt: #085041;
-    --c-pink-bg: #FBEAF0;
-    --c-pink-txt: #72243E;
-}
-
-:global(.dark-mode) .profile-page,
-:global([data-theme="dark"]) .profile-page,
-:global(.mud-theme-dark) .profile-page {
-    --c-purple-bg: #332C77;
-    --c-purple-txt: #CECBF6;
-    --c-coral-bg: #5E240F;
-    --c-coral-txt: #F5C4B3;
-    --c-blue-bg: #0F3A63;
-    --c-blue-txt: #B5D4F4;
-    --c-teal-bg: #0B4438;
-    --c-teal-txt: #9FE1CB;
-    --c-pink-bg: #5E1D33;
-    --c-pink-txt: #F4C0D1;
-}
-
-::deep .bg-purple {
-    background: var(--c-purple-bg);
-    color: var(--c-purple-txt);
-}
-
-::deep .bg-coral {
-    background: var(--c-coral-bg);
-    color: var(--c-coral-txt);
-}
-
-::deep .bg-blue {
-    background: var(--c-blue-bg);
-    color: var(--c-blue-txt);
-}
-
-::deep .bg-teal {
-    background: var(--c-teal-bg);
-    color: var(--c-teal-txt);
-}
-
-::deep .bg-pink {
-    background: var(--c-pink-bg);
-    color: var(--c-pink-txt);
-}
-
 @media (max-width: 600px) {
     .profile-page {
         padding: 24px;

@@ -1,7 +1,6 @@
 ﻿.workspace-details {
     padding: 36px 44px 60px;
     font-family: "Inter", sans-serif;
-
     background-color: var(--mud-palette-background);
     min-height: 100vh;
 }
@@ -68,23 +67,12 @@
     color: var(--mud-palette-text-secondary);
     max-width: 520px;
     line-height: 1.5;
-
     word-break: break-word;
     overflow-wrap: anywhere;
 }
 
 /* chips */
 .workspace-details {
-    --c-purple-bg: #EEEDFE;
-    --c-purple-txt: #3C3489;
-    --c-coral-bg: #FAECE7;
-    --c-coral-txt: #712B13;
-    --c-blue-bg: #E6F1FB;
-    --c-blue-txt: #0C447C;
-    --c-teal-bg: #E1F5EE;
-    --c-teal-txt: #085041;
-    --c-pink-bg: #FBEAF0;
-    --c-pink-txt: #72243E;
     --c-gray-bg: #F1EFE8;
     --c-gray-txt: #444441;
     --c-green-bg: #EAF3DE;
@@ -94,16 +82,6 @@
 :global(.dark-mode) .workspace-details,
 :global([data-theme="dark"]) .workspace-details,
 :global(.mud-theme-dark) .workspace-details {
-    --c-purple-bg: #332C77;
-    --c-purple-txt: #CECBF6;
-    --c-coral-bg: #5E240F;
-    --c-coral-txt: #F5C4B3;
-    --c-blue-bg: #0F3A63;
-    --c-blue-txt: #B5D4F4;
-    --c-teal-bg: #0B4438;
-    --c-teal-txt: #9FE1CB;
-    --c-pink-bg: #5E1D33;
-    --c-pink-txt: #F4C0D1;
     --c-gray-bg: #3A3A37;
     --c-gray-txt: #D3D1C7;
     --c-green-bg: #223F0C;
@@ -118,38 +96,40 @@
     border-radius: 999px;
 }
 
-::deep .badge-purple, ::deep .bg-purple {
-    background: var(--c-purple-bg);
-    color: var(--c-purple-txt);
+/* Використовуємо глобальні кольори для бейджів ролей */
+::deep .badge-purple {
+    background-color: var(--purple-bg);
+    color: var(--purple-text);
 }
 
-::deep .badge-coral, ::deep .bg-coral {
-    background: var(--c-coral-bg);
-    color: var(--c-coral-txt);
+::deep .badge-coral {
+    background-color: var(--coral-bg);
+    color: var(--coral-text);
 }
 
-::deep .badge-blue, ::deep .bg-blue {
-    background: var(--c-blue-bg);
-    color: var(--c-blue-txt);
+::deep .badge-blue {
+    background-color: var(--blue-bg);
+    color: var(--blue-text);
 }
 
-::deep .badge-teal, ::deep .bg-teal {
-    background: var(--c-teal-bg);
-    color: var(--c-teal-txt);
+::deep .badge-teal {
+    background-color: var(--teal-bg);
+    color: var(--teal-text);
 }
 
-::deep .badge-pink, ::deep .bg-pink {
-    background: var(--c-pink-bg);
-    color: var(--c-pink-txt);
+::deep .badge-pink {
+    background-color: var(--pink-bg);
+    color: var(--pink-text);
 }
 
-::deep .badge-gray, ::deep .bg-gray {
-    background: var(--c-gray-bg);
+/* Локальні кольори для статусів інвайтів */
+::deep .badge-gray {
+    background-color: var(--c-gray-bg);
     color: var(--c-gray-txt);
 }
 
-::deep .badge-green, ::deep .bg-green {
-    background: var(--c-green-bg);
+::deep .badge-green {
+    background-color: var(--c-green-bg);
     color: var(--c-green-txt);
 }
 
@@ -406,7 +386,6 @@
     font-size: 12.5px;
     line-height: 1.5;
     color: var(--mud-palette-text-secondary);
-
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;

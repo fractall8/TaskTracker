@@ -25,6 +25,15 @@
     border-color: var(--mud-palette-primary);
 }
 
+/* Додано клас для іконки файлу */
+.card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
 .attachment-meta {
     flex: 1;
     min-width: 0;

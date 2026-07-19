@@ -7,8 +7,8 @@
 
     <div class="sidebar-wrapper">
         <NavLink href="/dashboard" class="brand" Match="NavLinkMatch.All">
-            <img src="logo.svg" alt="Spaces Logo" class="brand-mark" 
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+            <img src="logo.svg" alt="Spaces Logo" class="brand-mark"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"/>
 
             <div class="brand-mark fallback-mark" style="display: none;"></div>
 
@@ -47,7 +47,7 @@
                     @foreach (var ws in WorkspaceStore.Workspaces)
                     {
                         <NavLink href="@($"/workspaces/{ws.Id}")" class="ws-row" ActiveClass="active">
-                            <span class="dot" style="@GetDotStyle(ws.Name)"></span>
+                            <span class="dot" style="background-color: @GetDotColorVar(ws.Name);"></span>
                             <span class="ws-name">@ws.Name</span>
                         </NavLink>
                     }
@@ -110,11 +110,12 @@
                             }
                             else
                             {
-                                <div class="avatar-round" style="background-color: var(--mud-palette-primary); color: white;">
+                                <div class="avatar-round"
+                                     style="background-color: var(--mud-palette-primary); color: white;">
                                     @if (!string.IsNullOrEmpty(ProfileStore.Profile?.AvatarUrl))
                                     {
-                                        <img src="@ProfileStore.Profile.AvatarUrl" alt="Avatar" 
-                                             style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" />
+                                        <img src="@ProfileStore.Profile.AvatarUrl" alt="Avatar"
+                                             style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"/>
                                     }
                                     else
                                     {
@@ -167,16 +168,12 @@
         }
     }
 
-    private readonly string[] _dotColors =
-    [
-        "#D85A30", "#378ADD", "#7F77DD", "#D4537E", "#1D9E75"
-    ];
-
-    private string GetDotStyle(string name)
+    private string GetDotColorVar(string? name)
     {
-        if (string.IsNullOrEmpty(name)) return $"background-color: {_dotColors[0]};";
-        int index = Math.Abs(name.GetHashCode()) % _dotColors.Length;
-        return $"background-color: {_dotColors[index]};";
+        if (string.IsNullOrEmpty(name)) return "var(--purple-solid)";
+        
+        var colors = new[] { "var(--purple-solid)", "var(--blue-solid)", "var(--teal-solid)", "var(--coral-solid)", "var(--pink-solid)" };
+        return colors[Math.Abs(name.GetHashCode()) % colors.Length];
     }
 
     private string RandomWidth(int index)

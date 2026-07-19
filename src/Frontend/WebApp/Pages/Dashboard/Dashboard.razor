@@ -64,7 +64,8 @@
             {
                 <div class="ws-card" @onclick="@(() => Navigation.NavigateTo($"/workspaces/{workspace.Id}"))">
                     <div class="ws-card-header">
-                        <div class="ws-avatar" style="@GetAvatarStyle(workspace.Name)">
+                        <!-- ВИПРАВЛЕНО: Було style="@GetColorClass...", стало class="ws-avatar @GetColorClass..." -->
+                        <div class="ws-avatar @GetColorClass(workspace.Name)">
                             @(workspace.Name.FirstOrDefault().ToString().ToUpper())
                         </div>
                         <div class="ws-card-actions" @onclick:stopPropagation="true">
@@ -120,22 +121,11 @@
 
 @code {
 
-    private readonly (string bg, string color)[] _avatarColors =
-    [
-        ("#FBCBBD", "#8A3B24"),
-        ("#B5D4F5", "#1E4F8A"),
-        ("#CFC9FC", "#3E3882"),
-        ("#F4C0D4", "#802A4B"),
-        ("#A3E5C7", "#1C613D")
-    ];
-
-    private string GetAvatarStyle(string name)
+    private string GetColorClass(string? name)
     {
-        if (string.IsNullOrEmpty(name))
-            return $"background-color: {_avatarColors[0].bg}; color: {_avatarColors[0].color};";
-
-        int index = Math.Abs(name.GetHashCode()) % _avatarColors.Length;
-        return $"background-color: {_avatarColors[index].bg}; color: {_avatarColors[index].color};";
+        if (string.IsNullOrEmpty(name)) return "bg-purple";
+        var colors = new[] { "bg-purple", "bg-blue", "bg-teal", "bg-coral", "bg-pink" };
+        return colors[Math.Abs(name.GetHashCode()) % colors.Length];
     }
 
     protected override void OnInitialized() =>
