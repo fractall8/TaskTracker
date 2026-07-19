@@ -140,6 +140,9 @@
     private BoardRoleDto? _boardRole => BoardDetailsStore.Board?.BoardRole;
     private WorkspaceRoleDto? _workspaceRole;
 
+    private BoardExportStatusDto? _lastExportStatus;
+    private BoardExportStatusDto? _lastReExportStatus;
+
     private bool CanManageColumns => BoardDetailsStore.Board is { IsArchived: false } &&
                                      _boardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
 
@@ -191,9 +194,13 @@
     protected override async Task OnInitializedAsync()
     {
         BoardDetailsStore.StateChanged += HandleStoreStateChanged;
-        await BoardDetailsStore.LoadAsync(BoardId);
-        await ResolveRolesAsync();
 
+        await BoardDetailsStore.LoadAsync(BoardId);
+
+        _lastExportStatus = BoardDetailsStore.Board?.ExportStatus;
+        _lastReExportStatus = BoardDetailsStore.Board?.ReExportStatus;
+
+        await ResolveRolesAsync();
         await ExportHubService.ConnectAsync(BoardId);
     }
 
@@ -222,6 +229,24 @@
 
     private void HandleStoreStateChanged()
     {
+        var currentExportStatus = BoardDetailsStore.Board?.ExportStatus;
+        var currentReExportStatus = BoardDetailsStore.Board?.ReExportStatus;
+
+        if (_lastExportStatus is BoardExportStatusDto.Requested or BoardExportStatusDto.Pending or BoardExportStatusDto.Processing
+            && currentExportStatus is BoardExportStatusDto.Completed)
+        {
+            Toast.ShowSuccess("Archive generated successfully");
+        }
+
+        if (_lastReExportStatus is BoardExportStatusDto.Requested or BoardExportStatusDto.Pending or BoardExportStatusDto.Processing
+            && currentReExportStatus is BoardExportStatusDto.None)
+        {
+            Toast.ShowSuccess("Archive updated successfully");
+        }
+
+        _lastExportStatus = currentExportStatus;
+        _lastReExportStatus = currentReExportStatus;
+
         InvokeAsync(() =>
         {
             StateHasChanged();

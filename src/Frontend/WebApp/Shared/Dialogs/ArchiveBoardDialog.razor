@@ -1,46 +1,133 @@
 ﻿@using Contracts.DTOs
 
-<MudDialog Style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+<MudDialog Style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); padding-bottom: 8px;">
     <TitleContent>
         <span style="font-size: 16px; font-weight: 600; color: var(--mud-palette-text-primary);">
             Archive Board
         </span>
     </TitleContent>
     <DialogContent>
-        <p style="margin: 0 0 16px 0; font-size: 13.5px; color: var(--mud-palette-text-secondary); line-height: 1.5;">
+        <MudText Typo="Typo.body2" Class="mb-4" Style="color: var(--mud-palette-text-secondary);">
             Archiving will make this board read-only. You can also generate a downloadable ZIP archive of its contents.
-        </p>
+        </MudText>
 
-        <p style="margin: 0 0 10px 0; font-size: 13px; font-weight: 600; color: var(--mud-palette-text-primary);">
+        <MudText Typo="Typo.subtitle2" Class="mb-3" Style="color: var(--mud-palette-text-primary); font-weight: 600;">
             Include in export:
-        </p>
+        </MudText>
 
         <div class="d-flex flex-column gap-3">
-            <label class="checkbox-field">
+            <label class="custom-checkbox">
                 <input type="checkbox" @bind="_model.IncludeDescriptions"/>
-                <span>Task descriptions</span>
+                <span class="checkmark"></span>
+                <span class="label-text">Task descriptions</span>
             </label>
-            <label class="checkbox-field">
+            <label class="custom-checkbox">
                 <input type="checkbox" @bind="_model.IncludeComments"/>
-                <span>Comments</span>
+                <span class="checkmark"></span>
+                <span class="label-text">Comments</span>
             </label>
-            <label class="checkbox-field">
+            <label class="custom-checkbox">
                 <input type="checkbox" @bind="_model.IncludeAttachments"/>
-                <span>Task attachments</span>
+                <span class="checkmark"></span>
+                <span class="label-text">Task attachments</span>
             </label>
-            <label class="checkbox-field">
+            <label class="custom-checkbox">
                 <input type="checkbox" @bind="_model.IncludeMembers"/>
-                <span>Board members</span>
+                <span class="checkmark"></span>
+                <span class="label-text">Board members</span>
             </label>
         </div>
     </DialogContent>
     <DialogActions>
-        <div style="display: flex; gap: 8px; width: 100%; justify-content: flex-end; padding: 0 8px 8px 8px;">
-            <button type="button" class="btn" @onclick="Cancel">Cancel</button>
-            <button type="button" class="btn btn-danger" @onclick="Submit">Archive & Export</button>
+        <div class="d-flex gap-2 pa-2 w-100 justify-end">
+            <button class="btn" @onclick="Cancel">Cancel</button>
+            <button class="btn btn-error" @onclick="Submit">Archive & Export</button>
         </div>
     </DialogActions>
 </MudDialog>
+
+<style>
+    .custom-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .custom-checkbox input {
+        display: none;
+    }
+
+    .custom-checkbox .checkmark {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--mud-palette-lines-default);
+        border-radius: 5px;
+        background-color: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+
+    .custom-checkbox:hover .checkmark {
+        border-color: var(--mud-palette-primary);
+    }
+
+    .custom-checkbox input:checked + .checkmark {
+        background-color: var(--mud-palette-primary);
+        border-color: var(--mud-palette-primary);
+    }
+
+    .custom-checkbox input:checked + .checkmark::after {
+        content: "";
+        width: 5px;
+        height: 10px;
+        border: solid white;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+        margin-bottom: 2px;
+    }
+
+    .custom-checkbox .label-text {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--mud-palette-text-primary);
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 36px;
+        padding: 0 15px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        border: 1px solid var(--mud-palette-lines-default);
+        background-color: transparent;
+        color: var(--mud-palette-text-primary);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn:hover {
+        background-color: var(--mud-palette-action-default-hover);
+    }
+    
+    .btn.btn-error {
+        background-color: var(--mud-palette-error);
+        color: white;
+        border-color: var(--mud-palette-error);
+    }
+    
+    .btn.btn-error:hover {
+        background-color: var(--mud-palette-error) !important;
+        filter: brightness(0.85);
+        color: white;
+    }
+</style>
 
 @code {
     [CascadingParameter] public IMudDialogInstance MudDialog { get; set; } = null!;
