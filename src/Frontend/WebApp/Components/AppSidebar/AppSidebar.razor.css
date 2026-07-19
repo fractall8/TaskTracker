@@ -14,16 +14,29 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 4px 8px;
+    padding: 6px 8px;
     margin-bottom: 28px;
+    text-decoration: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+::deep .brand:hover {
+    background: rgba(0, 0, 0, 0.04);
 }
 
 ::deep .brand-mark {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     border-radius: 6px;
-    background: var(--mud-palette-primary);
+    object-fit: contain;
     flex-shrink: 0;
+    display: block;
+}
+
+::deep .fallback-mark {
+    background: var(--mud-palette-primary);
 }
 
 ::deep .brand-name {
