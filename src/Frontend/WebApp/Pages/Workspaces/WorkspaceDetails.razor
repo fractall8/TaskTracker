@@ -18,9 +18,12 @@
 else if (!string.IsNullOrEmpty(WorkspaceStore.ErrorMessage))
 {
     <div class="workspace-details" @key="WorkspaceId">
-        <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="rounded-lg">
-            @GetSafeErrorMessage(WorkspaceStore.ErrorMessage)
-        </MudAlert>
+        <div class="custom-alert error">
+            <MudIcon Icon="@Icons.Material.Outlined.ErrorOutline" Size="Size.Small" Class="custom-alert-icon"/>
+            <div class="custom-alert-content">
+                <p>@GetSafeErrorMessage(WorkspaceStore.ErrorMessage)</p>
+            </div>
+        </div>
         <button class="crumb mt-4" @onclick="@(() => Navigation.NavigateTo("/dashboard"))">
             <MudIcon Icon="@Icons.Material.Filled.ChevronLeft" Size="Size.Small"/>
             Return to Dashboard
@@ -60,7 +63,8 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
             </button>
             @if (_currentUserRole is WorkspaceRoleDto.Owner)
             {
-                <button class="tab @(_activeTab == "invites" ? "active" : "")" @onclick="@(() => _activeTab = "invites")">
+                <button class="tab @(_activeTab == "invites" ? "active" : "")"
+                        @onclick="@(() => _activeTab = "invites")">
                     Invites
                 </button>
             }
@@ -69,7 +73,8 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
         <div class="tab-content">
             @if (_activeTab == "boards")
             {
-                <WorkspaceActiveBoards WorkspaceId="WorkspaceId" Workspace="workspace" CurrentUserRole="_currentUserRole"/>
+                <WorkspaceActiveBoards WorkspaceId="WorkspaceId" Workspace="workspace"
+                                       CurrentUserRole="_currentUserRole"/>
             }
             else if (_activeTab == "archived")
             {
@@ -81,7 +86,7 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
                                   Workspace="workspace"
                                   CurrentUserRole="_currentUserRole"
                                   CurrentUserId="_currentUserId"
-                                  OnRefreshRequested="HandleMembersRefresh" />
+                                  OnRefreshRequested="HandleMembersRefresh"/>
             }
             else if (_activeTab == "invites" && _currentUserRole is WorkspaceRoleDto.Owner)
             {
@@ -95,7 +100,7 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
     [Parameter] public Guid WorkspaceId { get; set; }
     private WorkspaceRoleDto? _currentUserRole;
     private Guid? _currentUserId;
-    
+
     private string _activeTab = "boards";
 
     private string GetColorClass(string name)
@@ -130,7 +135,7 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
     {
         await WorkspaceStore.LoadWorkspaceDetailsAsync(WorkspaceId);
     }
-    
+
     private void ResolveCurrentUserRole()
     {
         if (_currentUserId.HasValue && WorkspaceStore.CurrentWorkspace is { } ws)

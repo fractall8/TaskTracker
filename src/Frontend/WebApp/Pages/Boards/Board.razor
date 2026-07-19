@@ -55,17 +55,19 @@
 
     @if (!string.IsNullOrEmpty(BoardDetailsStore.ErrorMessage))
     {
-        <div class="error-alert mb-4">
-            <MudIcon Icon="@Icons.Material.Outlined.ErrorOutline" Size="Size.Small" Class="error-alert-icon"/>
-            <span>@BoardDetailsStore.ErrorMessage</span>
+        <div class="custom-alert error mb-4 flex-shrink-0">
+            <MudIcon Icon="@Icons.Material.Outlined.ErrorOutline" Size="Size.Small" Class="custom-alert-icon"/>
+            <div class="custom-alert-content">
+                <p>@BoardDetailsStore.ErrorMessage</p>
+            </div>
         </div>
     }
 
     @if (BoardDetailsStore.Board is { IsArchived: true })
     {
-        <div class="archive-alert mb-4">
-            <MudIcon Icon="@Icons.Material.Outlined.Archive" Class="archive-alert-icon"/>
-            <div class="archive-alert-content">
+        <div class="custom-alert warning mb-4 flex-shrink-0">
+            <MudIcon Icon="@Icons.Material.Outlined.Archive" Size="Size.Small" Class="custom-alert-icon"/>
+            <div class="custom-alert-content">
                 <h4>Archived Board</h4>
                 <p>This board is in Read-Only mode. You can view tasks and download the archive, but no changes can be
                     made.</p>

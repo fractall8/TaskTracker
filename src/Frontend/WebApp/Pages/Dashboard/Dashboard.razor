@@ -39,9 +39,12 @@
     }
     else if (!string.IsNullOrEmpty(WorkspaceStore.ErrorMessage))
     {
-        <MudAlert Severity="Severity.Error" Class="mt-4 rounded-lg">
-            @WorkspaceStore.ErrorMessage
-        </MudAlert>
+        <div class="custom-alert error mt-4">
+            <MudIcon Icon="@Icons.Material.Outlined.ErrorOutline" Size="Size.Small" Class="custom-alert-icon"/>
+            <div class="custom-alert-content">
+                <p>@WorkspaceStore.ErrorMessage</p>
+            </div>
+        </div>
     }
     else if (!WorkspaceStore.Workspaces.Any())
     {

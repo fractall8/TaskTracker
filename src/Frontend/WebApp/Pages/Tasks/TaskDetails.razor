@@ -29,11 +29,13 @@
     {
         @if (IsArchived)
         {
-            <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Class="mb-6 rounded-lg"
-                      Icon="@Icons.Material.Filled.Archive"
-                      Style="border-width: 2px; background-color: var(--mud-palette-surface);">
-                This board is archived. The task and its details are in Read-Only mode.
-            </MudAlert>
+            <div class="custom-alert warning mb-6 flex-shrink-0">
+                <MudIcon Icon="@Icons.Material.Outlined.Archive" Size="Size.Small" Class="custom-alert-icon"/>
+                <div class="custom-alert-content">
+                    <h4>Archived Board</h4>
+                    <p>This board is archived. The task and its details are in Read-Only mode.</p>
+                </div>
+            </div>
         }
 
         <div class="task-detail-grid">

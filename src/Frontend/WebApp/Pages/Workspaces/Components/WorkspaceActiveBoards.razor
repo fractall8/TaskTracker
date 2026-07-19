@@ -41,9 +41,10 @@
 }
 else if (!_boards.Any())
 {
-    <MudAlert Severity="Severity.Info" Class="rounded-lg">
-        @(string.IsNullOrEmpty(_searchTerm) ? "You are not a member of any boards yet." : "No boards match your search.")
-    </MudAlert>
+    <div class="empty-state mt-4">
+        <MudIcon Icon="@Icons.Material.Outlined.Dashboard"/>
+        <p>@(string.IsNullOrEmpty(_searchTerm) ? "You are not a member of any boards yet." : "No boards match your search.")</p>
+    </div>
 }
 else
 {

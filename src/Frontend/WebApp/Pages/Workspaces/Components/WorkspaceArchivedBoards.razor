@@ -25,9 +25,10 @@
 }
 else if (!_boards.Any())
 {
-    <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="rounded-lg">
-        No archived boards found in this workspace.
-    </MudAlert>
+    <div class="empty-state mt-4">
+        <MudIcon Icon="@Icons.Material.Outlined.Archive"/>
+        <p>No archived boards found in this workspace.</p>
+    </div>
 }
 else
 {

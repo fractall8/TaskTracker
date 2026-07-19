@@ -27,6 +27,13 @@
         <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
     </div>
 }
+else if (!_members.Any())
+{
+    <div class="empty-state mt-4">
+        <MudIcon Icon="@Icons.Material.Outlined.People"/>
+        <p>No members found.</p>
+    </div>
+}
 else
 {
     <table class="data-table">
@@ -88,12 +95,6 @@ else
                         <MudIcon Icon="@Icons.Material.Outlined.PersonRemove" Size="Size.Small"/>
                     </button>
                 </td>
-            </tr>
-        }
-        @if (!_members.Any())
-        {
-            <tr>
-                <td colspan="4" style="text-align: center;" class="muted">No members found.</td>
             </tr>
         }
         </tbody>

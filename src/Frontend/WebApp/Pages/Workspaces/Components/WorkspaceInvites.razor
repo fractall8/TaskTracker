@@ -26,6 +26,13 @@
         <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
     </div>
 }
+else if (!_invites.Any())
+{
+    <div class="empty-state mt-4">
+        <MudIcon Icon="@Icons.Material.Outlined.MailOutline"/>
+        <p>No active or expired invites found.</p>
+    </div>
+}
 else
 {
     <table class="data-table">
@@ -83,12 +90,6 @@ else
                         <MudIcon Icon="@Icons.Material.Outlined.Delete" Size="Size.Small"/>
                     </button>
                 </td>
-            </tr>
-        }
-        @if (!_invites.Any())
-        {
-            <tr>
-                <td colspan="5" style="text-align: center;" class="muted">No active or expired invites found.</td>
             </tr>
         }
         </tbody>

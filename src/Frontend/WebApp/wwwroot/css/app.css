@@ -323,3 +323,93 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover,
 input[type="time"]::-webkit-calendar-picker-indicator:hover {
     opacity: 1;
 }
+
+/* Custom Alerts & Empty States */
+
+.custom-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.5;
+    margin-bottom: 16px;
+    border: 1px solid transparent;
+}
+
+.custom-alert-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.custom-alert-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+}
+
+.custom-alert-content h4 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 14.5px;
+    color: inherit;
+}
+
+.custom-alert-content p {
+    margin: 0;
+    font-weight: 400;
+    color: inherit;
+    opacity: 0.9;
+}
+
+/* Error / Danger */
+.custom-alert.error {
+    background-color: rgba(235, 87, 87, 0.1); /* Based on --mud-palette-error */
+    border-color: rgba(235, 87, 87, 0.3);
+    color: var(--mud-palette-error);
+}
+
+/* Warning / Archive */
+.custom-alert.warning {
+    background-color: rgba(242, 201, 76, 0.1); /* Based on --mud-palette-warning */
+    border-color: rgba(242, 201, 76, 0.3);
+    color: var(--mud-palette-warning);
+}
+
+/* Info */
+.custom-alert.info {
+    background-color: rgba(92, 88, 214, 0.08); /* Based on --mud-palette-primary */
+    border-color: rgba(92, 88, 214, 0.2);
+    color: var(--mud-palette-primary);
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 48px 24px;
+    text-align: center;
+    background-color: var(--mud-palette-surface);
+    border: 1px dashed var(--mud-palette-lines-default);
+    border-radius: 12px;
+    color: var(--mud-palette-text-secondary);
+}
+
+.empty-state .mud-icon-root {
+    width: 48px;
+    height: 48px;
+    color: var(--mud-palette-secondary);
+    opacity: 0.5;
+    margin-bottom: 8px;
+}
+
+.empty-state p {
+    font-size: 14.5px;
+    font-weight: 500;
+    margin: 0;
+}

@@ -96,7 +96,10 @@
     }
     else if (!_isUploading)
     {
-        <p class="task-desc-placeholder">No files attached yet.</p>
+        <div class="empty-state mt-2" style="padding: 24px;">
+            <MudIcon Icon="@Icons.Material.Outlined.AttachFile"/>
+            <p>No files attached yet.</p>
+        </div>
     }
 }
 
