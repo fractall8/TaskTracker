@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Application.Interfaces.Services;
+using Azure;
 using Azure.Storage;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
@@ -63,37 +64,44 @@ public class BlobStorageService(BlobServiceClient blobServiceClient) : IFileServ
     {
         var containerClient = GetContainerClient(containerName);
 
-        var blobs = containerClient.GetBlobsAsync(options: new GetBlobsOptions{Prefix = prefix}, cancellationToken: ct);
-        var enumerator = blobs.GetAsyncEnumerator(ct);
+        try
+        {
+            var blobs = containerClient.GetBlobsAsync(options: new GetBlobsOptions { Prefix = prefix }, cancellationToken: ct);
+            var enumerator = blobs.GetAsyncEnumerator(ct);
 
-        if (!await enumerator.MoveNextAsync())
+            if (!await enumerator.MoveNextAsync())
+            {
+                return (false, null, null);
+            }
+
+            var blobItem = enumerator.Current;
+            var blobClient = containerClient.GetBlobClient(blobItem.Name);
+
+            if (!blobClient.CanGenerateSasUri)
+            {
+                throw new InvalidOperationException("BlobClient cannot generate SAS URI. Ensure StorageSharedKeyCredential is provided.");
+            }
+
+            var sasBuilder = new BlobSasBuilder
+            {
+                BlobContainerName = containerName,
+                BlobName = blobItem.Name,
+                Resource = "b",
+                ExpiresOn = DateTimeOffset.UtcNow.Add(expiry ?? TimeSpan.FromMinutes(5))
+            };
+
+            sasBuilder.SetPermissions(BlobSasPermissions.Read);
+            var sasUri = blobClient.GenerateSasUri(sasBuilder);
+            var downloadUrl = sasUri.ToString().Replace("azurite", "localhost");
+
+            var actualFileName = Path.GetFileName(blobItem.Name);
+
+            return (true, downloadUrl, actualFileName);
+        }
+        catch (RequestFailedException ex) when (ex.ErrorCode == "ContainerNotFound")
         {
             return (false, null, null);
         }
-
-        var blobItem = enumerator.Current;
-        var blobClient = containerClient.GetBlobClient(blobItem.Name);
-
-        if (!blobClient.CanGenerateSasUri)
-        {
-            throw new InvalidOperationException("BlobClient cannot generate SAS URI. Ensure StorageSharedKeyCredential is provided.");
-        }
-
-        var sasBuilder = new BlobSasBuilder
-        {
-            BlobContainerName = containerName,
-            BlobName = blobItem.Name,
-            Resource = "b",
-            ExpiresOn = DateTimeOffset.UtcNow.Add(expiry ?? TimeSpan.FromMinutes(5))
-        };
-
-        sasBuilder.SetPermissions(BlobSasPermissions.Read);
-        var sasUri = blobClient.GenerateSasUri(sasBuilder);
-        var downloadUrl = sasUri.ToString().Replace("azurite", "localhost");
-
-        var actualFileName = Path.GetFileName(blobItem.Name);
-
-        return (true, downloadUrl, actualFileName);
     }
 
     public Task<string> GetDownloadUrlAsync(string fileUrl, string originalFileName, TimeSpan? expiry = null, CancellationToken cancellationToken = default)
