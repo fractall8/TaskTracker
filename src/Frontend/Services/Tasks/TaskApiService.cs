@@ -58,6 +58,18 @@ public class TaskApiService(ITasksApi tasksApi) : ITaskApiService
         return await response.HandleResponseAsync();
     }
 
+    public async Task<AttachmentDownloadDto> GetAttachmentDownloadUrlAsync(Guid boardId, Guid taskId, Guid attachmentId, CancellationToken ct = default)
+    {
+        var response = await tasksApi.GetAttachmentDownloadUrlAsync(boardId, taskId, attachmentId, ct);
+        return await response.HandleResponseAsync();
+    }
+
+    public async Task DeleteAttachmentAsync(Guid boardId, Guid taskId, Guid attachmentId, CancellationToken ct = default)
+    {
+        var response = await tasksApi.DeleteAttachmentAsync(boardId, taskId, attachmentId, ct);
+        await response.HandleResponseAsync();
+    }
+
     public async Task<List<CommentDto>> GetCommentsAsync(Guid boardId, Guid taskId, CancellationToken ct = default)
     {
         var response = await tasksApi.GetCommentsAsync(boardId, taskId, ct);

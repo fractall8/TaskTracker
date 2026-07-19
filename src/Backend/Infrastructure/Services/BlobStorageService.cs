@@ -96,6 +96,37 @@ public class BlobStorageService(BlobServiceClient blobServiceClient) : IFileServ
         return (true, downloadUrl, actualFileName);
     }
 
+    public Task<string> GetDownloadUrlAsync(string fileUrl, string originalFileName, TimeSpan? expiry = null, CancellationToken cancellationToken = default)
+    {
+        var parsedUrl = fileUrl.Contains("localhost") ? fileUrl.Replace("localhost", "azurite") : fileUrl;
+        var blobUriBuilder = new BlobUriBuilder(new Uri(parsedUrl));
+
+        var containerClient = GetContainerClient(blobUriBuilder.BlobContainerName);
+        var blobClient = containerClient.GetBlobClient(blobUriBuilder.BlobName);
+
+        if (!blobClient.CanGenerateSasUri)
+        {
+            throw new InvalidOperationException("BlobClient cannot generate SAS URI. Ensure StorageSharedKeyCredential is provided.");
+        }
+
+        var sasBuilder = new BlobSasBuilder
+        {
+            BlobContainerName = blobUriBuilder.BlobContainerName,
+            BlobName = blobUriBuilder.BlobName,
+            Resource = "b",
+            ExpiresOn = DateTimeOffset.UtcNow.Add(expiry ?? TimeSpan.FromMinutes(5))
+        };
+
+        sasBuilder.SetPermissions(BlobSasPermissions.Read);
+
+        sasBuilder.ContentDisposition = $"attachment; filename*=UTF-8''{Uri.EscapeDataString(originalFileName)}";
+
+        var sasUri = blobClient.GenerateSasUri(sasBuilder);
+        var downloadUrl = sasUri.ToString().Replace("azurite", "localhost");
+
+        return Task.FromResult(downloadUrl);
+    }
+
     private BlobClient GetBlobClient(string containerName, string blobName) =>
         GetContainerClient(containerName).GetBlobClient(blobName);
 

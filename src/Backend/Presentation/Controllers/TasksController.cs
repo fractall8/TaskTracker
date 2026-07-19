@@ -1,4 +1,5 @@
-using Application.Features.Files.Commands;
+using Application.Features.Attachments.Commands;
+using Application.Features.Attachments.Queries;
 using Application.Features.Tasks.Commands;
 using Application.Features.Tasks.Queries;
 using Contracts.DTOs;
@@ -136,5 +137,29 @@ public class TasksController(ISender sender) : ControllerBase
         var attachmentDto = await sender.Send(command, ct);
 
         return Ok(attachmentDto);
+    }
+
+    [HttpGet("{taskId:guid}/attachments/{attachmentId:guid}/download")]
+    public async Task<ActionResult<AttachmentDownloadDto>> GetAttachmentDownloadUrl(
+        [FromRoute] Guid boardId,
+        [FromRoute] Guid taskId,
+        [FromRoute] Guid attachmentId,
+        CancellationToken ct)
+    {
+        var query = new GetAttachmentDownloadQuery(boardId, taskId, attachmentId);
+        var result = await sender.Send(query, ct);
+        return Ok(result);
+    }
+
+    [HttpDelete("{taskId:guid}/attachments/{attachmentId:guid}")]
+    public async Task<IActionResult> DeleteAttachment(
+        [FromRoute] Guid boardId,
+        [FromRoute] Guid taskId,
+        [FromRoute] Guid attachmentId,
+        CancellationToken ct)
+    {
+        var command = new DeleteAttachmentCommand(boardId, taskId, attachmentId);
+        await sender.Send(command, ct);
+        return NoContent();
     }
 }

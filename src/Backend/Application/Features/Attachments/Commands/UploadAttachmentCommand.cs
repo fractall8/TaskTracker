@@ -10,7 +10,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Application.Features.Files.Commands;
+namespace Application.Features.Attachments.Commands;
 
 public record UploadAttachmentCommand(
     Guid BoardId,

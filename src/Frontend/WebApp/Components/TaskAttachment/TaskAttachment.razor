@@ -1,9 +1,12 @@
 ﻿@using Contracts.DTOs
 @using Refit
-@using Services.Abstractions.Tasks
+@using WebApp.Shared.Dialogs
 @using WebApp.Shared.Toast
-@inject ITaskApiService TaskApi
+@inject IBoardDetailsStore Store
 @inject CustomToastService Toast
+@inject IJSRuntime Js
+@inject IProfileStore ProfileStore
+@inject IDialogService DialogService
 
 <div class="task-section-head-row">
     @if (Attachments != null && Attachments.Count > 1)
@@ -64,10 +67,29 @@
                         <p class="attachment-size">@(Math.Round(attachment.SizeInBytes / 1024.0, 1)) KB</p>
                     </div>
 
-                    <a class="icon-btn sm ghost" aria-label="Download @attachment.FileName"
-                       href="@attachment.FileUrl" target="_blank" download="@attachment.FileName">
-                        <MudIcon Icon="@Icons.Material.Outlined.FileDownload" Size="Size.Small"/>
-                    </a>
+                    <div class="d-flex gap-1">
+                        <button class="icon-btn sm ghost" aria-label="Download @attachment.FileName"
+                                disabled="@(_isDownloading == attachment.Id)"
+                                @onclick="@(() => DownloadAttachmentAsync(attachment))">
+                            @if (_isDownloading == attachment.Id)
+                            {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true"
+                                                     Style="width: 14px; height: 14px;"/>
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Outlined.FileDownload" Size="Size.Small"/>
+                            }
+                        </button>
+
+                        @if (!IsReadOnly && ProfileStore.Profile?.Id == attachment.CreatedById)
+                        {
+                            <button class="icon-btn sm ghost" aria-label="Delete @attachment.FileName"
+                                    @onclick="@(() => ConfirmDeleteAttachmentAsync(attachment))">
+                                <MudIcon Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error"/>
+                            </button>
+                        }
+                    </div>
                 </div>
             }
         </div>
@@ -85,8 +107,14 @@
     [Parameter] public bool IsReadOnly { get; set; }
 
     private bool _isUploading;
+    private Guid? _isDownloading;
     private string? _selectedFileName;
     private bool _isExpanded = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ProfileStore.EnsureLoadedAsync();
+    }
 
     private void ToggleAttachments() => _isExpanded = !_isExpanded;
 
@@ -135,7 +163,7 @@
             await using var stream = file.OpenReadStream(maxAllowedSize);
             var streamPart = new StreamPart(stream, file.Name, file.ContentType);
 
-            var newAttachment = await TaskApi.UploadAttachmentAsync(BoardId, TaskId, streamPart);
+            var newAttachment = await Store.UploadTaskAttachmentAsync(TaskId, streamPart);
 
             Attachments.Add(newAttachment);
             Toast.ShowSuccess("File uploaded successfully");
@@ -151,6 +179,56 @@
             _isUploading = false;
             _selectedFileName = null;
             StateHasChanged();
+        }
+    }
+
+    private async Task DownloadAttachmentAsync(AttachmentDto attachment)
+    {
+        try
+        {
+            _isDownloading = attachment.Id;
+            var downloadInfo = await Store.GetTaskAttachmentDownloadUrlAsync(TaskId, attachment.Id);
+
+            var module = await Js.InvokeAsync<IJSObjectReference>("import", "./js/fileDownload.js");
+            await module.InvokeVoidAsync("downloadFromUrl", downloadInfo.DownloadUrl, downloadInfo.FileName);
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Download failed: {ex.Message}");
+        }
+        finally
+        {
+            _isDownloading = null;
+        }
+    }
+
+    private async Task ConfirmDeleteAttachmentAsync(AttachmentDto attachment)
+    {
+        var parameters = new DialogParameters<ConfirmDeleteDialog>
+        {
+            { x => x.ContentText, $"Are you sure you want to delete '{attachment.FileName}'?" },
+            { x => x.ConfirmText, "Delete" },
+            { x => x.CancelText, "Cancel" },
+        };
+
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("Delete Attachment", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled)
+        {
+            try
+            {
+                await Store.DeleteTaskAttachmentAsync(TaskId, attachment.Id);
+
+                Attachments.Remove(attachment);
+                Toast.ShowSuccess("Attachment deleted");
+            }
+            catch (Exception ex)
+            {
+                Toast.ShowError($"Failed to delete attachment: {ex.Message}");
+            }
         }
     }
 
