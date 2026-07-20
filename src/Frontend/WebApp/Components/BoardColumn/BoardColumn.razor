@@ -22,13 +22,30 @@
 
         @if (CanManageColumns)
         {
-            <MudMenu Icon="@Icons.Material.Filled.MoreHoriz" AnchorOrigin="Origin.BottomRight"
-                     TransformOrigin="Origin.TopRight" Dense="true" Size="Size.Small">
-                <MudMenuItem OnClick="OpenEditColumnDialog" Icon="@Icons.Material.Filled.Edit">Edit</MudMenuItem>
-                <MudMenuItem OnClick="DeleteColumn" Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error">
-                    Delete
-                </MudMenuItem>
-            </MudMenu>
+            <div class="custom-dropdown-container" 
+                 @onclick:stopPropagation="true" 
+                 @onmousedown:stopPropagation="true">
+                 
+                <div class="column-options-trigger" @onclick="ToggleMenu">
+                    <MudIcon Icon="@Icons.Material.Filled.MoreHoriz" Size="Size.Small" />
+                </div>
+
+                @if (_isMenuOpen)
+                {
+                    <div class="dropdown-backdrop" @onclick="CloseMenu"></div>
+
+                    <div class="custom-dropdown-menu">
+                        <div class="custom-menu-item" @onclick="HandleEditClick">
+                            <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Class="menu-icon" />
+                            Edit
+                        </div>
+                        <div class="custom-menu-item danger" @onclick="HandleDeleteClick">
+                            <MudIcon Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Class="menu-icon" Color="Color.Error" />
+                            Delete
+                        </div>
+                    </div>
+                }
+            </div>
         }
     </div>
 
@@ -59,10 +76,27 @@
     [Parameter] public EventCallback<ColumnDto> OnColumnDrop { get; set; }
     [Parameter] public EventCallback OnColumnDragEnd { get; set; }
 
+    private bool _isMenuOpen;
+
+    private void ToggleMenu() => _isMenuOpen = !_isMenuOpen;
+    private void CloseMenu() => _isMenuOpen = false;
+
     private async Task HandleColumnDragStart() => await OnColumnDragStart.InvokeAsync(Column);
     private async Task HandleColumnDragEnter() => await OnColumnDragEnter.InvokeAsync(Column);
     private async Task HandleColumnDrop() => await OnColumnDrop.InvokeAsync(Column);
     private async Task HandleColumnDragEnd() => await OnColumnDragEnd.InvokeAsync();
+
+    private async Task HandleEditClick()
+    {
+        CloseMenu();
+        await OpenEditColumnDialog();
+    }
+
+    private async Task HandleDeleteClick()
+    {
+        CloseMenu();
+        await DeleteColumn();
+    }
 
     private async Task OpenEditColumnDialog()
     {
@@ -137,5 +171,4 @@
             }
         }
     }
-
 }
