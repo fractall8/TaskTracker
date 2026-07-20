@@ -17,6 +17,8 @@ public interface IBoardAccessService
 
     Task<BoardAccessContext> EnsureCanManageCommentsAsync(Guid boardId, CancellationToken ct = default);
 
+    Task<BoardAccessContext> EnsureCanManageAttachmentsAsync(Guid boardId, CancellationToken ct = default);
+
     Task<BoardAccessContext> EnsureCanViewBoardAsync(Guid boardId, CancellationToken ct = default);
 
     Task<BoardAccessContext> EnsureCanExportBoardAsync(Guid boardId, CancellationToken ct = default);

@@ -33,7 +33,7 @@ public class UploadAttachmentCommandHandler(
 {
     public async Task<AttachmentDto> Handle(UploadAttachmentCommand request, CancellationToken cancellationToken)
     {
-            await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, cancellationToken);
+            await boardAccessService.EnsureCanManageAttachmentsAsync(request.BoardId, cancellationToken);
 
             var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, cancellationToken);
             if (task == null || task.Column?.BoardId != request.BoardId)
