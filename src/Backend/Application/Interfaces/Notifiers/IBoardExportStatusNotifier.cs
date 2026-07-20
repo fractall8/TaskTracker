@@ -1,4 +1,4 @@
-﻿using Contracts.Notifications;
+﻿using Contracts.Notifications.BoardExport;
 
 namespace Application.Interfaces.Notifiers;
 

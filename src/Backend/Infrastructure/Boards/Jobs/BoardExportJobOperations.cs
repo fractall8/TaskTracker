@@ -2,7 +2,7 @@
 using Contracts.DTOs;
 using Contracts.Export;
 using Contracts.Messaging;
-using Contracts.Notifications;
+using Contracts.Notifications.BoardExport;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Boards.Jobs;
