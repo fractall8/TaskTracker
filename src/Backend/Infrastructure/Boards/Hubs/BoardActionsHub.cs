@@ -15,7 +15,7 @@ public static class BoardActionsHubEvents
 
 public class BoardActionsHub(
     ISender sender,
-    ILogger<BoardExportStatusHub> logger) : Hub
+    ILogger<BoardActionsHub> logger) : Hub
 {
     public async Task SubscribeAsync(Guid boardId)
     {
@@ -55,8 +55,6 @@ public class BoardActionsHub(
             "Unsubscribed connection {ConnectionId} from BoardActions group.",
             Context.ConnectionId);
     }
-
-    public static string GetGroupName(Guid boardId) => $"Board_{boardId}_Export";
 
     private static string? GetClaim(ClaimsPrincipal? user, string type) =>
         user?.FindFirst(type)?.Value;

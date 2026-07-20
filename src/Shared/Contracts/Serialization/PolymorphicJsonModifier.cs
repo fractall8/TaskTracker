@@ -2,7 +2,7 @@
 using System.Text.Json.Serialization.Metadata;
 using Contracts.Notifications.BoardActions;
 
-namespace Infrastructure.Common.Serialization;
+namespace Contracts.Serialization;
 
 public static class PolymorphicJsonModifier
 {

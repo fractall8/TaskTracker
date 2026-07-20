@@ -33,7 +33,7 @@ public class SubscribeBoardActionsCommandHandler(
             throw new UnauthorizedAccessException("User is unauthorized");
         }
 
-        if (BoardRolePermissions.CanViewBoard((BoardRole)boardRole))
+        if (!BoardRolePermissions.CanViewBoard((BoardRole)boardRole))
         {
             throw new UnauthorizedAccessException("You cannot view the board");
         }

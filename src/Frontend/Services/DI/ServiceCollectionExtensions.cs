@@ -97,6 +97,9 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IBoardExportStatusHubService, BoardExportStatusHubService>();
 
+        services.AddScoped<IBoardActionSyncGuard, BoardActionSyncGuard>();
+        services.AddScoped<IBoardActionsHubService, BoardActionsHubService>();
+
         return services;
     }
 }

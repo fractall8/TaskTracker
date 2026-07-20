@@ -93,5 +93,6 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.MapHub<BoardExportStatusHub>("/hubs/board-export-status");
+app.MapHub<BoardActionsHub>("/hubs/board-actions");
 
 app.Run();

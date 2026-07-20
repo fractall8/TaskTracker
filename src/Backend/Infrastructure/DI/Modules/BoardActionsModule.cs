@@ -1,12 +1,15 @@
 ﻿using System.Text.Json.Serialization.Metadata;
-using Infrastructure.Common.Serialization;
+using Application.Interfaces.Notifiers;
+using Contracts.Notifications.BoardActions;
+using Contracts.Serialization;
+using Infrastructure.Boards.Notifiers;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.DI.Modules;
 
-public static class SignalRModule
+public static class BoardActionsModule
 {
-    public static IServiceCollection AddSignalRModule(this IServiceCollection services)
+    public static IServiceCollection AddBoardActionsModule(this IServiceCollection services)
     {
         services.AddSignalR()
             .AddJsonProtocol(options =>
@@ -16,6 +19,8 @@ public static class SignalRModule
                     Modifiers = { PolymorphicJsonModifier.AddBoardActionPolymorphism }
                 };
             });
+
+        services.AddScoped<IBoardActionNotifier, BoardActionNotifier>();
 
         return services;
     }
