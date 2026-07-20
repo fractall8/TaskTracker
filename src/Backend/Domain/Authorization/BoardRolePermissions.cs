@@ -16,7 +16,7 @@ public static class BoardRolePermissions
     public static bool CanManageTasks(BoardRole role) =>
         role is BoardRole.Admin or BoardRole.ScrumMaster;
 
-    public static bool CanManageAttachemnts(BoardRole role) =>
+    public static bool CanManageAttachments(BoardRole role) =>
         role is BoardRole.Admin or BoardRole.ScrumMaster or BoardRole.User;
 
     public static bool CanMoveTasks(BoardRole role) =>
@@ -29,5 +29,8 @@ public static class BoardRolePermissions
         role is BoardRole.Admin;
 
     public static bool CanManageComments(BoardRole role) =>
+        role is BoardRole.Admin or BoardRole.ScrumMaster or BoardRole.User;
+
+    public static bool CanViewBoard(BoardRole role) =>
         role is BoardRole.Admin or BoardRole.ScrumMaster or BoardRole.User;
 }
