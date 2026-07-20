@@ -1,116 +1,117 @@
 ﻿@page "/profile"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@implements IDisposable
 @inject IProfileStore ProfileStore
-@inject ISnackbar Snackbar
+@inject CustomToastService Toast
+@using WebApp.Shared.Toast
+@using WebApp.Shared.Helpers
 @using Refit
 
 <PageTitle>Profile Settings - TaskTracker</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="pt-8">
-    <MudText Typo="Typo.h4" Class="fw-bold mb-6">Profile Settings</MudText>
+<div class="profile-page">
+    <h1 class="page-title">Profile Settings</h1>
 
     @if (ProfileStore.Profile is null)
     {
-        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        <div class="d-flex justify-center mt-8">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+        </div>
     }
     else
     {
-        <MudGrid>
-            <MudItem xs="12" md="4">
-                <MudPaper Elevation="2" Class="pa-6 d-flex flex-column align-center rounded-lg h-100" Style="border: 1px solid var(--mud-palette-lines-default);">
-                    
-                    <MudAvatar Style="height: 120px; width: 120px; font-size: 3rem;" 
-                               Color="Color.Primary" Class="mb-6">
-                        @if (!string.IsNullOrEmpty(ProfileStore.Profile.AvatarUrl))
+        <div class="profile-grid">
+            <div class="card avatar-card">
+                <div class="avatar-big @AvatarColorHelper.GetColorClass(ProfileStore.Profile.DisplayName ?? ProfileStore.Profile.Email)">
+                    @if (!string.IsNullOrEmpty(ProfileStore.Profile.AvatarUrl))
+                    {
+                        <img src="@ProfileStore.Profile.AvatarUrl" alt="User Avatar"
+                             style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"/>
+                    }
+                    else
+                    {
+                        @GetInitials(ProfileStore.Profile.DisplayName ?? ProfileStore.Profile.Email)
+                    }
+                </div>
+
+                <div class="d-flex align-center justify-center gap-3 mt-2">
+                    <MudFileUpload T="IBrowserFile" Accept=".png, .jpg, .jpeg" FilesChanged="UploadAvatar"
+                                   MaximumFileCount="1">
+                        <CustomContent Context="fileContext">
+                            <button type="button" class="link-btn" disabled="@_isUploading"
+                                    @onclick="@(() => fileContext.OpenFilePickerAsync())">
+                                Change avatar
+                            </button>
+                        </CustomContent>
+                        <SelectedTemplate></SelectedTemplate>
+                    </MudFileUpload>
+
+                    @if (!string.IsNullOrEmpty(ProfileStore.Profile.AvatarUrl))
+                    {
+                        <button type="button" class="icon-btn sm ghost" style="color: var(--mud-palette-error);"
+                                disabled="@_isUploading" @onclick="DeleteAvatar" title="Remove Avatar">
+                            <MudIcon Icon="@Icons.Material.Filled.Delete" Size="Size.Small"/>
+                        </button>
+                    }
+                </div>
+
+                @if (_isUploading)
+                {
+                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mt-3 w-100"/>
+                }
+            </div>
+
+            <div class="card info-card">
+                <p class="info-card-title">Personal Information</p>
+
+                <div class="info-row">
+                    <div class="info-row-main">
+                        <p class="info-label">Display Name</p>
+
+                        @if (_isEditingName)
                         {
-                            <MudImage Src="@ProfileStore.Profile.AvatarUrl" Alt="User Avatar" ObjectFit="ObjectFit.Cover" />
+                            <div class="field-edit-row">
+                                <input class="form-input"
+                                       @bind="_displayName"
+                                       @bind:event="oninput"
+                                       @onkeydown="HandleKeyDown"
+                                       disabled="@_isSaving"
+                                       autofocus/>
+
+                                <button class="icon-btn sm" aria-label="Save" @onclick="SaveDisplayNameAsync"
+                                        disabled="@_isSaving">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small"/>
+                                </button>
+                                <button class="icon-btn sm" aria-label="Cancel" @onclick="CancelEditName"
+                                        disabled="@_isSaving">
+                                    <MudIcon Icon="@Icons.Material.Filled.Close" Size="Size.Small"/>
+                                </button>
+                            </div>
                         }
                         else
                         {
-                            @(ProfileStore.Profile.DisplayName?.FirstOrDefault() ?? ProfileStore.Profile.Email.FirstOrDefault())
-                        }
-                    </MudAvatar>
-
-                    <div class="d-flex align-center gap-2">
-                        <MudFileUpload T="IBrowserFile" Accept=".png, .jpg, .jpeg" FilesChanged="UploadAvatar" MaximumFileCount="1">
-                            <CustomContent>
-                                <MudButton Variant="Variant.Text" 
-                                           Color="Color.Primary" 
-                                           Disabled="_isUploading"
-                                           OnClick="@(() => context.OpenFilePickerAsync())"
-                                           Class="text-transform-none font-weight-bold">
-                                    Change Avatar
-                                </MudButton>
-                            </CustomContent>
-                            <SelectedTemplate>
-                            </SelectedTemplate>
-                        </MudFileUpload>
-
-                        @if (!string.IsNullOrEmpty(ProfileStore.Profile.AvatarUrl))
-                        {
-                            <MudTooltip Text="Remove Avatar">
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" 
-                                               Color="Color.Error" 
-                                               Size="Size.Small"
-                                               Disabled="_isUploading"
-                                               OnClick="DeleteAvatar" />
-                            </MudTooltip>
+                            <p class="info-value">@(string.IsNullOrWhiteSpace(ProfileStore.Profile.DisplayName) ? "Not set" : ProfileStore.Profile.DisplayName)</p>
                         }
                     </div>
-                    
-                    @if (_isUploading)
+
+                    @if (!_isEditingName)
                     {
-                        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mt-4 w-100" />
+                        <button class="icon-btn sm ghost" aria-label="Edit display name" @onclick="EnableEditing">
+                            <MudIcon Icon="@Icons.Material.Outlined.Edit" Size="Size.Small"/>
+                        </button>
                     }
-                </MudPaper>
-            </MudItem>
+                </div>
 
-            <MudItem xs="12" md="8">
-                <MudPaper Elevation="2" Class="pa-6 rounded-lg h-100" Style="border: 1px solid var(--mud-palette-lines-default);">
-                    <MudText Typo="Typo.h6" Class="mb-6">Personal Information</MudText>
-
-                    <div class="mb-6">
-                        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary); font-weight: 500;">Display Name</MudText>
-                        
-                        <div class="d-flex align-center mt-1" style="min-height: 40px;">
-                            @if (_isEditingName)
-                            {
-                                <MudTextField @bind-Value="_displayName" 
-                                              Variant="Variant.Outlined" 
-                                              Margin="Margin.Dense"
-                                              MaxLength="50"
-                                              Class="flex-grow-1"
-                                              Adornment="Adornment.End"
-                                              AdornmentIcon="@Icons.Material.Filled.Check"
-                                              AdornmentColor="Color.Success"
-                                              OnAdornmentClick="SaveDisplayNameAsync"
-                                              OnBlur="SaveDisplayNameAsync"
-                                              OnKeyDown="HandleKeyDown"
-                                              Immediate="true"
-                                              Disabled="_isSaving"
-                                              AutoFocus="true" />
-                            }
-                            else
-                            {
-                                <MudText Typo="Typo.body1" Class="flex-grow-1">@ProfileStore.Profile.DisplayName</MudText>
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit" 
-                                               Size="Size.Small" 
-                                               Color="Color.Default"
-                                               OnClick="EnableEditing" />
-                            }
-                        </div>
+                <div class="info-row">
+                    <div class="info-row-main">
+                        <p class="info-label">Email Address</p>
+                        <p class="info-value">@ProfileStore.Profile.Email</p>
                     </div>
-
-                    <div>
-                        <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary); font-weight: 500;">Email Address</MudText>
-                        <MudText Typo="Typo.body1" Class="mt-1">@ProfileStore.Profile.Email</MudText>
-                    </div>
-
-                </MudPaper>
-            </MudItem>
-        </MudGrid>
+                </div>
+            </div>
+        </div>
     }
-</MudContainer>
+</div>
 
 @code {
     private string? _displayName;
@@ -122,7 +123,7 @@
     {
         ProfileStore.StateChanged += StateHasChanged;
         await ProfileStore.EnsureLoadedAsync();
-        
+
         _displayName = ProfileStore.Profile?.DisplayName;
     }
 
@@ -134,6 +135,12 @@
         _isEditingName = true;
     }
 
+    private void CancelEditName()
+    {
+        _isEditingName = false;
+        _displayName = ProfileStore.Profile?.DisplayName;
+    }
+
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
@@ -142,15 +149,14 @@
         }
         else if (e.Key == "Escape")
         {
-            _isEditingName = false;
-            _displayName = ProfileStore.Profile?.DisplayName;
+            CancelEditName();
         }
     }
 
     private async Task SaveDisplayNameAsync()
     {
         if (_isSaving) return;
-        
+
         if (string.IsNullOrWhiteSpace(_displayName) || _displayName == ProfileStore.Profile?.DisplayName)
         {
             _displayName = ProfileStore.Profile?.DisplayName;
@@ -162,12 +168,12 @@
         try
         {
             await ProfileStore.UpdateDisplayNameAsync(_displayName);
-            Snackbar.Add("Profile updated successfully.", Severity.Success);
+            Toast.ShowSuccess("Profile updated successfully.");
             _isEditingName = false;
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to update profile: {ex.Message}", Severity.Error);
+            Toast.ShowError($"Failed to update profile: {ex.Message}");
         }
         finally
         {
@@ -180,29 +186,29 @@
     {
         if (file is null) return;
 
-        var maxFileSize = 2 * 1024 * 1024; 
+        var maxFileSize = 2 * 1024 * 1024;
 
         if (file.Size > maxFileSize)
         {
             var actualSizeMb = file.Size / (1024.0 * 1024.0);
             var maxSizeMb = maxFileSize / (1024 * 1024);
-            
-            Snackbar.Add($"Failed to upload avatar: Supplied file with size {actualSizeMb:F2} MB exceeds the maximum of {maxSizeMb} MB.", Severity.Error);
+
+            Toast.ShowError($"Failed to upload avatar: Supplied file with size {actualSizeMb:F2} MB exceeds the maximum of {maxSizeMb} MB.");
             return;
         }
-        
+
         _isUploading = true;
         try
         {
             await using var stream = file.OpenReadStream(maxAllowedSize: maxFileSize);
             var streamPart = new StreamPart(stream, file.Name, file.ContentType);
-            
+
             await ProfileStore.UploadAvatarAsync(streamPart);
-            Snackbar.Add("Avatar uploaded successfully.", Severity.Success);
+            Toast.ShowSuccess("Avatar uploaded successfully.");
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to upload avatar: {ex.Message}", Severity.Error);
+            Toast.ShowError($"Failed to upload avatar: {ex.Message}");
         }
         finally
         {
@@ -216,15 +222,24 @@
         try
         {
             await ProfileStore.DeleteAvatarAsync();
-            Snackbar.Add("Avatar removed.", Severity.Info);
+            Toast.ShowSuccess("Avatar removed.");
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to remove avatar: {ex.Message}", Severity.Error);
+            Toast.ShowError($"Failed to remove avatar: {ex.Message}");
         }
         finally
         {
             _isUploading = false;
         }
     }
+
+    private string GetInitials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "U";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0][..1].ToUpper();
+        return (parts[0][..1] + parts[1][..1]).ToUpper();
+    }
+
 }

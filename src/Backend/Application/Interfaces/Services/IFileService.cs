@@ -12,4 +12,6 @@ public interface IFileService
         string prefix,
         TimeSpan? expiry = null,
         CancellationToken ct = default);
+
+    Task<string> GetDownloadUrlAsync(string fileUrl, string originalFileName, TimeSpan? expiry = null, CancellationToken cancellationToken = default);
 }

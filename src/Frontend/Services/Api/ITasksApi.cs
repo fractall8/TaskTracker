@@ -21,6 +21,12 @@ public interface ITasksApi
         [AliasAs("file")] StreamPart file,
         CancellationToken ct = default);
 
+    [Get("/api/boards/{boardId}/tasks/{taskId}/attachments/{attachmentId}/download")]
+    Task<IApiResponse<AttachmentDownloadDto>> GetAttachmentDownloadUrlAsync(Guid boardId, Guid taskId, Guid attachmentId, CancellationToken ct = default);
+
+    [Delete("/api/boards/{boardId}/tasks/{taskId}/attachments/{attachmentId}")]
+    Task<IApiResponse> DeleteAttachmentAsync(Guid boardId, Guid taskId, Guid attachmentId, CancellationToken ct = default);
+
     [Post("/api/boards/{boardId}/tasks/columns/{columnId}")]
     Task<IApiResponse<TaskDto>> CreateAsync(Guid boardId, Guid columnId, [Body] CreateTaskRequest request,
         CancellationToken ct = default);
@@ -28,6 +34,9 @@ public interface ITasksApi
     [Put("/api/boards/{boardId}/tasks/{taskId}")]
     Task<IApiResponse<TaskDto>> UpdateAsync(Guid boardId, Guid taskId, [Body] UpdateTaskRequest request,
         CancellationToken ct = default);
+
+    [Patch("/api/boards/{boardId}/tasks/{taskId}/due-date")]
+    Task<IApiResponse<TaskDto>> UpdateDueDateAsync(Guid boardId, Guid taskId, [Body] UpdateTaskDueDateRequest request, CancellationToken ct = default);
 
     [Delete("/api/boards/{boardId}/tasks/{taskId}")]
     Task<IApiResponse> DeleteAsync(Guid boardId, Guid taskId, CancellationToken ct = default);

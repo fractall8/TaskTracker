@@ -193,12 +193,53 @@ public class BoardDetailsStore(IBoardApiService boardsApi, IColumnApiService col
         }
     }
 
-    public void UpdateBoardName(string name)
+    public async Task<AttachmentDto> UploadTaskAttachmentAsync(Guid taskId, Refit.StreamPart filePart, CancellationToken ct = default)
     {
-        if (Board != null)
+        if (BoardId == null)
         {
-            Board = Board with { Name = name };
+            throw new InvalidOperationException("Board is not loaded.");
+        }
+
+        var attachment = await tasksApi.UploadAttachmentAsync(BoardId.Value, taskId, filePart, ct);
+
+        var task = Tasks.FirstOrDefault(t => t.Id == taskId);
+        if (task != null)
+        {
+            task.Attachments.Add(attachment);
             NotifyStateChanged();
+        }
+
+        return attachment;
+    }
+
+    public async Task<AttachmentDownloadDto> GetTaskAttachmentDownloadUrlAsync(Guid taskId, Guid attachmentId, CancellationToken ct = default)
+    {
+        if (BoardId == null)
+        {
+            throw new InvalidOperationException("Board is not loaded.");
+        }
+
+        return await tasksApi.GetAttachmentDownloadUrlAsync(BoardId.Value, taskId, attachmentId, ct);
+    }
+
+    public async Task DeleteTaskAttachmentAsync(Guid taskId, Guid attachmentId, CancellationToken ct = default)
+    {
+        if (BoardId == null)
+        {
+            throw new InvalidOperationException("Board is not loaded.");
+        }
+
+        await tasksApi.DeleteAttachmentAsync(BoardId.Value, taskId, attachmentId, ct);
+
+        var task = Tasks.FirstOrDefault(t => t.Id == taskId);
+        if (task != null)
+        {
+            var att = task.Attachments.FirstOrDefault(a => a.Id == attachmentId);
+            if (att != null)
+            {
+                task.Attachments.Remove(att);
+                NotifyStateChanged();
+            }
         }
     }
 
@@ -219,6 +260,21 @@ public class BoardDetailsStore(IBoardApiService boardsApi, IColumnApiService col
 
         Tasks = Tasks.Select(t => t.Id == taskId ? updatedTask : t).ToList();
         NotifyStateChanged();
+    }
+
+    public async Task<TaskDto?> UpdateTaskDueDateAsync(Guid taskId, UpdateTaskDueDateRequest request, CancellationToken ct = default)
+    {
+        if (BoardId == null)
+        {
+            return null;
+        }
+
+        var updatedTask = await tasksApi.UpdateTaskDueDateAsync(BoardId.Value, taskId, request, ct);
+
+        Tasks = Tasks.Select(t => t.Id == taskId ? updatedTask : t).ToList();
+        NotifyStateChanged();
+
+        return updatedTask;
     }
 
     public async Task DeleteTaskAsync(Guid taskId, CancellationToken ct = default)

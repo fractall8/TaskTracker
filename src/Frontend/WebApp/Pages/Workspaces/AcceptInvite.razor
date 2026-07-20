@@ -5,42 +5,115 @@
 
 <PageTitle>Accept Invite - TaskTracker</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex justify-center align-center" Style="min-height: 80vh;">
-    <MudPaper Elevation="4" Class="pa-8 rounded-lg text-center"
-              Style="width: 100%; border: 1px solid var(--mud-palette-lines-default);">
+<div class="invite-container">
+    <div class="invite-card">
         @if (_loading)
         {
-            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" Class="mb-4"/>
-            <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-secondary);">
-                Accepting invite...
-            </MudText>
+            <div class="d-flex justify-center mb-4">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large"/>
+            </div>
+            <h2 class="invite-title">Accepting invite...</h2>
+            <p class="invite-desc">Please wait while we add you to the workspace.</p>
         }
         else if (_success)
         {
-            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success"
-                     Style="font-size: 4rem;" Class="mb-4"/>
-            <MudText Typo="Typo.h5" Class="mb-2" Style="color: var(--mud-palette-text-primary);">
-                You're in!
-            </MudText>
-            <MudText Typo="Typo.body1" Class="mb-6" Style="color: var(--mud-palette-text-secondary);">
-                You have successfully joined the workspace.
-            </MudText>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                       StartIcon="@Icons.Material.Filled.Dashboard"
-                       OnClick="@(() => Navigation.NavigateTo("/dashboard"))">
+            <div class="icon-wrapper success-icon">
+                <MudIcon Icon="@Icons.Material.Outlined.CheckCircle" Style="font-size: 32px;"/>
+            </div>
+            <h2 class="invite-title">You're in!</h2>
+            <p class="invite-desc">You have successfully joined the workspace and can now access its boards.</p>
+
+            <button class="btn btn-primary" style="width: 100%; height: 44px; margin-top: 8px;"
+                    @onclick="@(() => Navigation.NavigateTo("/dashboard"))">
                 Go to Dashboard
-            </MudButton>
+            </button>
         }
         else if (_error is not null)
         {
-            <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mb-4 text-left rounded-lg">@_error</MudAlert>
-            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
-                       OnClick="@(() => Navigation.NavigateTo("/dashboard"))">
-                Go to Dashboard
-            </MudButton>
+            <div class="icon-wrapper error-icon">
+                <MudIcon Icon="@Icons.Material.Outlined.GppBad" Style="font-size: 32px;"/>
+            </div>
+            <h2 class="invite-title">Invite Failed</h2>
+
+            <div class="d-flex align-center justify-center gap-2" style="margin-bottom: 24px;">
+                <MudIcon Icon="@Icons.Material.Outlined.ErrorOutline" Size="Size.Small" Style="color: var(--mud-palette-error);" />
+                <span style="font-size: 14.5px; color: var(--mud-palette-text-secondary); line-height: 1;">@_error</span>
+            </div>
+
+            <button class="btn" style="width: 100%; height: 44px;"
+                    @onclick="@(() => Navigation.NavigateTo("/dashboard"))">
+                Back to Dashboard
+            </button>
         }
-    </MudPaper>
-</MudContainer>
+    </div>
+</div>
+
+<style>
+    .invite-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - 120px);
+        padding: 24px;
+    }
+
+    .invite-card {
+        background-color: var(--mud-palette-surface);
+        border: 1px solid var(--mud-palette-lines-default);
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+        padding: 40px 32px;
+        max-width: 420px;
+        width: 100%;
+        text-align: center;
+        animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .icon-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        margin: 0 auto 20px auto;
+    }
+
+    .success-icon {
+        background-color: rgba(39, 174, 96, 0.12);
+        color: var(--mud-palette-success);
+    }
+
+    .error-icon {
+        background-color: rgba(235, 87, 87, 0.12);
+        color: var(--mud-palette-error);
+    }
+
+    .invite-title {
+        font-size: 22px;
+        font-weight: 700;
+        margin: 0 0 8px 0;
+        color: var(--mud-palette-text-primary);
+    }
+
+    .invite-desc {
+        font-size: 14.5px;
+        color: var(--mud-palette-text-secondary);
+        line-height: 1.5;
+        margin: 0 0 24px 0;
+    }
+
+    @@keyframes scaleIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95) translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+</style>
 
 @code {
     [SupplyParameterFromQuery] public string? Token { get; set; }
@@ -71,4 +144,5 @@
             _loading = false;
         }
     }
+
 }

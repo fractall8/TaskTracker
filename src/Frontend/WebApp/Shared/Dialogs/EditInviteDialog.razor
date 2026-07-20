@@ -1,41 +1,53 @@
 ﻿@using Contracts.Requests.Workspaces
-@inject ISnackbar Snackbar
+@using WebApp.Shared.Toast
+@inject CustomToastService Toast
 
-<MudDialog>
+<MudDialog Style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+    <TitleContent>
+        <span style="font-size: 16px; font-weight: 600; color: var(--mud-palette-text-primary);">
+            Edit Expiration
+        </span>
+    </TitleContent>
     <DialogContent>
-        <div class="d-flex flex-column gap-4">
-            <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">
-                Select a new expiration date and time for this invite link.
-            </MudText>
-            
-            <MudDatePicker Label="Expiration Date" 
-                           @bind-Date="_date" 
-                           MinDate="DateTime.Today" 
-                           Variant="Variant.Outlined" />
-                           
-            <MudTimePicker Label="Expiration Time" 
-                           @bind-Time="_time" 
-                           Variant="Variant.Outlined" />
+        <p style="margin: 0 0 16px 0; font-size: 13.5px; color: var(--mud-palette-text-secondary); line-height: 1.5;">
+            Select a new expiration date and time for this invite link.
+        </p>
+
+        <div class="d-flex flex-column gap-3">
+            <label class="form-field">
+                <span>Expiration Date</span>
+                <input type="date" class="form-input"
+                       @bind="_date" @bind:format="yyyy-MM-dd"
+                       min="@_minDate"/>
+            </label>
+
+            <label class="form-field">
+                <span>Expiration Time</span>
+                <input type="time" class="form-input" @bind="_time"/>
+            </label>
         </div>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Save</MudButton>
+        <div style="display: flex; gap: 8px; width: 100%; justify-content: flex-end; padding: 0 8px 8px 8px;">
+            <button type="button" class="btn" @onclick="Cancel">Cancel</button>
+            <button type="button" class="btn btn-primary" @onclick="Submit">Save changes</button>
+        </div>
     </DialogActions>
 </MudDialog>
 
 @code {
-    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    [CascadingParameter] public IMudDialogInstance MudDialog { get; set; } = null!;
     [Parameter] public DateTimeOffset CurrentExpiration { get; set; }
 
     private DateTime? _date;
-    private TimeSpan? _time;
+    private TimeOnly? _time;
+    private string _minDate = DateTime.Today.ToString("yyyy-MM-dd");
 
     protected override void OnInitialized()
     {
         var localTime = CurrentExpiration.ToLocalTime();
         _date = localTime.DateTime;
-        _time = localTime.TimeOfDay;
+        _time = TimeOnly.FromDateTime(localTime.DateTime);
     }
 
     private void Cancel() => MudDialog.Cancel();
@@ -44,16 +56,21 @@
     {
         if (_date.HasValue && _time.HasValue)
         {
-            var newDateTime = _date.Value.Date + _time.Value;
+            var newDateTime = _date.Value.Date.Add(_time.Value.ToTimeSpan());
             var newOffset = new DateTimeOffset(newDateTime, DateTimeOffset.Now.Offset).ToUniversalTime();
-            
+
             if (newOffset <= DateTimeOffset.UtcNow)
             {
-                Snackbar.Add("Expiration date must be in the future.", Severity.Warning);
+                Toast.ShowWarning("Expiration date must be in the future.");
                 return;
             }
 
             MudDialog.Close(DialogResult.Ok(new UpdateInviteExpirationRequest(newOffset)));
         }
+        else
+        {
+            Toast.ShowError("Please enter both date and time.");
+        }
     }
+
 }

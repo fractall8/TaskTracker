@@ -87,15 +87,6 @@ public class TaskRepository(TaskTrackerDbContext dbContext) : Repository<TaskIte
         }
     }
 
-    public async Task<IEnumerable<Attachment>> GetAttachmentsByColumnIdAsync(Guid columnId,
-        CancellationToken ct = default)
-    {
-        return await DbContext.Tasks
-            .Where(t => t.ColumnId == columnId)
-            .SelectMany(t => t.Attachments)
-            .ToListAsync(ct);
-    }
-
     public async Task SoftDeleteCascadeAsync(Guid taskId, CancellationToken ct = default)
     {
         var now = DateTimeOffset.UtcNow;

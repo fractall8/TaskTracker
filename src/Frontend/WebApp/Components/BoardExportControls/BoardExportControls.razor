@@ -1,12 +1,13 @@
 ﻿@using Contracts.DTOs
 @using Contracts.Enums
 @using WebApp.Shared.Dialogs
+@using WebApp.Shared.Toast
 @implements IDisposable
 
 @inject IBoardDetailsStore BoardDetailsStore
 @inject IBoardApiService BoardApi
 @inject IDialogService DialogService
-@inject ISnackbar Snackbar
+@inject CustomToastService Toast
 @inject IJSRuntime Js
 
 @if (BoardDetailsStore.Board is { } board)
@@ -14,60 +15,57 @@
     <div class="d-flex align-center gap-3">
         @if (!board.IsArchived && board.BoardRole == BoardRoleDto.Admin)
         {
-            <MudButton Variant="Variant.Outlined" Color="Color.Warning" StartIcon="@Icons.Material.Filled.Archive"
-                       OnClick="ArchiveBoardAsync">
-                Archive Board
-            </MudButton>
+            <button class="btn btn-warning" type="button" @onclick="ArchiveBoardAsync">
+                <MudIcon Icon="@Icons.Material.Filled.Archive" Size="Size.Small"/>
+                Archive board
+            </button>
         }
         else if (board.IsArchived)
         {
-            <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined" Class="fw-bold">
-                Archived
-            </MudChip>
+            <span class="badge-warning">Archived</span>
 
             @if (board.ExportStatus is BoardExportStatusDto.Requested or BoardExportStatusDto.Pending or BoardExportStatusDto.Processing)
             {
                 <MudTooltip Text="We are currently generating your ZIP archive...">
-                    <MudButton Variant="Variant.Outlined" Color="Color.Info" StartIcon="@Icons.Material.Filled.Sync"
-                               Disabled="true">
-                        Processing Export...
-                    </MudButton>
+                    <button class="btn btn-info" disabled type="button">
+                        <MudIcon Icon="@Icons.Material.Filled.Sync" Size="Size.Small" Class="spin-icon"/>
+                        Processing export...
+                    </button>
                 </MudTooltip>
             }
             else // or condition for success
             {
                 @if (board.ExportStatus != BoardExportStatusDto.Failed)
                 {
-                    <MudButton Variant="Variant.Filled" Color="Color.Success"
-                               StartIcon="@Icons.Material.Filled.Download"
-                               OnClick="DownloadArchiveAsync">
-                        Download Archive
-                    </MudButton>
+                    <button class="btn btn-success" type="button" @onclick="DownloadArchiveAsync">
+                        <MudIcon Icon="@Icons.Material.Filled.Download" Size="Size.Small"/>
+                        Download archive
+                    </button>
                 }
 
                 @if (board.ReExportStatus is BoardExportStatusDto.Requested or BoardExportStatusDto.Pending or BoardExportStatusDto.Processing)
                 {
-                    <MudButton Variant="Variant.Outlined" Color="Color.Info" Disabled="true">
-                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"/>
-                        Updating Archive...
-                    </MudButton>
+                    <button class="btn btn-info" disabled type="button">
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2"
+                                             Style="width: 16px; height: 16px;"/>
+                        Updating archive...
+                    </button>
                 }
                 else if (board.ReExportStatus == BoardExportStatusDto.Failed || board.ExportStatus == BoardExportStatusDto.Failed)
                 {
                     <MudTooltip Text="Export failed. Click to try again.">
-                        <MudButton Variant="Variant.Outlined" Color="Color.Error"
-                                   StartIcon="@Icons.Material.Filled.Refresh"
-                                   OnClick="ReExportBoardAsync">
-                            @(board.ExportStatus == BoardExportStatusDto.Failed ? "Retry Export" : "Retry Re-export")
-                        </MudButton>
+                        <button class="btn btn-error" type="button" @onclick="ReExportBoardAsync">
+                            <MudIcon Icon="@Icons.Material.Filled.Refresh" Size="Size.Small"/>
+                            @(board.ExportStatus == BoardExportStatusDto.Failed ? "Retry export" : "Retry re-export")
+                        </button>
                     </MudTooltip>
                 }
                 else
                 {
-                    <MudButton Variant="Variant.Outlined" Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.Refresh" OnClick="ReExportBoardAsync">
+                    <button class="btn" type="button" @onclick="ReExportBoardAsync">
+                        <MudIcon Icon="@Icons.Material.Filled.Refresh" Size="Size.Small"/>
                         Re-export
-                    </MudButton>
+                    </button>
                 }
             }
         }
@@ -103,11 +101,11 @@
             {
                 await BoardApi.ArchiveAndExportBoardAsync(BoardDetailsStore.Board!.Id, exportOptions);
                 BoardDetailsStore.SetBoardArchived(exportOptions);
-                Snackbar.Add("Board archived and export queued successfully.", Severity.Success);
+                Toast.ShowSuccess("Board archived and export queued successfully.");
             }
             catch (Exception ex)
             {
-                Snackbar.Add(ex.Message, Severity.Error);
+                Toast.ShowError(ex.Message);
             }
         }
     }
@@ -124,11 +122,11 @@
             {
                 await BoardApi.ReExportBoardAsync(BoardDetailsStore.Board!.Id, exportOptions);
                 BoardDetailsStore.SetBoardReExporting(exportOptions);
-                Snackbar.Add("Re-export started. The archive will be updated in the background.", Severity.Info);
+                Toast.ShowInfo("Re-export started. The archive will be updated in the background.");
             }
             catch (Exception ex)
             {
-                Snackbar.Add(ex.Message, Severity.Error);
+                Toast.ShowError(ex.Message);
             }
         }
     }
@@ -144,7 +142,7 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add(ex.Message, Severity.Error);
+            Toast.ShowError(ex.Message);
         }
     }
 

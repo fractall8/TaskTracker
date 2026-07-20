@@ -12,6 +12,8 @@ public interface IWorkspaceStore
 
     bool IsLoading { get; }
 
+    bool IsLoaded { get; }
+
     string? ErrorMessage { get; }
 
     event Action? StateChanged;

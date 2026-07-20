@@ -1,0 +1,49 @@
+﻿@using WebApp.Shared.Toast
+@using WebApp.Shared.Toast.Enums
+@inject CustomToastService ToastService
+@implements IDisposable
+
+<div class="custom-toast-container">
+    @foreach (var toast in ToastService.Toasts)
+    {
+        <div class="custom-toast @(toast.IsClosing ? "is-closing" : "")" @key="toast.Id">
+            <div class="toast-icon-wrapper @GetIconClass(toast.Type)">
+                <MudIcon Icon="@GetIcon(toast.Type)"/>
+            </div>
+            <div class="toast-message">@toast.Message</div>
+            <button class="toast-close" @onclick="() => ToastService.RemoveToastAsync(toast.Id)">
+                <MudIcon Icon="@Icons.Material.Filled.Close"/>
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+
+    protected override void OnInitialized()
+    {
+        ToastService.OnChange += () => InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ToastService.OnChange -= () => InvokeAsync(StateHasChanged);
+    }
+
+    private string GetIcon(ToastType type) => type switch
+    {
+        ToastType.Success => Icons.Material.Outlined.CheckCircleOutline,
+        ToastType.Error => Icons.Material.Outlined.ErrorOutline,
+        ToastType.Warning => Icons.Material.Outlined.WarningAmber,
+        _ => Icons.Material.Outlined.Info
+    };
+
+    private string GetIconClass(ToastType type) => type switch
+    {
+        ToastType.Success => "toast-success",
+        ToastType.Error => "toast-error",
+        ToastType.Warning => "toast-warning",
+        _ => "toast-info"
+    };
+
+}

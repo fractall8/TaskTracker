@@ -1,49 +1,44 @@
 @using System.ComponentModel.DataAnnotations
 @using Contracts.DTOs
 @using Contracts.Requests.Workspaces
-@inject ICurrentUserService currentUserService
+@inject ICurrentUserService CurrentUserService
 
-<MudDialog>
+<MudDialog Style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
     <TitleContent>
-        <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-primary);">
-            <MudIcon Icon="@(Workspace is null ? Icons.Material.Filled.Add : Icons.Material.Filled.Edit)"
-                     Class="mr-2 mb-n1"/>
-            @(Workspace is null ? "New Workspace" : "Edit Workspace")
-        </MudText>
+        <span style="font-size: 16px; font-weight: 600; color: var(--mud-palette-text-primary);">
+            @(Workspace is null ? "Create workspace" : "Edit workspace")
+        </span>
     </TitleContent>
     <DialogContent>
-        <MudForm @ref="_form" ValidationDelay="0">
-            <MudTextField @bind-Value="_model.Name"
-                          For="@(() => _model.Name)"
-                          Label="Workspace Name"
-                          Required="true"
-                          RequiredError="Name is required"
-                          MaxLength="100"
-                          Variant="Variant.Outlined"
-                          Margin="Margin.Dense"
-                          Class="mb-3"/>
+        <EditForm Model="@_model" OnValidSubmit="Submit">
+            <DataAnnotationsValidator/>
 
-            <MudTextField @bind-Value="_model.Description"
-                          For="@(() => _model.Description)"
-                          Label="Description (Optional)"
-                          Lines="3"
-                          Variant="Variant.Outlined"
-                          Margin="Margin.Dense"
-                          MaxLength="500"/>
-        </MudForm>
+            <label class="form-field">
+                <span>Name</span>
+                <InputText @bind-Value="_model.Name" class="form-input" placeholder="e.g. Marketing"/>
+                <ValidationMessage For="@(() => _model.Name)" class="validation-error"/>
+            </label>
+
+            <label class="form-field mt-3">
+                <span>Description (Optional)</span>
+                <InputTextArea @bind-Value="_model.Description" class="form-input" rows="3"
+                               placeholder="What is this workspace for?"/>
+                <ValidationMessage For="@(() => _model.Description)" class="validation-error"/>
+            </label>
+            <div class="d-flex w-100 justify-end mt-6 mb-2">
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn" @onclick="Cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </div>
+            </div>
+        </EditForm>
     </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Save</MudButton>
-    </DialogActions>
 </MudDialog>
 
 @code {
     [CascadingParameter] public IMudDialogInstance? MudDialog { get; set; }
-
     [Parameter] public WorkspaceDto? Workspace { get; set; }
 
-    private MudForm? _form;
     private WorkspaceFormModel _model = new();
 
     protected override void OnInitialized()
@@ -59,25 +54,18 @@
 
     private async Task Submit()
     {
-        if (_form is not null)
+        if (CurrentUserService.User == null)
         {
-            await _form.ValidateAsync();
-
-            if (_form.IsValid)
-            {
-                if (currentUserService.User == null) 
-                {
-                    await currentUserService.InitializeAsync();
-                }
-                MudDialog?.Close(DialogResult.Ok(new CreateWorkspaceRequest(_model.Name, _model.Description)));
-            }
+            await CurrentUserService.InitializeAsync();
         }
+
+        MudDialog?.Close(DialogResult.Ok(new CreateWorkspaceRequest(_model.Name, _model.Description)));
     }
 
     public class WorkspaceFormModel
     {
         [Required] [MaxLength(100)] public string Name { get; set; } = string.Empty;
-
         [MaxLength(500)] public string? Description { get; set; }
     }
+
 }

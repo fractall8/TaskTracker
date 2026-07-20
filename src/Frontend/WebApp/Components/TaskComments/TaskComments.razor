@@ -1,0 +1,266 @@
+﻿@using System.Globalization
+@using Contracts.DTOs
+@using Contracts.Requests.Comments
+@using Services.Abstractions.Tasks
+@using WebApp.Shared.Dialogs
+@using WebApp.Shared.Helpers
+@using WebApp.Shared.Toast
+@inject ITaskApiService TaskApi
+@inject CustomToastService Toast
+@inject IDialogService DialogService
+@inject IProfileStore ProfileStore
+
+<p class="task-section-title mb-3">
+    Comments
+</p>
+
+@if (!IsReadOnly)
+{
+    <div class="comment-composer">
+        <textarea class="form-input"
+                  rows="2"
+                  placeholder="Write a comment..."
+                  @bind="_newCommentText"
+                  @bind:event="oninput">
+        </textarea>
+        <button class="btn btn-primary"
+                disabled="@(string.IsNullOrWhiteSpace(_newCommentText) || _isSubmittingComment)"
+                @onclick="SubmitCommentAsync">
+            Post comment
+        </button>
+    </div>
+}
+
+<div class="comment-list">
+    @if (_isLoading)
+    {
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Small" Class="mt-2"/>
+    }
+    else if (_comments != null && _comments.Any())
+    {
+        @foreach (var comment in _comments.OrderByDescending(c => c.CreatedAt))
+        {
+            <div class="comment-row">
+                <div class="avatar-round @AvatarColorHelper.GetColorClass(comment.AuthorName)">
+                    @if (!string.IsNullOrEmpty(comment.AuthorAvatarUrl))
+                    {
+                        <img src="@comment.AuthorAvatarUrl" alt="Avatar"
+                             style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"/>
+                    }
+                    else
+                    {
+                        @GetInitials(comment.AuthorName)
+                    }
+                </div>
+
+                <div class="comment-body">
+                    <div class="comment-head">
+                        <span class="comment-author">
+                            @(string.IsNullOrWhiteSpace(comment.AuthorName) ? "Unknown" : comment.AuthorName)
+                            @if (ProfileStore.Profile?.Id == comment.AuthorId)
+                            {
+                                <span class="tag-you">You</span>
+                            }
+                        </span>
+                        <span class="comment-time">
+                            @comment.CreatedAt.ToLocalTime().ToString("MMM d, yyyy, h:mm tt", CultureInfo.InvariantCulture)
+                            @if (comment.UpdatedAt.HasValue)
+                            {
+                                <span>(edited)</span>
+                            }
+                        </span>
+                    </div>
+
+                    @if (_editingCommentId == comment.Id)
+                    {
+                        <div class="add-task-form mt-2">
+                            <textarea class="form-input" rows="2" @bind="_editingCommentText"
+                                      @bind:event="oninput"></textarea>
+                            <div class="add-task-actions">
+                                <button class="btn btn-primary"
+                                        @onclick="@(() => SubmitEditAsync(comment))"
+                                        disabled="@(_isUpdatingComment || string.IsNullOrWhiteSpace(_editingCommentText))">
+                                    Save
+                                </button>
+                                <button class="icon-btn sm ghost" @onclick="CancelEdit" disabled="@_isUpdatingComment">
+                                    <MudIcon Icon="@Icons.Material.Filled.Close" Size="Size.Small"/>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="comment-text">@comment.Text</p>
+                    }
+                </div>
+
+                @if (!IsReadOnly && _editingCommentId != comment.Id && ProfileStore.Profile?.Id == comment.AuthorId)
+                {
+                    <div class="card-actions">
+                        <button class="icon-btn sm ghost" aria-label="Edit comment"
+                                @onclick="@(() => StartEditComment(comment))">
+                            <MudIcon Icon="@Icons.Material.Outlined.Edit" Size="Size.Small"/>
+                        </button>
+                        <button class="icon-btn sm ghost" aria-label="Delete comment"
+                                @onclick="@(() => ConfirmDeleteComment(comment))">
+                            <MudIcon Icon="@Icons.Material.Outlined.Delete" Size="Size.Small"/>
+                        </button>
+                    </div>
+                }
+            </div>
+        }
+    }
+    else
+    {
+        <div class="empty-state mt-2" style="padding: 24px;">
+            <MudIcon Icon="@Icons.Material.Outlined.ChatBubbleOutline"/>
+            <p>No comments yet.</p>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Guid BoardId { get; set; }
+    [Parameter, EditorRequired] public Guid TaskId { get; set; }
+    [Parameter] public bool IsReadOnly { get; set; }
+
+    private bool _isLoading = true;
+    private List<CommentDto>? _comments;
+
+    private string _newCommentText = string.Empty;
+    private bool _isSubmittingComment;
+
+    private Guid? _editingCommentId;
+    private string _editingCommentText = string.Empty;
+    private bool _isUpdatingComment;
+
+    private string GetInitials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "U";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0][..1].ToUpper();
+        return (parts[0][..1] + parts[1][..1]).ToUpper();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ProfileStore.EnsureLoadedAsync();
+        await LoadCommentsAsync();
+    }
+
+    private async Task LoadCommentsAsync()
+    {
+        try
+        {
+            _isLoading = true;
+            _comments = await TaskApi.GetCommentsAsync(BoardId, TaskId);
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Failed to load comments: {ex.Message}");
+            _comments = new List<CommentDto>();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SubmitCommentAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newCommentText)) return;
+
+        try
+        {
+            _isSubmittingComment = true;
+            var request = new CreateCommentRequest(_newCommentText);
+            var newComment = await TaskApi.CreateCommentAsync(BoardId, TaskId, request);
+
+            _comments?.Add(newComment);
+            _newCommentText = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Failed to post comment: {ex.Message}");
+        }
+        finally
+        {
+            _isSubmittingComment = false;
+        }
+    }
+
+    private void StartEditComment(CommentDto comment)
+    {
+        _editingCommentId = comment.Id;
+        _editingCommentText = comment.Text;
+    }
+
+    private void CancelEdit()
+    {
+        _editingCommentId = null;
+        _editingCommentText = string.Empty;
+    }
+
+    private async Task SubmitEditAsync(CommentDto comment)
+    {
+        if (string.IsNullOrWhiteSpace(_editingCommentText) || _editingCommentText == comment.Text)
+        {
+            CancelEdit();
+            return;
+        }
+
+        try
+        {
+            _isUpdatingComment = true;
+
+            var request = new UpdateCommentRequest(_editingCommentText);
+            var updatedComment = await TaskApi.UpdateCommentAsync(BoardId, TaskId, comment.Id, request);
+
+            var index = _comments?.FindIndex(c => c.Id == comment.Id) ?? -1;
+            if (index != -1 && _comments != null)
+            {
+                _comments[index] = updatedComment;
+            }
+
+            CancelEdit();
+            Toast.ShowSuccess("Comment updated");
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Failed to update comment: {ex.Message}");
+        }
+        finally
+        {
+            _isUpdatingComment = false;
+        }
+    }
+
+    private async Task ConfirmDeleteComment(CommentDto comment)
+    {
+        var parameters = new DialogParameters<ConfirmDeleteDialog>
+        {
+            { x => x.Title, "Delete comment" },
+            { x => x.ContentText, "Are you sure you want to delete this comment? This action cannot be undone." },
+            { x => x.ConfirmText, "Delete" }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            try
+            {
+                await TaskApi.DeleteCommentAsync(BoardId, TaskId, comment.Id);
+                _comments?.Remove(comment);
+                Toast.ShowInfo("Comment deleted");
+            }
+            catch (Exception ex)
+            {
+                Toast.ShowError(ex.Message);
+            }
+        }
+    }
+
+}

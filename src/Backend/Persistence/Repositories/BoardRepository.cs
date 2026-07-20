@@ -81,34 +81,6 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
             .ToListAsync(ct);
     }
 
-    public async Task<int> CountAllWorkspaceBoardsAsync(Guid workspaceId, string? searchTerm = null,
-        CancellationToken ct = default)
-    {
-        var query = DbSet.Where(b => b.WorkspaceId == workspaceId);
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            query = query.Where(b => EF.Functions.ILike(b.Name, $"%{searchTerm}%"));
-        }
-
-        return await query.CountAsync(ct);
-    }
-
-    public async Task<List<Board>> GetAllWorkspaceBoardsPaginatedAsync(Guid workspaceId, int pageNumber, int pageSize,
-        string? searchTerm = null, CancellationToken ct = default)
-    {
-        var query = DbSet.Where(b => b.WorkspaceId == workspaceId);
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            query = query.Where(b => EF.Functions.ILike(b.Name, $"%{searchTerm}%"));
-        }
-
-        return await query
-            .OrderByDescending(b => b.CreatedAt)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(ct);
-    }
-
     public async Task<Board?> GetBoardWithHierarchyAsync(Guid boardId, string? searchTerm = null,
         CancellationToken cancellationToken = default)
     {
@@ -148,77 +120,12 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
         return await query.FirstOrDefaultAsync(b => b.Id == boardId, cancellationToken);
     }
 
-    public async Task<IEnumerable<Board>> GetUserBoardsAsync(Guid userId, CancellationToken ct = default)
-    {
-        return await DbContext.Boards
-            .AsNoTracking()
-            .Include(b => b.Members.Where(m => m.WorkspaceMember!.UserId == userId))
-            .Where(b => b.Members.Any(m => m.WorkspaceMember!.UserId == userId))
-            .OrderByDescending(b => b.CreatedAt)
-            .ToListAsync(ct);
-    }
-
-    public async Task<int> CountUserBoardsAsync(Guid userId, string? searchTerm = null, CancellationToken ct = default)
-    {
-        var query = DbContext.Boards
-            .Where(b => b.Members.Any(m => m.WorkspaceMember!.UserId == userId));
-
-        return await ApplySearchFilter(query, searchTerm).CountAsync(ct);
-    }
-
-    public async Task<List<Board>> GetUserBoardsPaginatedAsync(Guid userId, int pageNumber, int pageSize,
-        string? searchTerm = null, CancellationToken ct = default)
-    {
-        var query = DbContext.Boards
-            .AsNoTracking()
-            .Include(b => b.Members.Where(m => m.WorkspaceMember!.UserId == userId))
-            .Where(b => b.Members.Any(m => m.WorkspaceMember!.UserId == userId));
-
-        return await ApplySearchFilter(query, searchTerm)
-            .OrderByDescending(b => b.CreatedAt)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(ct);
-    }
-
     public async Task<BoardRole?> GetUserRoleAsync(Guid boardId, Guid userId, CancellationToken ct = default)
     {
         return await DbContext.Set<BoardMember>()
             .Where(m => m.BoardId == boardId && m.WorkspaceMember!.UserId == userId)
             .Select(m => (BoardRole?)m.Role)
             .FirstOrDefaultAsync(ct);
-    }
-
-    public async Task<List<Board>> GetBoardsByWorkspaceIdAsync(Guid workspaceId, CancellationToken ct = default)
-    {
-        return await DbSet
-            .Where(b => b.WorkspaceId == workspaceId)
-            .OrderByDescending(b => b.CreatedAt)
-            .ToListAsync(ct);
-    }
-
-    public async Task<int> CountBoardsByWorkspaceIdAsync(Guid workspaceId, Guid userId, string? searchTerm = null,
-        CancellationToken ct = default)
-    {
-        var query = DbSet
-            .Where(b => b.WorkspaceId == workspaceId && b.Members.Any(m => m.WorkspaceMember!.UserId == userId));
-
-        return await ApplySearchFilter(query, searchTerm).CountAsync(ct);
-    }
-
-    public async Task<List<Board>> GetBoardsByWorkspaceIdPaginatedAsync(Guid workspaceId, Guid userId, int pageNumber,
-        int pageSize, string? searchTerm = null, CancellationToken ct = default)
-    {
-        var query = DbSet
-            .AsNoTracking()
-            .Include(b => b.Members.Where(m => m.WorkspaceMember!.UserId == userId))
-            .Where(b => b.WorkspaceId == workspaceId && b.Members.Any(m => m.WorkspaceMember!.UserId == userId));
-
-        return await ApplySearchFilter(query, searchTerm)
-            .OrderByDescending(b => b.CreatedAt)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(ct);
     }
 
     public async Task<List<BoardMemberDto>> GetBoardMembersAsync(Guid boardId, CancellationToken ct = default)

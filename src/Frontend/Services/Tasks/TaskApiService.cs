@@ -34,6 +34,12 @@ public class TaskApiService(ITasksApi tasksApi) : ITaskApiService
         return await response.HandleResponseAsync();
     }
 
+    public async Task<TaskDto> UpdateTaskDueDateAsync(Guid boardId, Guid taskId, UpdateTaskDueDateRequest request, CancellationToken ct = default)
+    {
+        var response = await tasksApi.UpdateDueDateAsync(boardId, taskId, request, ct);
+        return await response.HandleResponseAsync();
+    }
+
     public async Task DeleteTaskAsync(Guid boardId, Guid taskId, CancellationToken ct = default)
     {
         var response = await tasksApi.DeleteAsync(boardId, taskId, ct);
@@ -50,6 +56,18 @@ public class TaskApiService(ITasksApi tasksApi) : ITaskApiService
     {
         var response = await tasksApi.UploadAttachmentAsync(boardId, taskId, filePart, ct);
         return await response.HandleResponseAsync();
+    }
+
+    public async Task<AttachmentDownloadDto> GetAttachmentDownloadUrlAsync(Guid boardId, Guid taskId, Guid attachmentId, CancellationToken ct = default)
+    {
+        var response = await tasksApi.GetAttachmentDownloadUrlAsync(boardId, taskId, attachmentId, ct);
+        return await response.HandleResponseAsync();
+    }
+
+    public async Task DeleteAttachmentAsync(Guid boardId, Guid taskId, Guid attachmentId, CancellationToken ct = default)
+    {
+        var response = await tasksApi.DeleteAttachmentAsync(boardId, taskId, attachmentId, ct);
+        await response.HandleResponseAsync();
     }
 
     public async Task<List<CommentDto>> GetCommentsAsync(Guid boardId, Guid taskId, CancellationToken ct = default)

@@ -1,54 +1,53 @@
 ﻿@page "/"
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager NavigationManager
+@layout BlankLayout
 
 <PageTitle>TaskTracker - Home</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="d-flex align-center" Style="min-height: 70vh;">
-    <MudGrid Class="align-center w-100">
-
-        <MudItem xs="12" md="6" Class="d-flex flex-column justify-center pr-md-8">
-            <MudText Typo="Typo.h2" Color="Color.Primary" Class="font-weight-bold mb-4">
-                Manage your tasks <br/> efficiently
-            </MudText>
-
-            <MudText Typo="Typo.h5" Style="color: var(--mud-palette-text-secondary);" Class="mb-8">
-                TaskTracker is your personal productivity space.
-                Create tasks, track your progress, and achieve your goals without the extra stress.
-            </MudText>
-
-            <div class="d-flex gap-4">
-                <MudButton Href="authentication/login" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
-                           Class="px-8 py-3 font-weight-bold">
-                    Get Started
+<div class="home-container">
+    <main class="hero-section">
+        <div class="hero-content">
+            <h1 class="hero-title">Manage your tasks efficiently</h1>
+            <p class="hero-subtitle">
+                TaskTracker is your personal productivity space. Create tasks, track
+                your progress, and achieve your goals without the extra stress.
+            </p>
+            <div class="d-flex gap-4 flex-wrap">
+                <MudButton Href="authentication/login"
+                           Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Size="Size.Large"
+                           Class="px-8 py-3 rounded-lg"
+                           Style="font-weight: 600; text-transform: none; font-size: 15px;">
+                    Get started
                 </MudButton>
-                <MudButton Href="about" Variant="Variant.Outlined"
-                           Style="color: var(--mud-palette-text-primary); border-color: var(--mud-palette-lines-default);"
-                           Size="Size.Large" Class="px-8 py-3 font-weight-bold">
-                    Learn More
+
+                <MudButton Href="about"
+                           Variant="Variant.Outlined"
+                           Color="Color.Default"
+                           Size="Size.Large"
+                           Class="px-8 py-3 rounded-lg"
+                           Style="font-weight: 600; text-transform: none; font-size: 15px; border-color: var(--mud-palette-lines-default);">
+                    Learn more
                 </MudButton>
             </div>
-        </MudItem>
+        </div>
 
-        <MudItem xs="12" md="6" Class="d-none d-md-flex justify-center">
-            <MudPaper Elevation="0" Class="rounded-circle d-flex flex-column align-center justify-center"
-                      Style="width: 400px; height: 400px; background-color: var(--mud-palette-drawer-background); border: 1px solid var(--mud-palette-lines-default);">
-                <MudText Typo="Typo.h1">🚀</MudText>
-                <MudText Typo="Typo.h5" Style="color: var(--mud-palette-text-secondary);" Class="mt-4">
-                    Productivity
-                </MudText>
-            </MudPaper>
-        </MudItem>
-
-    </MudGrid>
-</MudContainer>
+        <div class="hero-graphic">
+            <div class="graphic-circle">
+                <div class="emoji">🚀</div>
+                <div class="label">Productivity</div>
+            </div>
+        </div>
+    </main>
+</div>
 
 @code {
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-
         if (authState.User.Identity?.IsAuthenticated == true)
         {
             NavigationManager.NavigateTo("/dashboard");

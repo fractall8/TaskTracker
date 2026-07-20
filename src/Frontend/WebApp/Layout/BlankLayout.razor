@@ -1,0 +1,31 @@
+﻿@using WebApp.Theme
+@inherits LayoutComponentBase
+@inject IJSRuntime JsRuntime
+
+<MudThemeProvider @ref="_themeProvider" @bind-IsDarkMode="_isDarkMode" Theme="TaskTrackerTheme.DefaultTheme"/>
+
+<MudLayout>
+    <MudMainContent Class="custom-main-content">
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool _isDarkMode;
+    private MudThemeProvider _themeProvider = null!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var storedTheme = await JsRuntime.InvokeAsync<string>("localStorage.getItem", "themePreference");
+            
+            _isDarkMode = !string.IsNullOrEmpty(storedTheme)
+                ? storedTheme == "dark"
+                : await _themeProvider.GetSystemDarkModeAsync();
+
+            StateHasChanged();
+        }
+    }
+
+}

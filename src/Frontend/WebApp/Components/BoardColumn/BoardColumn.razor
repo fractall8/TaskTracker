@@ -1,0 +1,141 @@
+@using Contracts.DTOs
+@using Contracts.Requests.Tasks
+@using WebApp.Shared.Dialogs
+@using WebApp.Shared.Toast
+@inject IBoardDetailsStore BoardDetailsStore
+@inject IDialogService DialogService
+@inject CustomToastService Toast
+
+<div class="column @(IsDragged ? "column-drag-active" : "") @(IsDropTarget ? "column-drop-target" : "")"
+     draggable="@(CanManageColumns ? "true" : "false")"
+     @ondragstart="HandleColumnDragStart"
+     @ondragenter="HandleColumnDragEnter"
+     @ondragover:preventDefault="true"
+     @ondrop="HandleColumnDrop"
+     @ondragend="HandleColumnDragEnd">
+
+    <div class="column-head">
+        <span class="column-title">
+            @Column.Name
+            <span class="count">@BoardDetailsStore.Tasks.Count(t => t.ColumnId == Column.Id)</span>
+        </span>
+
+        @if (CanManageColumns)
+        {
+            <MudMenu Icon="@Icons.Material.Filled.MoreHoriz" AnchorOrigin="Origin.BottomRight"
+                     TransformOrigin="Origin.TopRight" Dense="true" Size="Size.Small">
+                <MudMenuItem OnClick="OpenEditColumnDialog" Icon="@Icons.Material.Filled.Edit">Edit</MudMenuItem>
+                <MudMenuItem OnClick="DeleteColumn" Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error">
+                    Delete
+                </MudMenuItem>
+            </MudMenu>
+        }
+    </div>
+
+    <MudDropZone T="TaskDto"
+                 Identifier="@Column.Id.ToString()"
+                 AllowReorder="true"
+                 Class="task-list"/>
+
+    @if (CanManageTasks)
+    {
+        <button class="add-task-btn" @onclick="OpenCreateTaskDialog">
+            <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small"/>
+            Add a task
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ColumnDto Column { get; set; } = null!;
+    [Parameter, EditorRequired] public Guid BoardId { get; set; }
+    [Parameter] public bool IsDragged { get; set; }
+    [Parameter] public bool IsDropTarget { get; set; }
+    [Parameter] public bool CanManageColumns { get; set; }
+    [Parameter] public bool CanManageTasks { get; set; }
+
+    [Parameter] public EventCallback<ColumnDto> OnColumnDragStart { get; set; }
+    [Parameter] public EventCallback<ColumnDto> OnColumnDragEnter { get; set; }
+    [Parameter] public EventCallback<ColumnDto> OnColumnDrop { get; set; }
+    [Parameter] public EventCallback OnColumnDragEnd { get; set; }
+
+    private async Task HandleColumnDragStart() => await OnColumnDragStart.InvokeAsync(Column);
+    private async Task HandleColumnDragEnter() => await OnColumnDragEnter.InvokeAsync(Column);
+    private async Task HandleColumnDrop() => await OnColumnDrop.InvokeAsync(Column);
+    private async Task HandleColumnDragEnd() => await OnColumnDragEnd.InvokeAsync();
+
+    private async Task OpenEditColumnDialog()
+    {
+        var parameters = new DialogParameters { ["InitialName"] = Column.Name };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+
+        var dialog = await DialogService.ShowAsync<ColumnDialog>("Edit Column", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result!.Canceled)
+        {
+            try
+            {
+                var newName = result.Data?.ToString() ?? string.Empty;
+                await BoardDetailsStore.UpdateColumnNameAsync(Column.Id, newName);
+                Toast.ShowSuccess("Column updated successfully");
+            }
+            catch (Exception ex)
+            {
+                Toast.ShowError(ex.Message);
+            }
+        }
+    }
+
+    private async Task DeleteColumn()
+    {
+        var taskCount = BoardDetailsStore.Tasks.Count(t => t.ColumnId == Column.Id);
+
+        var parameters = new DialogParameters<ConfirmDeleteDialog>
+        {
+            { x => x.Title, "Delete column" },
+            { x => x.ContentText, $"Delete the \"{Column.Name}\" column and all {taskCount} task(s) in it?" },
+            { x => x.ConfirmText, "Delete column" }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            try
+            {
+                await BoardDetailsStore.DeleteColumnAsync(Column.Id);
+                Toast.ShowSuccess("Column and all its content deleted.");
+            }
+            catch (Exception ex)
+            {
+                Toast.ShowError($"Failed to delete column: {ex.Message}");
+            }
+        }
+    }
+
+    private async Task OpenCreateTaskDialog()
+    {
+        var parameters = new DialogParameters<TaskDialog> { { x => x.BoardId, BoardId } };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+        var dialog = await DialogService.ShowAsync<TaskDialog>("Create Task", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result!.Canceled)
+        {
+            try
+            {
+                var request = (CreateTaskRequest)result.Data!;
+                await BoardDetailsStore.CreateTaskAsync(Column.Id, request);
+                Toast.ShowSuccess("Task created successfully");
+            }
+            catch (Exception ex)
+            {
+                Toast.ShowError(ex.Message);
+            }
+        }
+    }
+
+}

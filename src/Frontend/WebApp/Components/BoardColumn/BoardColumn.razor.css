@@ -1,0 +1,95 @@
+﻿.column {
+    width: 272px;
+    flex-shrink: 0;
+    background: var(--mud-palette-drawer-background);
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 12px;
+    padding: 10px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    max-height: 100%;
+    cursor: grab;
+    transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out, border-color 0.2s;
+}
+
+.column:active {
+    cursor: grabbing;
+}
+
+.column-drag-active {
+    opacity: 0.6;
+    transform: scale(0.98);
+}
+
+.column-drop-target {
+    border: 2px dashed var(--mud-palette-primary) !important;
+    background-color: transparent !important;
+    opacity: 0.8;
+}
+
+.column-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 6px 8px;
+}
+
+.column-title {
+    font-weight: 600;
+    font-size: 13.5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--mud-palette-text-primary);
+}
+
+.column-title .count {
+    color: var(--mud-palette-text-secondary);
+    font-weight: 500;
+    font-size: 12px;
+    background: var(--mud-palette-background);
+    padding: 2px 6px;
+    border-radius: 999px;
+}
+
+::deep .task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 8px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 2px;
+    min-height: 20px;
+}
+
+::deep .task-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+::deep .task-list::-webkit-scrollbar-thumb {
+    background: var(--mud-palette-lines-default);
+    border-radius: 3px;
+}
+
+.add-task-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--mud-palette-text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 8px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.add-task-btn:hover {
+    background: var(--mud-palette-action-default-hover);
+    color: var(--mud-palette-text-primary);
+}

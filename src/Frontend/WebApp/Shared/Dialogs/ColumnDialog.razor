@@ -1,41 +1,35 @@
 ﻿@using System.ComponentModel.DataAnnotations
 
-<MudDialog>
+<MudDialog Style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
     <TitleContent>
-        <MudText Typo="Typo.h6" Style="color: var(--mud-palette-text-primary);">
-            <MudIcon
-                Icon="@(string.IsNullOrEmpty(InitialName) ? Icons.Material.Filled.Add : Icons.Material.Filled.Edit)"
-                Class="mr-2 mb-n1"/>
-            @(string.IsNullOrEmpty(InitialName) ? "New Column" : "Edit Column")
-        </MudText>
+        <span style="font-size: 16px; font-weight: 600; color: var(--mud-palette-text-primary);">
+            @(string.IsNullOrEmpty(InitialName) ? "Create column" : "Edit column")
+        </span>
     </TitleContent>
     <DialogContent>
-        <MudForm @ref="_form" ValidationDelay="0">
-            <MudTextField @bind-Value="_model.Name"
-                          For="@(() => _model.Name)"
-                          Label="Column Name"
-                          Required="true"
-                          RequiredError="Name is required"
-                          MaxLength="50"
-                          Variant="Variant.Outlined"
-                          Margin="Margin.Dense"
-                          AutoFocus="true"
-                          OnKeyDown="HandleKeyDown"
-                          Class="mb-3"/>
-        </MudForm>
+        <EditForm Model="@_model" OnValidSubmit="Submit">
+            <DataAnnotationsValidator/>
+
+            <label class="form-field">
+                <span>Name</span>
+                <InputText @bind-Value="_model.Name" class="form-input" placeholder="e.g. In Progress"/>
+                <ValidationMessage For="@(() => _model.Name)" class="validation-error"/>
+            </label>
+
+            <div class="d-flex w-100 justify-end mt-6 mb-2">
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn" @onclick="Cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </div>
+            </div>
+        </EditForm>
     </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Save</MudButton>
-    </DialogActions>
 </MudDialog>
 
 @code {
     [CascadingParameter] public IMudDialogInstance? MudDialog { get; set; }
-
     [Parameter] public string? InitialName { get; set; }
 
-    private MudForm? _form;
     private ColumnFormModel _model = new();
 
     protected override void OnInitialized()
@@ -46,36 +40,11 @@
         }
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender && _form != null)
-        {
-            await Task.Delay(50);
-            await _form.ResetValidationAsync();
-        }
-    }
-
     private void Cancel() => MudDialog?.Cancel();
 
-    private async Task Submit()
+    private void Submit()
     {
-        if (_form is not null)
-        {
-            await _form.ValidateAsync();
-
-            if (_form.IsValid)
-            {
-                MudDialog?.Close(DialogResult.Ok(_model.Name.Trim()));
-            }
-        }
-    }
-
-    private async Task HandleKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter")
-        {
-            await Submit();
-        }
+        MudDialog?.Close(DialogResult.Ok(_model.Name.Trim()));
     }
 
     public class ColumnFormModel

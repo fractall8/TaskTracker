@@ -1,0 +1,238 @@
+﻿@using Contracts.DTOs
+@using Refit
+@using WebApp.Shared.Dialogs
+@using WebApp.Shared.Toast
+@inject IBoardDetailsStore Store
+@inject CustomToastService Toast
+@inject IJSRuntime Js
+@inject IProfileStore ProfileStore
+@inject IDialogService DialogService
+
+<div class="task-section-head-row">
+    @if (Attachments != null && Attachments.Count > 1)
+    {
+        <button class="section-toggle" @onclick="ToggleAttachments">
+            <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small"
+                     Style="@($"transform: {(_isExpanded ? "none" : "rotate(-90deg)")}; transition: transform .15s")"/>
+            <span>Attachments</span>
+        </button>
+    }
+    else
+    {
+        <p class="task-section-title">Attachments</p>
+    }
+
+    @if (!IsReadOnly)
+    {
+        <div>
+            <InputFile id="fileInput" OnChange="SubmitUploadAsync" style="display: none;"
+                       accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"/>
+            <label for="fileInput" class="btn" style="margin: 0; cursor: pointer;">
+                <MudIcon Icon="@Icons.Material.Outlined.AttachFile" Size="Size.Small"/>
+                Attach file
+            </label>
+        </div>
+    }
+</div>
+
+@if (_isUploading && _selectedFileName != null)
+{
+    <div class="attachment-row mb-4">
+        <span class="card-icon bg-gray" style="width: 32px; height: 32px; border-radius: 8px; font-size: 10.5px;">
+            ...
+        </span>
+        <div class="attachment-meta">
+            <p class="attachment-name">@_selectedFileName</p>
+            <p class="attachment-size">Uploading...</p>
+        </div>
+        <MudProgressCircular Color="Color.Primary" Size="Size.Small" Indeterminate="true"/>
+    </div>
+}
+
+@if (_isExpanded || Attachments == null || Attachments.Count <= 1)
+{
+    @if (Attachments != null && Attachments.Any())
+    {
+        <div class="attachment-list">
+            @foreach (var attachment in Attachments.OrderByDescending(a => a.CreatedAt))
+            {
+                <div class="attachment-row">
+                    <span class="card-icon @GetExtensionColor(attachment.FileName)"
+                          style="width: 32px; height: 32px; border-radius: 8px; font-size: 10.5px;">
+                        @GetExtensionLabel(attachment.FileName)
+                    </span>
+
+                    <div class="attachment-meta">
+                        <p class="attachment-name">@attachment.FileName</p>
+                        <p class="attachment-size">@(Math.Round(attachment.SizeInBytes / 1024.0, 1)) KB</p>
+                    </div>
+
+                    <div class="d-flex gap-1">
+                        <button class="icon-btn sm ghost" aria-label="Download @attachment.FileName"
+                                disabled="@(_isDownloading == attachment.Id)"
+                                @onclick="@(() => DownloadAttachmentAsync(attachment))">
+                            @if (_isDownloading == attachment.Id)
+                            {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true"
+                                                     Style="width: 14px; height: 14px;"/>
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Outlined.FileDownload" Size="Size.Small"/>
+                            }
+                        </button>
+
+                        @if (!IsReadOnly && ProfileStore.Profile?.Id == attachment.CreatedById)
+                        {
+                            <button class="icon-btn sm ghost" aria-label="Delete @attachment.FileName"
+                                    @onclick="@(() => ConfirmDeleteAttachmentAsync(attachment))">
+                                <MudIcon Icon="@Icons.Material.Outlined.Delete" Size="Size.Small" Color="Color.Error"/>
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else if (!_isUploading)
+    {
+        <div class="empty-state mt-2" style="padding: 24px;">
+            <MudIcon Icon="@Icons.Material.Outlined.AttachFile"/>
+            <p>No files attached yet.</p>
+        </div>
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public Guid BoardId { get; set; }
+    [Parameter, EditorRequired] public Guid TaskId { get; set; }
+    [Parameter] public ICollection<AttachmentDto> Attachments { get; set; } = new List<AttachmentDto>();
+    [Parameter] public bool IsReadOnly { get; set; }
+
+    private bool _isUploading;
+    private Guid? _isDownloading;
+    private string? _selectedFileName;
+    private bool _isExpanded = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ProfileStore.EnsureLoadedAsync();
+    }
+
+    private void ToggleAttachments() => _isExpanded = !_isExpanded;
+
+    private string GetExtensionLabel(string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName)) return "?";
+        var ext = Path.GetExtension(fileName).TrimStart('.').ToUpper();
+        return ext.Length > 4 ? ext[..4] : ext;
+    }
+
+    private string GetExtensionColor(string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName)) return "bg-gray";
+        var ext = Path.GetExtension(fileName).TrimStart('.').ToLower();
+
+        return ext switch
+        {
+            "pdf" => "bg-coral",
+            "doc" or "docx" => "bg-blue",
+            "xls" or "xlsx" => "bg-teal",
+            "png" or "jpg" or "jpeg" or "gif" => "bg-purple",
+            "ppt" or "pptx" => "bg-pink",
+            _ => "bg-gray"
+        };
+    }
+
+    private async Task SubmitUploadAsync(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file == null) return;
+
+        const long maxAllowedSize = 10 * 1024 * 1024; // 10 MB
+
+        if (file.Size > maxAllowedSize)
+        {
+            Toast.ShowWarning("File is too large (max 10MB).");
+            return;
+        }
+
+        try
+        {
+            _isUploading = true;
+            _selectedFileName = file.Name;
+            StateHasChanged();
+
+            await using var stream = file.OpenReadStream(maxAllowedSize);
+            var streamPart = new StreamPart(stream, file.Name, file.ContentType);
+
+            var newAttachment = await Store.UploadTaskAttachmentAsync(TaskId, streamPart);
+
+            Attachments.Add(newAttachment);
+            Toast.ShowSuccess("File uploaded successfully");
+
+            _isExpanded = true;
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Upload failed: {ex.Message}");
+        }
+        finally
+        {
+            _isUploading = false;
+            _selectedFileName = null;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DownloadAttachmentAsync(AttachmentDto attachment)
+    {
+        try
+        {
+            _isDownloading = attachment.Id;
+            var downloadInfo = await Store.GetTaskAttachmentDownloadUrlAsync(TaskId, attachment.Id);
+
+            var module = await Js.InvokeAsync<IJSObjectReference>("import", "./js/fileDownload.js");
+            await module.InvokeVoidAsync("downloadFromUrl", downloadInfo.DownloadUrl, downloadInfo.FileName);
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Download failed: {ex.Message}");
+        }
+        finally
+        {
+            _isDownloading = null;
+        }
+    }
+
+    private async Task ConfirmDeleteAttachmentAsync(AttachmentDto attachment)
+    {
+        var parameters = new DialogParameters<ConfirmDeleteDialog>
+        {
+            { x => x.ContentText, $"Are you sure you want to delete '{attachment.FileName}'?" },
+            { x => x.ConfirmText, "Delete" },
+            { x => x.CancelText, "Cancel" },
+        };
+
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("Delete Attachment", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled)
+        {
+            try
+            {
+                await Store.DeleteTaskAttachmentAsync(TaskId, attachment.Id);
+
+                Attachments.Remove(attachment);
+                Toast.ShowSuccess("Attachment deleted");
+            }
+            catch (Exception ex)
+            {
+                Toast.ShowError($"Failed to delete attachment: {ex.Message}");
+            }
+        }
+    }
+
+}

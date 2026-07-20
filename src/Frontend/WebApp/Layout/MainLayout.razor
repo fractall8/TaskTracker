@@ -1,18 +1,26 @@
-﻿@inherits LayoutComponentBase
-@implements IDisposable
-@inject IProfileStore ProfileStore
+﻿@using WebApp.Components.AppSidebar
+@using WebApp.Shared.Components
+@using WebApp.Theme
+@inherits LayoutComponentBase
+@inject IWorkspaceStore WorkspaceStore
 @inject ICurrentUserService CurrentUserService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IJSRuntime JsRuntime
+@inject NavigationManager NavigationManager
 
-<MudThemeProvider @ref="_themeProvider" @bind-IsDarkMode="_isDarkMode" Theme="@_trelloTheme"/>
+<MudThemeProvider @ref="_themeProvider" @bind-IsDarkMode="_isDarkMode" Theme="@TaskTrackerTheme.DefaultTheme"/>
 <MudPopoverProvider/>
 <MudDialogProvider/>
 <MudSnackbarProvider/>
+<ToastContainer />
 
 <MudLayout>
-    <AppNavBar IsDarkMode="_isDarkMode" OnThemeToggled="ToggleTheme"/>
-    <MudMainContent>
+    <AppSidebar IsDarkMode="_isDarkMode"
+                OnThemeToggled="ToggleTheme"
+                OnSignIn="BeginSignIn"
+                OnSignOut="BeginSignOut"/>
+
+    <MudMainContent Class="custom-main-content">
         @Body
     </MudMainContent>
 </MudLayout>
@@ -20,56 +28,17 @@
 @code {
     private bool _isDarkMode;
     private MudThemeProvider _themeProvider = null!;
-
-    private readonly MudTheme _trelloTheme = new MudTheme()
-    {
-        PaletteLight = new PaletteLight
-        {
-            Primary = "#0052CC",
-            Secondary = "#172B4D",
-            Background = "#FFFFFF",
-            DrawerBackground = "#F4F5F7", 
-            Surface = "#FFFFFF",
-            AppbarBackground = "#FFFFFF",
-            AppbarText = "#172B4D",
-            TextPrimary = "#172B4D",
-            TextSecondary = "#5E6C84",
-            LinesDefault = "#DFE1E6",
-            Divider = "#DFE1E6",
-            Info = "#0052CC",
-            Success = "#00875A",
-            Warning = "#FF991F",
-            Error = "#DE350B"
-        },
-        PaletteDark = new PaletteDark
-        {
-            Primary = "#579DFF",
-            Secondary = "#B6C2CF",
-            Background = "#161A1D",
-            DrawerBackground = "#22272B", 
-            Surface = "#2C333A",
-            AppbarBackground = "#1D2125",
-            AppbarText = "#9FADBC",
-            TextPrimary = "#B6C2CF",
-            TextSecondary = "#8C9BAB",
-            LinesDefault = "#A6C5E229",
-            Divider = "#A6C5E229",
-            Info = "#579DFF",
-            Success = "#216E4E",
-            Warning = "#A54800",
-            Error = "#AE2E24"
-        }
-    };
-
-    protected override void OnInitialized() =>
-        ProfileStore.StateChanged += OnStoreStateChanged;
-
+    
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         if (authState.User.Identity?.IsAuthenticated == true)
         {
             await CurrentUserService.InitializeAsync();
+            if (!WorkspaceStore.IsLoaded)
+            {
+                await WorkspaceStore.LoadUserWorkspacesAsync();
+            }
         }
     }
 
@@ -90,7 +59,6 @@
         await JsRuntime.InvokeVoidAsync("updateBodyTheme", _isDarkMode);
     }
 
-    public void Dispose() => ProfileStore.StateChanged -= OnStoreStateChanged;
-
-    private void OnStoreStateChanged() => InvokeAsync(StateHasChanged);
+    private void BeginSignIn() => NavigationManager.NavigateTo("authentication/login");
+    private void BeginSignOut() => NavigationManager.NavigateToLogout("authentication/logout", "./");
 }

@@ -3,133 +3,87 @@
 @using Contracts.DTOs
 @using Contracts.Enums
 @using Services.Abstractions.Hubs
+@using WebApp.Components.BoardColumn
+@using WebApp.Components.BoardExportControls
+@using WebApp.Components.TaskCard
 @using WebApp.Shared.Dialogs
+@using WebApp.Shared.Helpers
+@using WebApp.Shared.Toast
 @inject IBoardDetailsStore BoardDetailsStore
 @inject IWorkspaceStore WorkspaceStore
 @inject IProfileStore ProfileStore
 @inject NavigationManager Navigation
 @inject IDialogService DialogService
-@inject ISnackbar Snackbar
+@inject CustomToastService Toast
 @inject IBoardExportStatusHubService ExportHubService
 
-<style>
-    .column-grab {
-        cursor: grab;
-        transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out;
-    }
+<PageTitle>@(IsCurrentBoardLoaded ? BoardDetailsStore.Board!.Name : "Board") - TaskTracker</PageTitle>
 
-    .column-grab:active {
-        cursor: grabbing;
-    }
+<main class="board-main">
+    <button class="crumb crumb-btn" @onclick="NavigateBack">
+        <MudIcon Icon="@Icons.Material.Filled.ChevronLeft" Size="Size.Small"/>
+        Back to Workspace
+    </button>
 
-    .column-drag-active {
-        opacity: 0.6;
-        transform: scale(0.98);
-    }
-
-    .column-drop-target {
-        border: 2px dashed var(--mud-palette-primary) !important;
-        background-color: transparent !important;
-        opacity: 0.8;
-    }
-
-    .board-horizontal-scroll::-webkit-scrollbar {
-        height: 10px;
-    }
-
-    .board-horizontal-scroll::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    .board-horizontal-scroll::-webkit-scrollbar-thumb {
-        background: var(--mud-palette-lines-default);
-        border-radius: 8px;
-    }
-
-    .board-horizontal-scroll::-webkit-scrollbar-thumb:hover {
-        background: var(--mud-palette-text-secondary);
-    }
-</style>
-
-<MudContainer MaxWidth="MaxWidth.False" Class="pt-4 px-4 px-md-8 d-flex flex-column"
-              Style="height: calc(100vh - 64px); overflow: hidden;">
-
-    <div class="mb-2 flex-shrink-0">
-        <MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
-                   Color="Color.Default"
-                   Variant="Variant.Text"
-                   OnClick="NavigateBack">
-            Back to Workspace's Boards
-        </MudButton>
-    </div>
-
-    <div class="d-flex align-center mb-4 w-100 flex-shrink-0">
-        <MudText Typo="Typo.h4" Class="fw-bold text-truncate"
-                 Style="max-width: 500px; color: var(--mud-palette-text-primary);">
-            @(BoardDetailsStore.Board?.Name ?? "Loading Board...")
-        </MudText>
-        
-        <div class="ml-4">
-            <BoardExportControls />
+    <div class="board-head">
+        <div class="board-head-left">
+            <div class="card-icon @AvatarColorHelper.GetColorClass(IsCurrentBoardLoaded ? BoardDetailsStore.Board?.Name : null)">
+                @(IsCurrentBoardLoaded ? BoardDetailsStore.Board!.Name.FirstOrDefault().ToString().ToUpper() : "B")
+            </div>
+            <h1>@(IsCurrentBoardLoaded ? BoardDetailsStore.Board!.Name : "Loading Board...")</h1>
         </div>
 
-        <MudSpacer/>
+        <div class="board-head-right">
+            <div class="search-input">
+                <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Small"/>
+                <input placeholder="Search tasks..."
+                       value="@_searchQuery"
+                       @oninput="OnSearchInput"
+                       disabled="@(!IsCurrentBoardLoaded)"/>
+            </div>
 
-        @if (_workspaceRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
-        {
-            <MudButton Variant="Variant.Outlined" 
-                       Color="Color.Primary" 
-                       StartIcon="@Icons.Material.Filled.Group" 
-                       Class="mr-4 rounded-lg"
-                       OnClick="OpenManageMembersDialog">
-                Manage Members
-            </MudButton>
-        }
+            @if (IsCurrentBoardLoaded && _workspaceRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
+            {
+                <button class="btn" @onclick="OpenManageMembersDialog">
+                    <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small"/>
+                    Members
+                </button>
+            }
 
-        <div style="width: 300px;">
-            <MudTextField T="string"
-                          Value="@_searchQuery"
-                          ValueChanged="OnSearchChanged"
-                          Placeholder="Search tasks..."
-                          Adornment="Adornment.Start"
-                          AdornmentIcon="@Icons.Material.Filled.Search"
-                          IconSize="Size.Small"
-                          Variant="Variant.Outlined"
-                          Margin="Margin.Dense"
-                          Clearable="true"
-                          Immediate="true"
-                          DebounceInterval="500"
-                          Style="background-color: var(--mud-palette-surface);"
-                          Disabled="@(BoardDetailsStore.Board == null)"/>
+            <BoardExportControls/>
         </div>
     </div>
 
     @if (!string.IsNullOrEmpty(BoardDetailsStore.ErrorMessage))
     {
-        <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mb-4 flex-shrink-0 rounded-lg">
-            @BoardDetailsStore.ErrorMessage
-        </MudAlert>
+        <div class="custom-alert error mb-4 flex-shrink-0">
+            <MudIcon Icon="@Icons.Material.Outlined.ErrorOutline" Size="Size.Small" Class="custom-alert-icon"/>
+            <div class="custom-alert-content">
+                <p>@BoardDetailsStore.ErrorMessage</p>
+            </div>
+        </div>
     }
 
-    @if (BoardDetailsStore.IsLoading && BoardDetailsStore.Board == null)
+    @if (IsCurrentBoardLoaded && BoardDetailsStore.Board is { IsArchived: true })
+    {
+        <div class="custom-alert warning mb-4 flex-shrink-0">
+            <MudIcon Icon="@Icons.Material.Outlined.Archive" Size="Size.Small" Class="custom-alert-icon"/>
+            <div class="custom-alert-content">
+                <h4>Archived Board</h4>
+                <p>This board is in Read-Only mode. You can view tasks and download the archive, but no changes can be
+                    made.</p>
+            </div>
+        </div>
+    }
+
+    @if (BoardDetailsStore.IsLoading || !IsCurrentBoardLoaded)
     {
         <div class="d-flex justify-center align-center flex-grow-1">
             <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large"/>
         </div>
     }
-    else if (BoardDetailsStore.Board != null)
+    else
     {
-        @if (BoardDetailsStore.Board is { IsArchived: true })
-        {
-            <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Class="mb-4 rounded-lg" Icon="@Icons.Material.Filled.Archive" Style="border-width: 2px; background-color: var(--mud-palette-surface);">
-                <div class="d-flex align-center justify-space-between w-100">
-                    <div>
-                        <MudText Typo="Typo.h6" Class="fw-bold">Archived Board</MudText>
-                        <MudText Typo="Typo.body2">This board is in Read-Only mode. You can view tasks and download the archive, but no changes can be made.</MudText>
-                    </div>
-                </div>
-            </MudAlert>
-        }
         <MudDropContainer @ref="_dropContainer"
                           T="TaskDto"
                           Items="BoardDetailsStore.Tasks"
@@ -137,13 +91,10 @@
                           ItemDropped="TaskUpdated"
                           ItemDisabled="@((item) => !CanMoveTasks)"
                           CanDrop="@((_, _) => CanMoveTasks)"
-                          Class="d-flex flex-column flex-grow-1 overflow-hidden w-100">
-
+                          Class="board-drop-container">
             <ChildContent>
-                <div class="d-flex flex-row gap-4 overflow-x-auto flex-grow-1 pb-2 board-horizontal-scroll"
-                     style="align-items: flex-start; flex-wrap: nowrap;">
-
-                    @foreach (var column in BoardDetailsStore.Board.Columns)
+                <div class="board-columns">
+                    @foreach (var column in BoardDetailsStore.Board!.Columns)
                     {
                         <BoardColumn Column="column"
                                      BoardId="@BoardId"
@@ -159,32 +110,30 @@
 
                     @if (CanManageColumns)
                     {
-                        <MudButton Variant="Variant.Outlined"
-                                   StartIcon="@Icons.Material.Filled.Add"
-                                   OnClick="OpenCreateColumnDialog"
-                                   Class="rounded-lg px-4 flex-shrink-0"
-                                   Style="width: 320px; height: 50px; border: 2px dashed var(--mud-palette-lines-default); background-color: transparent; color: var(--mud-palette-text-secondary); justify-content: flex-start; text-transform: none; font-weight: 500;">
-                            @(BoardDetailsStore.Board.Columns.Any() ? "Add another column" : "Add a column")
-                        </MudButton>
+                        <div class="column-add" @onclick="OpenCreateColumnDialog">
+                            <button class="add-column-btn">
+                                <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small"/>
+                                @(BoardDetailsStore.Board.Columns.Any() ? "Add another column" : "Add column")
+                            </button>
+                        </div>
                     }
-
                 </div>
             </ChildContent>
 
             <ItemRenderer>
-                <TaskCard Task="context" 
-                          BoardId="@BoardId" 
-                          CanManageTasks="CanManageTasks" 
-                          CanMoveTasks="CanMoveTasks" />
+                <TaskCard Task="context"
+                          BoardId="@BoardId"
+                          CanManageTasks="CanManageTasks"
+                          CanMoveTasks="CanMoveTasks"/>
             </ItemRenderer>
-
         </MudDropContainer>
     }
-</MudContainer>
+</main>
 
 @code {
     [Parameter] public Guid BoardId { get; set; }
 
+    private Guid _loadedBoardId;
     private ColumnDto? _draggedColumn;
     private ColumnDto? _targetColumn;
     private string _searchQuery = string.Empty;
@@ -192,53 +141,82 @@
 
     private MudDropContainer<TaskDto>? _dropContainer;
 
+    private bool IsCurrentBoardLoaded => BoardDetailsStore.Board != null && BoardDetailsStore.Board.Id == BoardId;
+
     private BoardRoleDto? _boardRole => BoardDetailsStore.Board?.BoardRole;
     private WorkspaceRoleDto? _workspaceRole;
 
-    private bool CanManageColumns => BoardDetailsStore.Board is { IsArchived: false } && 
+    private BoardExportStatusDto? _lastExportStatus;
+    private BoardExportStatusDto? _lastReExportStatus;
+
+    private bool CanManageColumns => IsCurrentBoardLoaded && BoardDetailsStore.Board is { IsArchived: false } &&
                                      _boardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
 
-    private bool CanManageTasks => BoardDetailsStore.Board is { IsArchived: false } && 
+    private bool CanManageTasks => IsCurrentBoardLoaded && BoardDetailsStore.Board is { IsArchived: false } &&
                                    _boardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
 
-    private bool CanMoveTasks => BoardDetailsStore.Board is { IsArchived: false } && 
+    private bool CanMoveTasks => IsCurrentBoardLoaded && BoardDetailsStore.Board is { IsArchived: false } &&
                                  _boardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster or BoardRoleDto.User;
 
-    private async Task OnSearchChanged(string newValue)
+    protected override void OnInitialized()
     {
-        _searchQuery = newValue;
-        
+        BoardDetailsStore.StateChanged += HandleStoreStateChanged;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loadedBoardId != BoardId)
+        {
+            BoardDetailsStore.Reset();
+            
+            _loadedBoardId = BoardId;
+            _searchQuery = string.Empty;
+
+            if (_loadedBoardId != Guid.Empty)
+            {
+                await ExportHubService.DisconnectAsync();
+            }
+
+            await BoardDetailsStore.LoadAsync(BoardId);
+
+            _lastExportStatus = BoardDetailsStore.Board?.ExportStatus;
+            _lastReExportStatus = BoardDetailsStore.Board?.ReExportStatus;
+
+            await ResolveRolesAsync();
+            await ExportHubService.ConnectAsync(BoardId);
+        }
+    }
+
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        _searchQuery = e.Value?.ToString() ?? string.Empty;
+
         if (_searchCts != null)
         {
             await _searchCts.CancelAsync();
             _searchCts.Dispose();
         }
-        
+
         _searchCts = new CancellationTokenSource();
         var token = _searchCts.Token;
 
         try
         {
-            await BoardDetailsStore.LoadAsync(BoardId, _searchQuery, token);
-            _dropContainer?.Refresh();
+            await Task.Delay(500, token);
+
+            if (!token.IsCancellationRequested)
+            {
+                await BoardDetailsStore.LoadAsync(BoardId, _searchQuery, token);
+                _dropContainer?.Refresh();
+            }
         }
         catch (OperationCanceledException)
         {
-            // skip
         }
         catch (Exception ex)
         {
-            Snackbar.Add(ex.Message, Severity.Error);
+            Toast.ShowError(ex.Message);
         }
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        BoardDetailsStore.StateChanged += HandleStoreStateChanged;
-        await BoardDetailsStore.LoadAsync(BoardId);
-        await ResolveRolesAsync();
-        
-        await ExportHubService.ConnectAsync(BoardId);
     }
 
     private async Task ResolveRolesAsync()
@@ -246,7 +224,7 @@
         if (BoardDetailsStore.Board != null)
         {
             _workspaceRole = WorkspaceStore.GetCachedRole(BoardDetailsStore.Board.WorkspaceId);
-            
+
             if (_workspaceRole == null)
             {
                 await WorkspaceStore.LoadWorkspaceDetailsAsync(BoardDetailsStore.Board.WorkspaceId);
@@ -260,13 +238,31 @@
         BoardDetailsStore.StateChanged -= HandleStoreStateChanged;
         _searchCts?.Cancel();
         _searchCts?.Dispose();
-        
+
         _ = ExportHubService.DisconnectAsync();
     }
 
     private void HandleStoreStateChanged()
     {
-        InvokeAsync(() => 
+        var currentExportStatus = BoardDetailsStore.Board?.ExportStatus;
+        var currentReExportStatus = BoardDetailsStore.Board?.ReExportStatus;
+
+        if (_lastExportStatus is BoardExportStatusDto.Requested or BoardExportStatusDto.Pending or BoardExportStatusDto.Processing
+            && currentExportStatus is BoardExportStatusDto.Completed)
+        {
+            Toast.ShowSuccess("Archive generated successfully");
+        }
+
+        if (_lastReExportStatus is BoardExportStatusDto.Requested or BoardExportStatusDto.Pending or BoardExportStatusDto.Processing
+            && currentReExportStatus is BoardExportStatusDto.None)
+        {
+            Toast.ShowSuccess("Archive updated successfully");
+        }
+
+        _lastExportStatus = currentExportStatus;
+        _lastReExportStatus = currentReExportStatus;
+
+        InvokeAsync(() =>
         {
             StateHasChanged();
             _dropContainer?.Refresh();
@@ -278,9 +274,8 @@
         if (!CanMoveTasks) return;
 
         var task = dropItem.Item;
-
         if (task == null) return;
-        
+
         var targetColumnId = Guid.Parse(dropItem.DropzoneIdentifier);
         var newPosition = dropItem.IndexInZone;
 
@@ -290,7 +285,7 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to move task: {ex.Message}", Severity.Error);
+            Toast.ShowError($"Failed to move task: {ex.Message}");
             _dropContainer?.Refresh();
         }
     }
@@ -323,7 +318,7 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add(ex.Message, Severity.Error);
+            Toast.ShowError(ex.Message);
             _dropContainer?.Refresh();
         }
     }
@@ -353,46 +348,44 @@
             try
             {
                 var columnName = result.Data?.ToString() ?? string.Empty;
-
                 await BoardDetailsStore.CreateColumnAsync(columnName);
-
-                Snackbar.Add("Column created successfully", Severity.Success);
+                Toast.ShowSuccess("Column created successfully");
             }
             catch (Exception ex)
             {
-                Snackbar.Add(ex.Message, Severity.Error);
+                Toast.ShowError(ex.Message);
             }
         }
     }
-    
+
     private async Task OpenManageMembersDialog()
     {
         var currentUserEmail = ProfileStore.Profile?.Email ?? string.Empty;
-        
-        var parameters = new DialogParameters 
-        { 
-            { nameof(ManageBoardMembersDialog.WorkspaceId), BoardDetailsStore.Board!.WorkspaceId }, 
+
+        var parameters = new DialogParameters
+        {
+            { nameof(ManageBoardMembersDialog.WorkspaceId), BoardDetailsStore.Board!.WorkspaceId },
             { nameof(ManageBoardMembersDialog.BoardId), BoardId },
             { nameof(ManageBoardMembersDialog.CurrentUserEmail), currentUserEmail },
             { nameof(ManageBoardMembersDialog.CurrentUserWorkspaceRole), _workspaceRole }
         };
 
-        var options = new DialogOptions 
-        { 
-            CloseButton = true, 
-            MaxWidth = MaxWidth.Medium, 
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Medium,
             FullWidth = true,
             CloseOnEscapeKey = true
         };
-        
+
         await DialogService.ShowAsync<ManageBoardMembersDialog>("Manage Board Members", parameters, options);
     }
 
     private void NavigateBack()
     {
-        if (BoardDetailsStore.Board != null)
+        if (IsCurrentBoardLoaded)
         {
-            Navigation.NavigateTo($"/workspaces/{BoardDetailsStore.Board.WorkspaceId}");
+            Navigation.NavigateTo($"/workspaces/{BoardDetailsStore.Board!.WorkspaceId}");
         }
         else
         {

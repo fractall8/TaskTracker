@@ -29,9 +29,15 @@ public interface IBoardDetailsStore
 
     Task ReorderColumnsAsync(Guid columnId, int newPosition, CancellationToken ct = default);
 
-    void UpdateBoardName(string name);
+    Task<AttachmentDto> UploadTaskAttachmentAsync(Guid taskId, Refit.StreamPart filePart, CancellationToken ct = default);
+
+    Task<AttachmentDownloadDto> GetTaskAttachmentDownloadUrlAsync(Guid taskId, Guid attachmentId, CancellationToken ct = default);
+
+    Task DeleteTaskAttachmentAsync(Guid taskId, Guid attachmentId, CancellationToken ct = default);
 
     Task UpdateTaskAsync(Guid taskId, UpdateTaskRequest request, CancellationToken ct = default);
+
+    Task<TaskDto?> UpdateTaskDueDateAsync(Guid taskId, UpdateTaskDueDateRequest request, CancellationToken ct = default);
 
     Task DeleteTaskAsync(Guid taskId, CancellationToken ct = default);
 

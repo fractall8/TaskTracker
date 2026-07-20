@@ -3,19 +3,34 @@
 @implements IDisposable
 @inject IWorkspaceStore WorkspaceStore
 @inject IDialogService DialogService
-@inject ISnackbar Snackbar
+@inject CustomToastService Toast
 @inject NavigationManager Navigation
 @using Contracts.DTOs
 @using Contracts.Enums
 @using Contracts.Requests.Workspaces
 @using WebApp.Shared.Dialogs
+@using WebApp.Shared.Helpers
+@using WebApp.Shared.Toast
 
-<PageTitle>My Workspaces - TaskTracker</PageTitle>
+<PageTitle>Workspaces - TaskTracker</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="pt-6 pb-8 px-4">
-    <div class="d-flex flex-column flex-md-row justify-space-between align-center mb-6 gap-4">
-        <MudText Typo="Typo.h4" Class="fw-bold" Style="color: var(--mud-palette-text-primary);">My Workspaces</MudText>
-    </div>
+<div class="dashboard-container">
+    <header class="content-header">
+        <div class="header-titles">
+            <h1>Workspaces</h1>
+            <p class="subtitle">
+                @(WorkspaceStore.Workspaces?.Count ?? 0) workspace@(WorkspaceStore.Workspaces?.Count == 1 ? "" : "s")
+            </p>
+        </div>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="OpenCreateDialog"
+                   Class="rounded-lg px-6 py-2"
+                   Style="font-weight: 600; text-transform: none; font-size: 15px;">
+            Create workspace
+        </MudButton>
+    </header>
 
     @if (WorkspaceStore.IsLoading)
     {
@@ -25,76 +40,87 @@
     }
     else if (!string.IsNullOrEmpty(WorkspaceStore.ErrorMessage))
     {
-        <MudAlert Severity="Severity.Error" Class="mt-4 rounded-lg">
-            @WorkspaceStore.ErrorMessage
-        </MudAlert>
+        <div class="custom-alert error mt-4">
+            <MudIcon Icon="@Icons.Material.Outlined.ErrorOutline" Size="Size.Small" Class="custom-alert-icon"/>
+            <div class="custom-alert-content">
+                <p>@WorkspaceStore.ErrorMessage</p>
+            </div>
+        </div>
     }
     else if (!WorkspaceStore.Workspaces.Any())
     {
-        <MudAlert Severity="Severity.Info" Class="mt-4 rounded-lg">
-            You don't have any workspaces yet. Create your first one!
-        </MudAlert>
+        <div class="workspaces-grid">
+            <div class="ws-card new-card" @onclick="OpenCreateDialog">
+                <div class="new-card-content">
+                    <MudIcon Icon="@Icons.Material.Filled.Add" Style="font-size: 32px;" Class="mb-2"/>
+                    <p style="font-size: 16px; font-weight: 500;">New workspace</p>
+                </div>
+            </div>
+        </div>
     }
     else
     {
-        <MudGrid>
+        <div class="workspaces-grid">
             @foreach (var workspace in WorkspaceStore.Workspaces)
             {
-                <MudItem xs="12" sm="6" md="4" lg="3">
-                    <MudCard Elevation="2" Class="h-100 d-flex flex-column rounded-lg"
-                             Style="border: 1px solid var(--mud-palette-lines-default); background-color: var(--mud-palette-surface); cursor: pointer;"
-                             @onclick="@(() => Navigation.NavigateTo($"/workspaces/{workspace.Id}"))">
-                        <MudCardHeader>
-                            <CardHeaderContent>
-                                <MudText Typo="Typo.h6" Class="fw-bold"
-                                         Style="color: var(--mud-palette-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                    @workspace.Name
-                                </MudText>
-                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
-                                         Color="@RoleChipColor(workspace.UserRole)" Class="mt-1 ml-0" Style="height: 20px; font-size: 11px;">
-                                    @workspace.UserRole.ToString()
-                                </MudChip>
-                            </CardHeaderContent>
-                            <CardHeaderActions>
-                                @if (workspace.UserRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
-                                {
-                                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" Dense="true"
-                                             @onclick:stopPropagation="true">
-                                        <MudMenuItem Icon="@Icons.Material.Filled.Edit"
-                                                     OnClick="@(() => OpenEditDialog(workspace))">
-                                            Edit
+                <div class="ws-card" @onclick="@(() => Navigation.NavigateTo($"/workspaces/{workspace.Id}"))">
+                    <div class="ws-card-header">
+                        <div class="ws-avatar @AvatarColorHelper.GetColorClass(workspace.Name)">
+                            @(workspace.Name.FirstOrDefault().ToString().ToUpper())
+                        </div>
+                        <div class="ws-card-actions" @onclick:stopPropagation="true">
+                            @if (workspace.UserRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
+                            {
+                                <MudMenu Icon="@Icons.Material.Filled.MoreHoriz" Size="Size.Medium" Dense="true"
+                                         AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                                    <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                                                 OnClick="@(() => OpenEditDialog(workspace))">Edit
+                                    </MudMenuItem>
+                                    @if (workspace.UserRole is WorkspaceRoleDto.Owner)
+                                    {
+                                        <MudMenuItem Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error"
+                                                     OnClick="@(() => DeleteWorkspace(workspace))">Delete
                                         </MudMenuItem>
-                                        @if (workspace.UserRole is WorkspaceRoleDto.Owner)
-                                        {
-                                            <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                                                         IconColor="Color.Error"
-                                                         OnClick="@(() => DeleteWorkspace(workspace))">
-                                                Delete
-                                            </MudMenuItem>
-                                        }
-                                    </MudMenu>
-                                }
-                            </CardHeaderActions>
-                        </MudCardHeader>
+                                    }
+                                </MudMenu>
+                            }
+                        </div>
+                    </div>
 
-                        <MudCardContent Class="flex-grow-1 overflow-hidden pt-0">
-                            <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">
-                                @(string.IsNullOrWhiteSpace(workspace.Description) ? "No description provided." : workspace.Description)
-                            </MudText>
-                        </MudCardContent>
-                    </MudCard>
-                </MudItem>
+                    <div class="ws-card-body">
+                        <h3>@workspace.Name</h3>
+                        <p>@(string.IsNullOrWhiteSpace(workspace.Description) ? "No description provided." : workspace.Description)</p>
+                    </div>
+
+                    <div class="ws-card-footer">
+                        @if (workspace.UserRole == WorkspaceRoleDto.Owner)
+                        {
+                            <span class="ws-badge ws-badge-owner">Owner</span>
+                        }
+                        else if (workspace.UserRole == WorkspaceRoleDto.Admin)
+                        {
+                            <span class="ws-badge ws-badge-admin">Admin</span>
+                        }
+                        else
+                        {
+                            <span class="ws-badge ws-badge-participant">Participant</span>
+                        }
+                    </div>
+                </div>
             }
-        </MudGrid>
-    }
 
-    <MudFab Color="Color.Primary"
-            StartIcon="@Icons.Material.Filled.Add"
-            Style="position: fixed; bottom: 32px; right: 32px;"
-            OnClick="OpenCreateDialog"/>
-</MudContainer>
+            <div class="ws-card new-card" @onclick="OpenCreateDialog">
+                <div class="new-card-content">
+                    <MudIcon Icon="@Icons.Material.Filled.Add" Style="font-size: 32px;" Class="mb-2"/>
+                    <p style="font-size: 16px; font-weight: 500;">New<br/>workspace</p>
+                </div>
+            </div>
+        </div>
+    }
+</div>
 
 @code {
+    
     protected override void OnInitialized() =>
         WorkspaceStore.StateChanged += OnStoreStateChanged;
 
@@ -106,29 +132,21 @@
 
     private void OnStoreStateChanged() => InvokeAsync(StateHasChanged);
 
-    private Color RoleChipColor(WorkspaceRoleDto role) => role switch
-    {
-        WorkspaceRoleDto.Owner => Color.Warning,
-        WorkspaceRoleDto.Admin => Color.Info,
-        _ => Color.Default
-    };
-
     private async Task OpenCreateDialog()
     {
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
         var dialog = await DialogService.ShowAsync<WorkspaceDialog>("Create Workspace", options);
         var result = await dialog.Result;
-
         if (result is { Canceled: false, Data: CreateWorkspaceRequest request })
         {
             try
             {
                 await WorkspaceStore.CreateWorkspaceAsync(request);
-                Snackbar.Add("Workspace created successfully.", Severity.Success);
+                Toast.ShowSuccess("Workspace created successfully.");
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Failed to create workspace: {ex.Message}", Severity.Error);
+                Toast.ShowError($"Failed to create workspace: {ex.Message}");
             }
         }
     }
@@ -139,17 +157,16 @@
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
         var dialog = await DialogService.ShowAsync<WorkspaceDialog>("Edit Workspace", parameters, options);
         var result = await dialog.Result;
-
         if (result is { Canceled: false, Data: CreateWorkspaceRequest request })
         {
             try
             {
                 await WorkspaceStore.UpdateWorkspaceAsync(workspace.Id, new UpdateWorkspaceRequest(request.Name, request.Description));
-                Snackbar.Add("Workspace updated successfully.", Severity.Success);
+                Toast.ShowSuccess("Workspace updated successfully.");
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Failed to update workspace: {ex.Message}", Severity.Error);
+                Toast.ShowError($"Failed to update workspace: {ex.Message}");
             }
         }
     }
@@ -158,22 +175,29 @@
     {
         var safeName = workspace.Name.Length > 40 ? workspace.Name[..40] + "..." : workspace.Name;
 
-        var confirmed = await DialogService.ShowMessageBoxAsync(
-            "Delete Confirmation",
-            $"Are you sure you want to delete '{safeName}'? All boards, columns and tasks inside will be permanently removed.",
-            yesText: "Delete", cancelText: "Cancel");
+        var parameters = new DialogParameters<ConfirmDeleteDialog>
+        {
+            { x => x.Title, "Delete workspace" },
+            { x => x.ContentText, $"Are you sure you want to delete \"{safeName}\"? All of its boards, columns and tasks will be permanently removed." },
+            { x => x.ConfirmText, "Delete workspace" }
+        };
 
-        if (confirmed == true)
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
         {
             try
             {
                 await WorkspaceStore.DeleteWorkspaceAsync(workspace.Id);
-                Snackbar.Add("Workspace deleted.", Severity.Success);
+                Toast.ShowSuccess("Workspace deleted.");
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Failed to delete workspace: {ex.Message}", Severity.Error);
+                Toast.ShowError($"Failed to delete workspace: {ex.Message}");
             }
         }
     }
+
 }
