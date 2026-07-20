@@ -1,6 +1,11 @@
-﻿using Application.Interfaces.Repositories;
+﻿using Application.Common.Interfaces;
+using Application.Common.Mappings;
+using Application.Interfaces.Notifiers;
+using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
+using Contracts.Notifications.BoardActions;
+using Contracts.Notifications.BoardActions.Payloads;
 using FluentValidation;
 using MediatR;
 
@@ -12,12 +17,14 @@ public class MoveColumnCommandHandler(
     IBoardAccessService boardAccessService,
     IBoardRepository boardRepository,
     IColumnRepository columnRepository,
+    IBoardActionNotifier boardActionNotifier,
+    IDateTimeProvider dateTimeProvider,
     IUnitOfWork unitOfWork)
     : IRequestHandler<MoveColumnCommand>
 {
     public async Task Handle(MoveColumnCommand request, CancellationToken ct)
     {
-        await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, ct);
+        var boardAccessContext = await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, ct);
 
         var board = await boardRepository.GetByIdAsync(request.BoardId, ct);
 
@@ -42,12 +49,25 @@ public class MoveColumnCommandHandler(
         }
 
         var oldPosition = column.Position;
-        await columnRepository.UpdatePositionsOnMoveAsync(request.BoardId, oldPosition, safeNewPosition, ct);
 
-        column.Position = safeNewPosition;
-        columnRepository.Update(column);
+        await unitOfWork.ExecuteInTransactionAsync(async token =>
+        {
+            await columnRepository.UpdatePositionsOnMoveAsync(request.BoardId, oldPosition, safeNewPosition, token);
 
-        await unitOfWork.SaveChangesAsync(ct);
+            column.Position = safeNewPosition;
+            columnRepository.Update(column);
+
+            await unitOfWork.SaveChangesAsync(token);
+        }, ct);
+
+        var reorderedColumns = await columnRepository.GetListByBoardIdAsync(request.BoardId, ct);
+
+        await boardActionNotifier.NotifyAsync(new BoardActionNotification(
+            request.BoardId,
+            BoardActionNotificationType.ColumnsReordered,
+            boardAccessContext.UserId,
+            dateTimeProvider.UtcNow,
+            new ColumnsReorderedPayload(BoardActionPositionMappings.ToColumnPositions(reorderedColumns))), ct);
     }
 }
 

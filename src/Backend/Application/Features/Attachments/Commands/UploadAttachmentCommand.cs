@@ -1,8 +1,12 @@
+using Application.Common.Interfaces;
+using Application.Interfaces.Notifiers;
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Application.Settings;
 using Contracts.DTOs;
+using Contracts.Notifications.BoardActions;
+using Contracts.Notifications.BoardActions.Payloads;
 using Domain.Constants;
 using Domain.Entities;
 using FluentValidation;
@@ -27,13 +31,15 @@ public class UploadAttachmentCommandHandler(
     IFileService fileService,
     IUserRepository userRepository,
     ICurrentUserAccessor currentUserAccessor,
+    IBoardActionNotifier boardActionNotifier,
+    IDateTimeProvider dateTimeProvider,
     IUnitOfWork unitOfWork,
     ILogger<UploadAttachmentCommandHandler> logger)
     : IRequestHandler<UploadAttachmentCommand, AttachmentDto>
 {
     public async Task<AttachmentDto> Handle(UploadAttachmentCommand request, CancellationToken cancellationToken)
     {
-            await boardAccessService.EnsureCanManageAttachmentsAsync(request.BoardId, cancellationToken);
+            var boardAccessContext = await boardAccessService.EnsureCanManageAttachmentsAsync(request.BoardId, cancellationToken);
 
             var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, cancellationToken);
             if (task == null || task.Column?.BoardId != request.BoardId)
@@ -84,6 +90,16 @@ public class UploadAttachmentCommandHandler(
                 logger.LogError(ex,"Failed to upload attachment blob: {FileUrl}", fileUrl);
                 throw;
             }
+
+
+            var attachmentsCount = await attachmentRepository.CountAsync(a => a.TaskId == request.TaskId, cancellationToken);
+
+            await boardActionNotifier.NotifyAsync(new BoardActionNotification(
+                request.BoardId,
+                BoardActionNotificationType.TaskAttachmentsCountChanged,
+                boardAccessContext.UserId,
+                dateTimeProvider.UtcNow,
+                new TaskAttachmentsCountChangedPayload(request.TaskId, attachmentsCount)), cancellationToken);
 
             return new AttachmentDto(
                 attachment.Id,

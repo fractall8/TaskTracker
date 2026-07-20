@@ -8,6 +8,11 @@ namespace Persistence.Repositories;
 public class ColumnRepository(TaskTrackerDbContext dbContext)
     : Repository<Column, Guid>(dbContext), IColumnRepository
 {
+    public async Task<List<Column>> GetListByBoardIdAsync(Guid boardId, CancellationToken ct = default)
+    {
+        return await DbContext.Columns.Where(c => c.BoardId == boardId).ToListAsync(ct);
+    }
+
     public async Task<IEnumerable<string>> GetNameListByBoardIdAsync(Guid boardId, CancellationToken ct = default)
     {
         return await DbContext.Columns.Where(c => c.BoardId == boardId && !c.IsDeleted).Select(c => c.Name)

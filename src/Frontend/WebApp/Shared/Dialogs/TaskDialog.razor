@@ -176,8 +176,7 @@
                 Title: _model.Title,
                 Description: string.IsNullOrWhiteSpace(_model.Description) ? null : _model.Description,
                 DueDate: dueDateOffset,
-                AssigneeId: _model.AssigneeId,
-                ColumnId: Task!.ColumnId
+                AssigneeId: _model.AssigneeId
             );
             MudDialog?.Close(DialogResult.Ok(updateRequest));
         }

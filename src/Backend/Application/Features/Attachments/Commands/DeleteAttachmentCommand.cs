@@ -1,6 +1,10 @@
-﻿using Application.Interfaces.Repositories;
+﻿using Application.Common.Interfaces;
+using Application.Interfaces.Notifiers;
+using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
+using Contracts.Notifications.BoardActions;
+using Contracts.Notifications.BoardActions.Payloads;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -16,6 +20,8 @@ public class DeleteAttachmentCommandHandler(
     ITaskRepository taskRepository,
     IAttachmentRepository attachmentRepository,
     IFileService fileService,
+    IBoardActionNotifier boardActionNotifier,
+    IDateTimeProvider dateTimeProvider,
     IUnitOfWork unitOfWork,
     ILogger<DeleteAttachmentCommandHandler> logger) : IRequestHandler<DeleteAttachmentCommand>
 {
@@ -51,5 +57,14 @@ public class DeleteAttachmentCommandHandler(
         {
             logger.LogError(ex, "Failed to delete attachment blob for Task {TaskId}: {FileUrl}", request.TaskId, attachment.FileUrl);
         }
+
+        var remainingAttachmentsCount = await attachmentRepository.CountAsync(a => a.TaskId == request.TaskId, cancellationToken);
+
+        await boardActionNotifier.NotifyAsync(new BoardActionNotification(
+            request.BoardId,
+            BoardActionNotificationType.TaskAttachmentsCountChanged,
+            userInfo.UserId,
+            dateTimeProvider.UtcNow,
+            new TaskAttachmentsCountChangedPayload(request.TaskId, remainingAttachmentsCount)), cancellationToken);
     }
 }

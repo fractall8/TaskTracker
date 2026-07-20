@@ -1,7 +1,11 @@
-﻿using Application.Interfaces.Repositories;
+﻿using Application.Common.Interfaces;
+using Application.Interfaces.Notifiers;
+using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Contracts.DTOs;
+using Contracts.Notifications.BoardActions;
+using Contracts.Notifications.BoardActions.Payloads;
 using Domain.Constants;
 using Domain.Entities;
 using FluentValidation;
@@ -16,12 +20,14 @@ public class CreateColumnCommandHandler(
     IBoardAccessService boardAccessService,
     IBoardRepository boardRepository,
     IColumnRepository columnRepository,
+    IBoardActionNotifier boardActionNotifier,
+    IDateTimeProvider dateTimeProvider,
     IUnitOfWork unitOfWork)
     : IRequestHandler<CreateColumnCommand, ColumnDto>
 {
     public async Task<ColumnDto> Handle(CreateColumnCommand request, CancellationToken ct)
     {
-        await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, ct);
+        var boardAccessContext = await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, ct);
 
         var board = await boardRepository.GetByIdAsync(request.BoardId, ct);
 
@@ -36,11 +42,9 @@ public class CreateColumnCommandHandler(
         if (existingNames.Any(existingName =>
                 string.Equals(existingName, request.Name, StringComparison.OrdinalIgnoreCase)))
         {
-            if (existingNames.Any(existingName =>
-                    string.Equals(existingName, request.Name, StringComparison.OrdinalIgnoreCase)))
-            {
-                throw new ValidationException([new ValidationFailure("Name", "A column with this name already exists on the board.")]);
-            }
+            throw new ValidationException([
+                new ValidationFailure("Name", "A column with this name already exists on the board.")
+            ]);
         }
 
         var column = new Column
@@ -53,6 +57,13 @@ public class CreateColumnCommandHandler(
         await columnRepository.AddAsync(column, ct);
 
         await unitOfWork.SaveChangesAsync(ct);
+
+        await boardActionNotifier.NotifyAsync(new BoardActionNotification(
+            request.BoardId,
+            BoardActionNotificationType.ColumnCreated,
+            boardAccessContext.UserId,
+            dateTimeProvider.UtcNow,
+            new ColumnCreatedPayload(column.Id, column.Name, column.Position)), ct);
 
         return new ColumnDto(
             column.Id,

@@ -10,6 +10,8 @@ public interface ITaskRepository : IRepository<TaskItem, Guid>
 
     Task<IEnumerable<TaskItem>> GetTasksByBoardIdAsync(Guid boardId, CancellationToken ct = default);
 
+    Task<List<TaskItem>> GetTasksByColumnIdAsync(Guid columnId, CancellationToken ct = default);
+
     Task<TaskItem?> GetTaskWithColumnAsync(Guid taskId, CancellationToken ct = default);
 
     Task<int> GetMaxPositionAsync(Guid columnId, CancellationToken ct = default);
