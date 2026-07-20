@@ -7,6 +7,7 @@
 @using WebApp.Components.BoardExportControls
 @using WebApp.Components.TaskCard
 @using WebApp.Shared.Dialogs
+@using WebApp.Shared.Helpers
 @using WebApp.Shared.Toast
 @inject IBoardDetailsStore BoardDetailsStore
 @inject IWorkspaceStore WorkspaceStore
@@ -16,7 +17,7 @@
 @inject CustomToastService Toast
 @inject IBoardExportStatusHubService ExportHubService
 
-<PageTitle>@(BoardDetailsStore.Board?.Name ?? "Board") - TaskTracker</PageTitle>
+<PageTitle>@(IsCurrentBoardLoaded ? BoardDetailsStore.Board!.Name : "Board") - TaskTracker</PageTitle>
 
 <main class="board-main">
     <button class="crumb crumb-btn" @onclick="NavigateBack">
@@ -26,10 +27,10 @@
 
     <div class="board-head">
         <div class="board-head-left">
-            <div class="card-icon @GetColorClass(BoardDetailsStore.Board?.Name)">
-                @(BoardDetailsStore.Board?.Name?.FirstOrDefault().ToString().ToUpper() ?? "B")
+            <div class="card-icon @AvatarColorHelper.GetColorClass(IsCurrentBoardLoaded ? BoardDetailsStore.Board?.Name : null)">
+                @(IsCurrentBoardLoaded ? BoardDetailsStore.Board!.Name.FirstOrDefault().ToString().ToUpper() : "B")
             </div>
-            <h1>@(BoardDetailsStore.Board?.Name ?? "Loading Board...")</h1>
+            <h1>@(IsCurrentBoardLoaded ? BoardDetailsStore.Board!.Name : "Loading Board...")</h1>
         </div>
 
         <div class="board-head-right">
@@ -38,10 +39,10 @@
                 <input placeholder="Search tasks..."
                        value="@_searchQuery"
                        @oninput="OnSearchInput"
-                       disabled="@(BoardDetailsStore.Board == null)"/>
+                       disabled="@(!IsCurrentBoardLoaded)"/>
             </div>
 
-            @if (_workspaceRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
+            @if (IsCurrentBoardLoaded && _workspaceRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
             {
                 <button class="btn" @onclick="OpenManageMembersDialog">
                     <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small"/>
@@ -63,7 +64,7 @@
         </div>
     }
 
-    @if (BoardDetailsStore.Board is { IsArchived: true })
+    @if (IsCurrentBoardLoaded && BoardDetailsStore.Board is { IsArchived: true })
     {
         <div class="custom-alert warning mb-4 flex-shrink-0">
             <MudIcon Icon="@Icons.Material.Outlined.Archive" Size="Size.Small" Class="custom-alert-icon"/>
@@ -75,13 +76,13 @@
         </div>
     }
 
-    @if (BoardDetailsStore.IsLoading && BoardDetailsStore.Board == null)
+    @if (BoardDetailsStore.IsLoading || !IsCurrentBoardLoaded)
     {
         <div class="d-flex justify-center align-center flex-grow-1">
             <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large"/>
         </div>
     }
-    else if (BoardDetailsStore.Board != null)
+    else
     {
         <MudDropContainer @ref="_dropContainer"
                           T="TaskDto"
@@ -93,7 +94,7 @@
                           Class="board-drop-container">
             <ChildContent>
                 <div class="board-columns">
-                    @foreach (var column in BoardDetailsStore.Board.Columns)
+                    @foreach (var column in BoardDetailsStore.Board!.Columns)
                     {
                         <BoardColumn Column="column"
                                      BoardId="@BoardId"
@@ -132,6 +133,7 @@
 @code {
     [Parameter] public Guid BoardId { get; set; }
 
+    private Guid _loadedBoardId;
     private ColumnDto? _draggedColumn;
     private ColumnDto? _targetColumn;
     private string _searchQuery = string.Empty;
@@ -139,26 +141,50 @@
 
     private MudDropContainer<TaskDto>? _dropContainer;
 
+    private bool IsCurrentBoardLoaded => BoardDetailsStore.Board != null && BoardDetailsStore.Board.Id == BoardId;
+
     private BoardRoleDto? _boardRole => BoardDetailsStore.Board?.BoardRole;
     private WorkspaceRoleDto? _workspaceRole;
 
     private BoardExportStatusDto? _lastExportStatus;
     private BoardExportStatusDto? _lastReExportStatus;
 
-    private bool CanManageColumns => BoardDetailsStore.Board is { IsArchived: false } &&
+    private bool CanManageColumns => IsCurrentBoardLoaded && BoardDetailsStore.Board is { IsArchived: false } &&
                                      _boardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
 
-    private bool CanManageTasks => BoardDetailsStore.Board is { IsArchived: false } &&
+    private bool CanManageTasks => IsCurrentBoardLoaded && BoardDetailsStore.Board is { IsArchived: false } &&
                                    _boardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
 
-    private bool CanMoveTasks => BoardDetailsStore.Board is { IsArchived: false } &&
+    private bool CanMoveTasks => IsCurrentBoardLoaded && BoardDetailsStore.Board is { IsArchived: false } &&
                                  _boardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster or BoardRoleDto.User;
 
-    private string GetColorClass(string? name)
+    protected override void OnInitialized()
     {
-        if (string.IsNullOrEmpty(name)) return "bg-gray";
-        var colors = new[] { "bg-purple", "bg-blue", "bg-teal", "bg-coral", "bg-pink" };
-        return colors[Math.Abs(name.GetHashCode()) % colors.Length];
+        BoardDetailsStore.StateChanged += HandleStoreStateChanged;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loadedBoardId != BoardId)
+        {
+            BoardDetailsStore.Reset();
+            
+            _loadedBoardId = BoardId;
+            _searchQuery = string.Empty;
+
+            if (_loadedBoardId != Guid.Empty)
+            {
+                await ExportHubService.DisconnectAsync();
+            }
+
+            await BoardDetailsStore.LoadAsync(BoardId);
+
+            _lastExportStatus = BoardDetailsStore.Board?.ExportStatus;
+            _lastReExportStatus = BoardDetailsStore.Board?.ReExportStatus;
+
+            await ResolveRolesAsync();
+            await ExportHubService.ConnectAsync(BoardId);
+        }
     }
 
     private async Task OnSearchInput(ChangeEventArgs e)
@@ -176,7 +202,7 @@
 
         try
         {
-            await Task.Delay(500, token); // 500 ms for default
+            await Task.Delay(500, token);
 
             if (!token.IsCancellationRequested)
             {
@@ -191,19 +217,6 @@
         {
             Toast.ShowError(ex.Message);
         }
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        BoardDetailsStore.StateChanged += HandleStoreStateChanged;
-
-        await BoardDetailsStore.LoadAsync(BoardId);
-
-        _lastExportStatus = BoardDetailsStore.Board?.ExportStatus;
-        _lastReExportStatus = BoardDetailsStore.Board?.ReExportStatus;
-
-        await ResolveRolesAsync();
-        await ExportHubService.ConnectAsync(BoardId);
     }
 
     private async Task ResolveRolesAsync()
@@ -370,14 +383,13 @@
 
     private void NavigateBack()
     {
-        if (BoardDetailsStore.Board != null)
+        if (IsCurrentBoardLoaded)
         {
-            Navigation.NavigateTo($"/workspaces/{BoardDetailsStore.Board.WorkspaceId}");
+            Navigation.NavigateTo($"/workspaces/{BoardDetailsStore.Board!.WorkspaceId}");
         }
         else
         {
             Navigation.NavigateTo("/dashboard");
         }
     }
-
 }

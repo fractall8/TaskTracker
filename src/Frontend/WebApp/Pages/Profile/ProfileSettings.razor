@@ -4,6 +4,7 @@
 @inject IProfileStore ProfileStore
 @inject CustomToastService Toast
 @using WebApp.Shared.Toast
+@using WebApp.Shared.Helpers
 @using Refit
 
 <PageTitle>Profile Settings - TaskTracker</PageTitle>
@@ -21,7 +22,7 @@
     {
         <div class="profile-grid">
             <div class="card avatar-card">
-                <div class="avatar-big @GetColorClass(ProfileStore.Profile.DisplayName ?? ProfileStore.Profile.Email)">
+                <div class="avatar-big @AvatarColorHelper.GetColorClass(ProfileStore.Profile.DisplayName ?? ProfileStore.Profile.Email)">
                     @if (!string.IsNullOrEmpty(ProfileStore.Profile.AvatarUrl))
                     {
                         <img src="@ProfileStore.Profile.AvatarUrl" alt="User Avatar"
@@ -60,7 +61,6 @@
                 }
             </div>
 
-            <!-- Картка з інформацією (справа) -->
             <div class="card info-card">
                 <p class="info-card-title">Personal Information</p>
 
@@ -232,13 +232,6 @@
         {
             _isUploading = false;
         }
-    }
-
-    private string GetColorClass(string? name)
-    {
-        if (string.IsNullOrEmpty(name)) return "bg-purple";
-        var colors = new[] { "bg-purple", "bg-blue", "bg-teal", "bg-coral", "bg-pink" };
-        return colors[Math.Abs(name.GetHashCode()) % colors.Length];
     }
 
     private string GetInitials(string? name)

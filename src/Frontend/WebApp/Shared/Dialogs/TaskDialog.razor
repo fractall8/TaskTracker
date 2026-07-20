@@ -1,6 +1,7 @@
 @using System.ComponentModel.DataAnnotations
 @using Contracts.DTOs
 @using Contracts.Requests.Tasks
+@using WebApp.Shared.Helpers
 @using WebApp.Shared.Toast
 @inject CustomToastService Toast
 
@@ -12,18 +13,19 @@
     </TitleContent>
     <DialogContent>
         <EditForm Model="@_model" OnValidSubmit="Submit">
-            <DataAnnotationsValidator />
+            <DataAnnotationsValidator/>
 
             <label class="form-field">
                 <span>Title</span>
-                <InputText @bind-Value="_model.Title" class="form-input" placeholder="e.g. Draft landing page copy" />
-                <ValidationMessage For="@(() => _model.Title)" class="validation-error" />
+                <InputText @bind-Value="_model.Title" class="form-input" placeholder="e.g. Draft landing page copy"/>
+                <ValidationMessage For="@(() => _model.Title)" class="validation-error"/>
             </label>
 
             <label class="form-field mt-3">
                 <span>Description (Optional)</span>
-                <InputTextArea @bind-Value="_model.Description" class="form-input" rows="@(IsEditMode ? 5 : 3)" placeholder="Add more detail" />
-                <ValidationMessage For="@(() => _model.Description)" class="validation-error" />
+                <InputTextArea @bind-Value="_model.Description" class="form-input" rows="@(IsEditMode ? 5 : 3)"
+                               placeholder="Add more detail"/>
+                <ValidationMessage For="@(() => _model.Description)" class="validation-error"/>
             </label>
 
             <label class="form-field mt-3">
@@ -41,27 +43,43 @@
                     {
                         <MudSelectItem T="Guid?" Value="@((Guid?)member.UserId)">
                             <div class="d-flex align-center gap-2">
-                                <MudAvatar Size="Size.Small" Color="Color.Primary" Style="width: 24px; height: 24px; font-size: 12px;">
-                                    @{
-                                        var displayName = !string.IsNullOrWhiteSpace(member.DisplayName) ? member.DisplayName : member.Email;
-                                        var initial = displayName.FirstOrDefault().ToString().ToUpper();
+                                @{
+                                    var displayName = !string.IsNullOrWhiteSpace(member.DisplayName) ? member.DisplayName : member.Email;
+                                    var initial = displayName.FirstOrDefault().ToString().ToUpper();
+                                    var colorClass = AvatarColorHelper.GetColorClass(displayName);
+                                }
+
+                                <div class="avatar-round flex-shrink-0 @colorClass"
+                                     style="width: 24px; height: 24px; font-size: 12px; line-height: normal; display: flex; align-items: center; justify-content: center; border-radius: 50%; overflow: hidden;">
+                                    @if (!string.IsNullOrEmpty(member.AvatarUrl))
+                                    {
+                                        <img src="@member.AvatarUrl" alt="Avatar"
+                                             style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"/>
                                     }
-                                    @if (!string.IsNullOrEmpty(member.AvatarUrl)) { <MudImage Src="@member.AvatarUrl"/> }
-                                    else { @initial }
-                                </MudAvatar>
+                                    else
+                                    {
+                                        @initial
+                                    }
+                                </div>
+
                                 <MudText Typo="Typo.body2" Class="text-truncate">
                                     @if (!string.IsNullOrWhiteSpace(member.DisplayName))
                                     {
-                                        @member.DisplayName <span class="ms-1" style="color: var(--mud-palette-text-secondary); font-size: 0.85em;">(@member.Email)</span>
+                                        @member.DisplayName
+                                        <span class="ms-1"
+                                              style="color: var(--mud-palette-text-secondary); font-size: 0.85em;">(@member.Email)</span>
                                     }
-                                    else { @member.Email }
+                                    else
+                                    {
+                                        @member.Email
+                                    }
                                 </MudText>
                             </div>
                         </MudSelectItem>
                     }
                 </MudSelect>
             </label>
-            
+
             <label class="form-field mt-3">
                 <span>Due Date (Optional)</span>
                 <MudDatePicker @bind-Date="_model.DueDate"
@@ -76,7 +94,9 @@
                 <div>
                     @if (IsEditMode)
                     {
-                        <button type="button" class="btn ghost" style="color: var(--mud-palette-error);" @onclick="Delete">Delete task</button>
+                        <button type="button" class="btn ghost" style="color: var(--mud-palette-error);"
+                                @onclick="Delete">Delete task
+                        </button>
                     }
                 </div>
                 <div class="d-flex gap-2">

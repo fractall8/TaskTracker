@@ -25,7 +25,6 @@
     border-color: var(--mud-palette-primary);
 }
 
-/* Додано клас для іконки файлу */
 .card-icon {
     display: flex;
     align-items: center;

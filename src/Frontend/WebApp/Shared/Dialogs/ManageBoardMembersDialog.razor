@@ -1,6 +1,7 @@
 ﻿@implements IDisposable
 @using Contracts.DTOs
 @using Contracts.Enums
+@using WebApp.Shared.Helpers
 @using WebApp.Shared.Toast
 @inject IBoardMembersStore Store
 @inject IWorkspaceStore WorkspaceStore
@@ -47,7 +48,7 @@
                             {
                                 <div class="dropdown-item" @onclick="@(() => SelectUser(user))">
                                     <div
-                                        class="avatar-round sm flex-shrink-0 @GetColorClass(user.DisplayName ?? user.Email)">
+                                        class="avatar-round sm flex-shrink-0 @AvatarColorHelper.GetColorClass(user.DisplayName ?? user.Email)">
                                         @if (!string.IsNullOrEmpty(user.AvatarUrl))
                                         {
                                             <img src="@user.AvatarUrl" alt="Avatar"
@@ -113,7 +114,7 @@
                             <td>
                                 <div class="d-flex align-center gap-3" style="min-width: 0;">
                                     <div
-                                        class="avatar-round sm flex-shrink-0 @GetColorClass(member.DisplayName ?? member.Email)">
+                                        class="avatar-round sm flex-shrink-0 @AvatarColorHelper.GetColorClass(member.DisplayName ?? member.Email)">
                                         @if (!string.IsNullOrEmpty(member.AvatarUrl))
                                         {
                                             <img src="@member.AvatarUrl" alt="Avatar"
@@ -126,10 +127,10 @@
                                     </div>
                                     <div class="d-flex flex-column" style="min-width: 0; overflow: hidden;">
                                         <div class="d-flex align-center gap-2">
-                                                <span class="member-name text-truncate"
-                                                      style="font-size: 14.5px; font-weight: 500; line-height: 1.2;">
-                                                    @(member.DisplayName ?? member.Email)
-                                                </span>
+                                            <span class="member-name text-truncate"
+                                                  style="font-size: 14.5px; font-weight: 500; line-height: 1.2;">
+                                                @(member.DisplayName ?? member.Email)
+                                            </span>
                                             @if (member.Email == CurrentUserEmail)
                                             {
                                                 <span class="tag-you flex-shrink-0">You</span>
@@ -139,8 +140,8 @@
                                         {
                                             <span class="member-email text-truncate"
                                                   style="font-size: 13px; color: var(--mud-palette-text-secondary); margin-top: 2px;">
-                                                    @member.Email
-                                                </span>
+                                                @member.Email
+                                            </span>
                                         }
                                     </div>
                                 </div>
@@ -337,10 +338,22 @@
         align-items: center;
         justify-content: center;
         overflow: hidden;
+        border-radius: 50%;
     }
 
     .flex-shrink-0 {
         flex-shrink: 0 !important;
+    }
+
+    .tag-you {
+        font-size: 12px;
+        font-weight: 500;
+        padding: 1px 8px;
+        border-radius: 12px;
+        background-color: transparent;
+        color: var(--mud-palette-primary);
+        border: 1px solid var(--mud-palette-primary);
+        user-select: none;
     }
 </style>
 
@@ -483,14 +496,7 @@
             }
         }
     }
-
-    private string GetColorClass(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return "bg-purple";
-        var colors = new[] { "bg-purple", "bg-blue", "bg-teal", "bg-coral", "bg-pink" };
-        return colors[Math.Abs(name.GetHashCode()) % colors.Length];
-    }
-
+    
     private bool CanChangeRole(BoardMemberDto targetMember)
     {
         if (targetMember.Email == CurrentUserEmail) return false;

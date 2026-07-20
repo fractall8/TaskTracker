@@ -4,6 +4,7 @@
 @using Contracts.DTOs
 @using Contracts.Enums
 @using WebApp.Shared.Dialogs
+@using WebApp.Shared.Helpers
 @using WebApp.Shared.Toast
 
 <div class="toolbar d-flex align-center justify-space-between mb-4">
@@ -51,7 +52,7 @@ else
             <tr class="@(member.UserId == CurrentUserId ? "row-you" : "")">
                 <td>
                     <div class="cell-member">
-                        <div class="avatar-round @GetColorClass(member.DisplayName ?? member.Email)">
+                        <div class="avatar-round @AvatarColorHelper.GetColorClass(member.DisplayName ?? member.Email)">
                             @if (!string.IsNullOrEmpty(member.AvatarUrl))
                             {
                                 <img src="@member.AvatarUrl" alt="Avatar"
@@ -180,13 +181,6 @@ else
         {
             await OnRefreshRequested.InvokeAsync();
         }
-    }
-
-    private string GetColorClass(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return "bg-purple";
-        var colors = new[] { "bg-purple", "bg-blue", "bg-teal", "bg-coral", "bg-pink" };
-        return colors[Math.Abs(name.GetHashCode()) % colors.Length];
     }
 
     private bool CanEditRole(WorkspaceRoleDto targetRole) => CurrentUserRole is WorkspaceRoleDto.Owner && targetRole != WorkspaceRoleDto.Owner;

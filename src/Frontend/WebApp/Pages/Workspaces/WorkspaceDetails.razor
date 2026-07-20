@@ -6,6 +6,7 @@
 @inject IProfileStore ProfileStore
 @using Contracts.Enums
 @using WebApp.Pages.Workspaces.Components
+@using WebApp.Shared.Helpers
 
 <PageTitle>@(WorkspaceStore.CurrentWorkspace?.Name ?? "Workspace") - TaskTracker</PageTitle>
 
@@ -39,7 +40,7 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
         </button>
 
         <div class="ws-header">
-            <div class="ws-icon @GetColorClass(workspace.Name)">
+            <div class="ws-icon @AvatarColorHelper.GetColorClass(workspace.Name)">
                 @(workspace.Name.FirstOrDefault().ToString().ToUpper())
             </div>
             <div class="ws-info">
@@ -102,14 +103,7 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
     private Guid? _currentUserId;
 
     private string _activeTab = "boards";
-
-    private string GetColorClass(string name)
-    {
-        if (string.IsNullOrEmpty(name)) return "bg-purple";
-        var colors = new[] { "bg-purple", "bg-blue", "bg-teal", "bg-coral", "bg-pink" };
-        return colors[Math.Abs(name.GetHashCode()) % colors.Length];
-    }
-
+    
     protected override async Task OnInitializedAsync()
     {
         WorkspaceStore.StateChanged += OnStoreStateChanged;

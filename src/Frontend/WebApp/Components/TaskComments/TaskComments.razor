@@ -2,6 +2,8 @@
 @using Contracts.DTOs
 @using Contracts.Requests.Comments
 @using Services.Abstractions.Tasks
+@using WebApp.Shared.Dialogs
+@using WebApp.Shared.Helpers
 @using WebApp.Shared.Toast
 @inject ITaskApiService TaskApi
 @inject CustomToastService Toast
@@ -39,7 +41,7 @@
         @foreach (var comment in _comments.OrderByDescending(c => c.CreatedAt))
         {
             <div class="comment-row">
-                <div class="avatar-round @GetColorClass(comment.AuthorName)">
+                <div class="avatar-round @AvatarColorHelper.GetColorClass(comment.AuthorName)">
                     @if (!string.IsNullOrEmpty(comment.AuthorAvatarUrl))
                     {
                         <img src="@comment.AuthorAvatarUrl" alt="Avatar"
@@ -80,7 +82,7 @@
                                         disabled="@(_isUpdatingComment || string.IsNullOrWhiteSpace(_editingCommentText))">
                                     Save
                                 </button>
-                                <button class="icon-btn sm ghost" @onclick="CancelEdit" disabled="_isUpdatingComment">
+                                <button class="icon-btn sm ghost" @onclick="CancelEdit" disabled="@_isUpdatingComment">
                                     <MudIcon Icon="@Icons.Material.Filled.Close" Size="Size.Small"/>
                                 </button>
                             </div>
@@ -131,13 +133,6 @@
     private Guid? _editingCommentId;
     private string _editingCommentText = string.Empty;
     private bool _isUpdatingComment;
-
-    private string GetColorClass(string? name)
-    {
-        if (string.IsNullOrEmpty(name)) return "bg-purple";
-        var colors = new[] { "bg-purple", "bg-blue", "bg-teal", "bg-coral", "bg-pink" };
-        return colors[Math.Abs(name.GetHashCode()) % colors.Length];
-    }
 
     private string GetInitials(string? name)
     {
@@ -242,12 +237,18 @@
 
     private async Task ConfirmDeleteComment(CommentDto comment)
     {
-        bool? result = await DialogService.ShowMessageBoxAsync(
-            "Delete Comment",
-            "Are you sure you want to delete this comment?",
-            yesText: "Delete", cancelText: "Cancel");
+        var parameters = new DialogParameters<ConfirmDeleteDialog>
+        {
+            { x => x.Title, "Delete comment" },
+            { x => x.ContentText, "Are you sure you want to delete this comment? This action cannot be undone." },
+            { x => x.ConfirmText, "Delete" }
+        };
 
-        if (result == true)
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
         {
             try
             {

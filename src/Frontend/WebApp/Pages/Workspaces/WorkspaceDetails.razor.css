@@ -96,7 +96,6 @@
     border-radius: 999px;
 }
 
-/* Використовуємо глобальні кольори для бейджів ролей */
 ::deep .badge-purple {
     background-color: var(--purple-bg);
     color: var(--purple-text);
@@ -122,7 +121,6 @@
     color: var(--pink-text);
 }
 
-/* Локальні кольори для статусів інвайтів */
 ::deep .badge-gray {
     background-color: var(--c-gray-bg);
     color: var(--c-gray-txt);

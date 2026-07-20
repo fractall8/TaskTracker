@@ -191,8 +191,6 @@
     font-weight: 500;
 }
 
-/* Видалено блоки .bg-purple, .bg-blue тощо та їхні .dark-mode версії */
-
 ::deep .btn {
     display: inline-flex;
     align-items: center;

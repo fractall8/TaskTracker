@@ -1,4 +1,5 @@
-﻿@implements IDisposable
+﻿@using WebApp.Shared.Helpers
+@implements IDisposable
 @inject IProfileStore ProfileStore
 @inject IWorkspaceStore WorkspaceStore
 
@@ -47,7 +48,7 @@
                     @foreach (var ws in WorkspaceStore.Workspaces)
                     {
                         <NavLink href="@($"/workspaces/{ws.Id}")" class="ws-row" ActiveClass="active">
-                            <span class="dot" style="background-color: @GetDotColorVar(ws.Name);"></span>
+                            <span class="dot" style="background-color: @AvatarColorHelper.GetDotColorVar(ws.Name);"></span>
                             <span class="ws-name">@ws.Name</span>
                         </NavLink>
                     }
@@ -110,8 +111,7 @@
                             }
                             else
                             {
-                                <div class="avatar-round"
-                                     style="background-color: var(--mud-palette-primary); color: white;">
+                                <div class="avatar-round flex-shrink-0 @AvatarColorHelper.GetColorClass(ProfileStore.Profile?.DisplayName ?? ProfileStore.Profile?.Email)">
                                     @if (!string.IsNullOrEmpty(ProfileStore.Profile?.AvatarUrl))
                                     {
                                         <img src="@ProfileStore.Profile.AvatarUrl" alt="Avatar"
@@ -166,14 +166,6 @@
         {
             await OnThemeToggled.InvokeAsync();
         }
-    }
-
-    private string GetDotColorVar(string? name)
-    {
-        if (string.IsNullOrEmpty(name)) return "var(--purple-solid)";
-        
-        var colors = new[] { "var(--purple-solid)", "var(--blue-solid)", "var(--teal-solid)", "var(--coral-solid)", "var(--pink-solid)" };
-        return colors[Math.Abs(name.GetHashCode()) % colors.Length];
     }
 
     private string RandomWidth(int index)

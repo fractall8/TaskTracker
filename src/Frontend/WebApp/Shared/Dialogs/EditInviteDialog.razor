@@ -56,7 +56,6 @@
     {
         if (_date.HasValue && _time.HasValue)
         {
-            // Додаємо час через ToTimeSpan()
             var newDateTime = _date.Value.Date.Add(_time.Value.ToTimeSpan());
             var newOffset = new DateTimeOffset(newDateTime, DateTimeOffset.Now.Offset).ToUniversalTime();
 

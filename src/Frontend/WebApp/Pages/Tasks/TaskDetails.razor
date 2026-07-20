@@ -6,6 +6,7 @@
 @using WebApp.Components.TaskAttachment
 @using WebApp.Components.TaskComments
 @using WebApp.Shared.Dialogs
+@using WebApp.Shared.Helpers
 @using WebApp.Shared.Toast
 @inject ITaskApiService TaskApi
 @inject IBoardDetailsStore BoardDetailsStore
@@ -76,7 +77,7 @@
                 <div class="side-meta-row">
                     <p class="info-label">Created by</p>
                     <div class="cell-member">
-                        <div class="avatar-round @GetColorClass(_task.ReporterName)">
+                        <div class="avatar-round @AvatarColorHelper.GetColorClass(_task.ReporterName)">
                             @if (!string.IsNullOrEmpty(_task.ReporterAvatarUrl))
                             {
                                 <img src="@_task.ReporterAvatarUrl" alt="Avatar"
@@ -98,7 +99,7 @@
                         <span style="display: flex; align-items: center; gap: 8px;">
                             @if (_task.AssigneeId.HasValue)
                             {
-                                <span class="avatar-round tiny @GetColorClass(_task.AssigneeName)">
+                                <span class="avatar-round tiny @AvatarColorHelper.GetColorClass(_task.AssigneeName)">
                                     @if (!string.IsNullOrEmpty(_task.AssigneeAvatarUrl))
                                     {
                                         <img src="@_task.AssigneeAvatarUrl" alt="Avatar"
@@ -174,14 +175,7 @@
 
     private bool IsArchived => BoardDetailsStore.Board?.IsArchived == true;
     private bool CanManageTasks => !IsArchived && BoardDetailsStore.Board?.BoardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
-
-    private string GetColorClass(string? name)
-    {
-        if (string.IsNullOrEmpty(name)) return "bg-purple";
-        var colors = new[] { "bg-purple", "bg-blue", "bg-teal", "bg-coral", "bg-pink" };
-        return colors[Math.Abs(name.GetHashCode()) % colors.Length];
-    }
-
+    
     private string GetInitials(string? name)
     {
         if (string.IsNullOrWhiteSpace(name)) return "U";

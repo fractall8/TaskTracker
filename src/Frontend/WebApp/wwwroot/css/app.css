@@ -33,6 +33,7 @@ html, body {
     --mud-palette-warning: #F2C94C;
     --mud-palette-error: #EB5757;
     --mud-palette-action-default-hover: rgba(26, 29, 31, 0.04);
+    --mud-palette-action-default: rgba(0, 0, 0, 0.54);
 
     --purple-bg: #EEEDFE;
     --purple-text: #3C3489;
@@ -71,6 +72,7 @@ html, body {
     --mud-palette-warning: #F2C94C;
     --mud-palette-error: #EB5757;
     --mud-palette-action-default-hover: rgba(255, 255, 255, 0.05);
+    --mud-palette-action-default: rgba(255, 255, 255, 0.50);
 
     --purple-bg: #332C77;
     --purple-text: #CECBF6;

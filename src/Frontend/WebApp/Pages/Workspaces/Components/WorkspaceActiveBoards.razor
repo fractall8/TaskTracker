@@ -7,6 +7,7 @@
 @using Contracts.Enums
 @using Contracts.Requests.Boards
 @using WebApp.Shared.Dialogs
+@using WebApp.Shared.Helpers
 @using WebApp.Shared.Toast
 
 <div class="toolbar">
@@ -53,7 +54,7 @@ else
         {
             <div class="card" @onclick="@(() => Navigation.NavigateTo($"/boards/{board.Id}"))" style="cursor: pointer;">
                 <div class="card-top">
-                    <div class="card-icon @GetColorClass(board.Name)">
+                    <div class="card-icon @AvatarColorHelper.GetColorClass(board.Name)">
                         @(board.Name.FirstOrDefault().ToString().ToUpper())
                     </div>
                     <div class="card-actions" @onclick:stopPropagation="true">
@@ -132,13 +133,6 @@ else
     private string? _searchTerm;
     private CancellationTokenSource? _searchCts;
     private CancellationTokenSource? _debounceCts;
-
-    private string GetColorClass(string? name)
-    {
-        if (string.IsNullOrEmpty(name)) return "bg-purple";
-        var colors = new[] { "bg-purple", "bg-blue", "bg-teal", "bg-coral", "bg-pink" };
-        return colors[Math.Abs(name.GetHashCode()) % colors.Length];
-    }
 
     protected override async Task OnInitializedAsync()
     {
