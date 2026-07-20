@@ -225,6 +225,7 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
                         t.CreatedAt,
                         t.UpdatedAt,
                         t.Description,
+                        t.DueDate,
                         Reporter = new BoardExportUserDto(
                             t.Reporter!.Id,
                             t.Reporter.Email,
@@ -323,6 +324,7 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
                         t.Reporter,
                         t.Assignee,
                         options.IncludeDescriptions ? t.Description : null,
+                        t.DueDate,
                         commentsByTask.TryGetValue(t.Id, out var tc) ? tc : options.IncludeComments ? [] : null,
                         attachmentsByTask.TryGetValue(t.Id, out var ta) ? ta : options.IncludeAttachments ? [] : null))
                     .ToList()))

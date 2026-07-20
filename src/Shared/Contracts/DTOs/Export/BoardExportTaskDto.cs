@@ -9,5 +9,6 @@ public record BoardExportTaskDto(
     BoardExportUserDto Reporter,
     BoardExportUserDto? Assignee,
     string? Description,
+    DateTimeOffset? DueDate,
     IReadOnlyList<BoardExportCommentDto>? Comments,
     IReadOnlyList<BoardExportAttachmentDto>? Attachments);
