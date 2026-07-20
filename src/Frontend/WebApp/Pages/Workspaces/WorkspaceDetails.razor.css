@@ -476,9 +476,12 @@
 }
 
 ::deep .data-table .actions {
-    display: flex;
-    gap: 6px;
-    justify-content: flex-end;
+    text-align: right;
+    white-space: nowrap;
+}
+
+::deep .data-table .actions > * {
+    margin-left: 6px;
 }
 
 ::deep .data-table td.muted {
