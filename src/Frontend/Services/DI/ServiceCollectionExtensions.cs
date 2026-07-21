@@ -19,6 +19,7 @@ using Services.Configuration;
 using Services.Hubs;
 using Services.Profile;
 using Services.Tasks;
+using Services.Tasks.Stores;
 using Services.Workspaces;
 using Services.Workspaces.Stores;
 
@@ -90,12 +91,17 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITaskApiService, TaskApiService>();
         services.AddScoped<IBoardDetailsStore, BoardDetailsStore>();
 
+        services.AddScoped<ITaskDetailsStore, TaskDetailsStore>();
+
         services.AddScoped<ICurrentUserService, CurrentUserService>();
 
         services.AddScoped<IWorkspaceStore, WorkspaceStore>();
         services.AddScoped<IWorkspaceApiService, WorkspaceApiService>();
 
         services.AddScoped<IBoardExportStatusHubService, BoardExportStatusHubService>();
+
+        services.AddScoped<IBoardActionSyncGuard, BoardActionSyncGuard>();
+        services.AddScoped<IBoardActionsHubService, BoardActionsHubService>();
 
         return services;
     }

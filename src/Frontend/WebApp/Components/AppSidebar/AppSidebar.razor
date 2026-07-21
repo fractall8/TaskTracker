@@ -2,30 +2,45 @@
 @implements IDisposable
 @inject IProfileStore ProfileStore
 @inject IWorkspaceStore WorkspaceStore
+@inject NavigationManager Navigation
+@inject IBrowserViewportService BrowserViewportService
 
-<MudDrawer Open="true" Elevation="0" Variant="DrawerVariant.Persistent" Width="280px"
-           Style="border-right: 1px solid rgba(100, 110, 120, 0.2); background-color: var(--mud-palette-drawer-background); overflow-x: hidden;">
+<MudDrawer @bind-Open="_drawerOpen" Elevation="0" Variant="DrawerVariant.Mini" Width="280px" MiniWidth="76px"
+           Breakpoint="Breakpoint.None"
+           Style="border-right: 1px solid rgba(100, 110, 120, 0.2); background-color: var(--mud-palette-drawer-background); overflow: visible !important;">
 
-    <div class="sidebar-wrapper">
-        <NavLink href="/dashboard" class="brand" Match="NavLinkMatch.All">
-            <img src="logo.svg" alt="Spaces Logo" class="brand-mark"
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"/>
+    <div class="sidebar-wrapper @(_drawerOpen ? "" : "mini")">
 
-            <div class="brand-mark fallback-mark" style="display: none;"></div>
+        <div class="top-row">
+            <div class="brand" @onclick="HandleBrandClick">
+                <div class="logo-wrapper">
+                    <img src="logo.svg" alt="Spaces Logo" class="brand-mark"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"/>
+                    <div class="brand-mark fallback-mark" style="display: none;"></div>
 
-            <span class="brand-name">TaskTracker</span>
-        </NavLink>
+                    <MudIcon Icon="@Icons.Material.Filled.Menu" Class="mini-hamburger" Size="Size.Small"/>
+                </div>
+                <span class="brand-name">TaskTracker</span>
+            </div>
+
+            <div class="collapse-btn-wrapper">
+                <MudIconButton Icon="@Icons.Material.Outlined.MenuOpen"
+                               Color="Color.Inherit"
+                               Size="Size.Small"
+                               OnClick="ToggleDrawer"/>
+            </div>
+        </div>
 
         <NavLink href="/dashboard" class="nav-item" Match="NavLinkMatch.All">
-            <MudIcon Icon="@Icons.Material.Filled.Home" Size="Size.Small"/>
-            All workspaces
+            <MudIcon Icon="@Icons.Material.Filled.Home" Size="Size.Small" Class="nav-icon"/>
+            <span class="nav-text">All workspaces</span>
         </NavLink>
 
         <div class="side-section-head">
             <button class="side-toggle" @onclick="ToggleWorkspaces">
                 <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small"
                          Style="@($"transform: {(_wsExpanded ? "none" : "rotate(-90deg)")}; transition: transform .15s")"/>
-                <span class="ml-1">Workspaces</span>
+                <span class="ml-1 section-title">Workspaces</span>
             </button>
         </div>
 
@@ -39,7 +54,8 @@
                         <div class="ws-row" style="pointer-events: none; gap: 9px;">
                             <MudSkeleton SkeletonType="SkeletonType.Circle" Width="7px" Height="7px"
                                          Class="flex-shrink-0" Animation="Animation.Wave"/>
-                            <MudSkeleton Width="@(RandomWidth(i))" Height="14px" Animation="Animation.Wave"/>
+                            <MudSkeleton Width="@(RandomWidth(i))" Height="14px" Animation="Animation.Wave"
+                                         Class="ws-skeleton-text"/>
                         </div>
                     }
                 }
@@ -48,7 +64,8 @@
                     @foreach (var ws in WorkspaceStore.Workspaces)
                     {
                         <NavLink href="@($"/workspaces/{ws.Id}")" class="ws-row" ActiveClass="active">
-                            <span class="dot" style="background-color: @AvatarColorHelper.GetDotColorVar(ws.Name);"></span>
+                            <span class="dot"
+                                  style="background-color: @AvatarColorHelper.GetDotColorVar(ws.Name);"></span>
                             <span class="ws-name">@ws.Name</span>
                         </NavLink>
                     }
@@ -59,9 +76,11 @@
         <div class="side-spacer"></div>
 
         <div class="theme-toggle-container" @onclick="HandleThemeToggle">
-            <div class="d-flex align-center gap-3">
-                <MudIcon Icon="@Icons.Material.Outlined.LightMode" Size="Size.Small"/>
-                <span>Theme</span>
+            <div class="d-flex align-center theme-content-wrapper">
+                <MudIcon Icon="@(IsDarkMode ? Icons.Material.Outlined.DarkMode : Icons.Material.Outlined.LightMode)"
+                         Size="Size.Small"
+                         Class="theme-icon"/>
+                <span class="theme-text ml-3">Theme</span>
             </div>
 
             <div class="pill-toggle @(IsDarkMode ? "dark" : "light")">
@@ -96,14 +115,12 @@
                     }
 
                     <button class="profile-row-btn w-100" @onclick="ToggleMenu"
-                            disabled="@(ProfileStore.Profile == null)"
-                            style="display: block; border: none; background: transparent; padding: 0; text-align: left;">
+                            disabled="@(ProfileStore.Profile == null)">
                         <div class="profile-row">
                             @if (ProfileStore.Profile == null || ProfileStore.IsLoading)
                             {
                                 <MudSkeleton SkeletonType="SkeletonType.Circle" Width="30px" Height="30px"
                                              Class="flex-shrink-0" Animation="Animation.Wave"/>
-
                                 <div class="profile-meta">
                                     <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="100%" Height="32px"
                                                  Class="rounded" Animation="Animation.Wave"/>
@@ -111,7 +128,8 @@
                             }
                             else
                             {
-                                <div class="avatar-round flex-shrink-0 @AvatarColorHelper.GetColorClass(ProfileStore.Profile?.DisplayName ?? ProfileStore.Profile?.Email)">
+                                <div
+                                    class="avatar-round flex-shrink-0 @AvatarColorHelper.GetColorClass(ProfileStore.Profile?.DisplayName ?? ProfileStore.Profile?.Email)">
                                     @if (!string.IsNullOrEmpty(ProfileStore.Profile?.AvatarUrl))
                                     {
                                         <img src="@ProfileStore.Profile.AvatarUrl" alt="Avatar"
@@ -128,9 +146,9 @@
                                     <p class="profile-email">@ProfileStore.Profile?.Email</p>
                                 </div>
 
-                                <MudIcon
-                                    Icon="@(_isMenuOpen ? Icons.Material.Filled.KeyboardArrowDown : Icons.Material.Filled.KeyboardArrowUp)"
-                                    Size="Size.Small" Style="color: var(--mud-palette-text-secondary);"/>
+                                <MudIcon Class="profile-chevron"
+                                         Icon="@(_isMenuOpen ? Icons.Material.Filled.KeyboardArrowDown : Icons.Material.Filled.KeyboardArrowUp)"
+                                         Size="Size.Small" Style="color: var(--mud-palette-text-secondary);"/>
                             }
                         </div>
                     </button>
@@ -138,9 +156,12 @@
             </Authorized>
             <NotAuthorized>
                 <div class="pa-2">
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" OnClick="OnSignIn">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" OnClick="OnSignIn"
+                               Class="login-btn-full">
                         Log In
                     </MudButton>
+                    <MudIconButton Icon="@Icons.Material.Filled.Login" Color="Color.Primary" Variant="Variant.Filled"
+                                   OnClick="OnSignIn" Class="login-btn-mini"/>
                 </div>
             </NotAuthorized>
         </AuthorizeView>
@@ -153,12 +174,20 @@
     [Parameter] public EventCallback OnSignIn { get; set; }
     [Parameter] public EventCallback OnSignOut { get; set; }
 
+    private bool _drawerOpen = true;
     private bool _wsExpanded = true;
     private bool _isMenuOpen = false;
 
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
     private void ToggleWorkspaces() => _wsExpanded = !_wsExpanded;
     private void ToggleMenu() => _isMenuOpen = !_isMenuOpen;
     private void CloseMenu() => _isMenuOpen = false;
+
+    private void HandleBrandClick()
+    {
+        if (_drawerOpen) Navigation.NavigateTo("/dashboard");
+        else ToggleDrawer();
+    }
 
     private async Task HandleThemeToggle()
     {
@@ -178,6 +207,19 @@
     {
         ProfileStore.StateChanged += OnStoreStateChanged;
         WorkspaceStore.StateChanged += OnStoreStateChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var breakpoint = await BrowserViewportService.GetCurrentBreakpointAsync();
+            if (breakpoint < Breakpoint.Lg)
+            {
+                _drawerOpen = false;
+                StateHasChanged();
+            }
+        }
     }
 
     public void Dispose()

@@ -4,10 +4,19 @@
     height: 100%;
     padding: 24px 16px;
     box-sizing: border-box;
+    transition: padding 0.2s ease-in-out;
 }
 
 ::deep * {
     box-sizing: border-box;
+}
+
+::deep .top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    height: 40px;
 }
 
 ::deep .brand {
@@ -15,15 +24,25 @@
     align-items: center;
     gap: 12px;
     padding: 6px 8px;
-    margin-bottom: 28px;
     text-decoration: none;
     border-radius: 8px;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s, opacity 0.2s;
+    overflow: hidden;
 }
 
 ::deep .brand:hover {
     background: rgba(0, 0, 0, 0.04);
+}
+
+::deep .logo-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    position: relative;
 }
 
 ::deep .brand-mark {
@@ -31,12 +50,21 @@
     height: 28px;
     border-radius: 6px;
     object-fit: contain;
-    flex-shrink: 0;
     display: block;
+    position: absolute;
+    opacity: 1;
+    transition: opacity 0.2s ease-in-out;
 }
 
 ::deep .fallback-mark {
     background: var(--mud-palette-primary);
+}
+
+::deep .mini-hamburger {
+    position: absolute;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+    pointer-events: none;
 }
 
 ::deep .brand-name {
@@ -44,6 +72,19 @@
     font-size: 18px;
     color: var(--mud-palette-text-primary);
     letter-spacing: -0.02em;
+}
+
+::deep .collapse-btn-wrapper {
+    color: var(--mud-palette-text-secondary);
+    display: flex;
+    justify-content: center;
+    transition: background-color 0.2s;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+::deep .collapse-btn-wrapper:hover {
+    background: rgba(0, 0, 0, 0.04);
 }
 
 ::deep .nav-item {
@@ -58,6 +99,9 @@
     margin-bottom: 16px;
     text-decoration: none;
     transition: background 0.2s, color 0.2s;
+
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 ::deep .nav-item:hover {
@@ -77,6 +121,9 @@
     justify-content: space-between;
     padding: 0 8px;
     margin-bottom: 12px;
+
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 ::deep .side-toggle {
@@ -333,6 +380,7 @@
     text-align: left;
     cursor: pointer;
     width: 100%;
+    display: block;
 }
 
 ::deep .profile-row {
@@ -343,6 +391,7 @@
     border-radius: 12px;
     border-top: 1px solid transparent;
     transition: background-color 0.2s;
+    width: 100%;
 }
 
 ::deep .profile-row:hover {
@@ -364,6 +413,7 @@
 ::deep .profile-meta {
     min-width: 0;
     flex: 1;
+    width: 100%;
 }
 
 ::deep .profile-name {
@@ -383,4 +433,86 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+::deep .login-btn-mini {
+    display: none;
+}
+
+/* styles for mini */
+
+.sidebar-wrapper.mini {
+    padding: 24px 0;
+}
+
+.sidebar-wrapper.mini ::deep .brand-name,
+.sidebar-wrapper.mini ::deep .collapse-btn-wrapper,
+.sidebar-wrapper.mini ::deep .nav-text,
+.sidebar-wrapper.mini ::deep .side-section-head,
+.sidebar-wrapper.mini ::deep .ws-list,
+.sidebar-wrapper.mini ::deep .theme-text,
+.sidebar-wrapper.mini ::deep .pill-toggle,
+.sidebar-wrapper.mini ::deep .profile-meta,
+.sidebar-wrapper.mini ::deep .profile-chevron,
+.sidebar-wrapper.mini ::deep .login-btn-full {
+    display: none !important;
+}
+
+.sidebar-wrapper.mini ::deep .brand,
+.sidebar-wrapper.mini ::deep .theme-toggle-container,
+.sidebar-wrapper.mini ::deep .profile-row {
+    width: 44px !important;
+    height: 44px !important;
+    margin: 0 auto;
+    padding: 0 !important;
+    justify-content: center !important;
+    align-items: center !important;
+    border-radius: 8px;
+}
+
+.sidebar-wrapper.mini ::deep .nav-item {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 44px !important;
+    height: 44px !important;
+    margin: 0 auto 16px auto !important;
+    padding: 0 !important;
+    border-radius: 8px;
+    gap: 0 !important;
+}
+
+.sidebar-wrapper.mini ::deep .nav-item .nav-icon {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.sidebar-wrapper.mini ::deep .theme-content-wrapper {
+    justify-content: center;
+    width: 100%;
+}
+
+.sidebar-wrapper.mini ::deep .theme-icon {
+    margin: 0;
+}
+
+.sidebar-wrapper.mini ::deep .brand:hover .brand-mark {
+    opacity: 0;
+}
+
+.sidebar-wrapper.mini ::deep .brand:hover .mini-hamburger {
+    opacity: 1;
+    color: var(--mud-palette-text-primary);
+}
+
+.sidebar-wrapper.mini ::deep .login-btn-mini {
+    display: flex;
+    margin: 0 auto;
+}
+
+.sidebar-wrapper.mini ::deep .custom-profile-menu {
+    left: 100%;
+    bottom: 0;
+    margin-left: 12px;
+    min-width: 200px;
 }

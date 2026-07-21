@@ -1,7 +1,11 @@
-﻿using Application.Interfaces.Repositories;
+﻿using Application.Common.Interfaces;
+using Application.Interfaces.Notifiers;
+using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Contracts.DTOs;
+using Contracts.Notifications.BoardActions;
+using Contracts.Notifications.BoardActions.Payloads;
 using Domain.Constants;
 using Domain.Entities;
 using FluentValidation;
@@ -22,6 +26,8 @@ public class CreateTaskCommandHandler(
     IBoardRepository boardRepository,
     IColumnRepository columnRepository,
     ITaskRepository taskRepository,
+    IBoardActionNotifier boardActionNotifier,
+    IDateTimeProvider dateTimeProvider,
     IUnitOfWork unitOfWork)
     : IRequestHandler<CreateTaskCommand, TaskDto>
 {
@@ -68,6 +74,18 @@ public class CreateTaskCommandHandler(
         await unitOfWork.SaveChangesAsync(ct);
 
         await taskRepository.LoadUsersForTaskAsync(task, ct);
+
+        await boardActionNotifier.NotifyAsync(new BoardActionNotification(
+            request.BoardId,
+            BoardActionNotificationType.TaskCreated,
+            boardAccessContext.UserId,
+            dateTimeProvider.UtcNow,
+            new TaskCreatedPayload(
+                request.ColumnId,
+                task.Id,
+                task.Title,
+                task.Position,
+                task.AssigneeId)), ct);
 
         return new TaskDto(
             task.Id, task.Title, task.Description, task.Position, task.DueDate,

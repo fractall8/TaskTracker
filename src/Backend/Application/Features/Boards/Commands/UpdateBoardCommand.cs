@@ -1,8 +1,12 @@
-﻿using Application.Interfaces.Repositories;
+﻿using Application.Common.Interfaces;
+using Application.Interfaces.Notifiers;
+using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Contracts.DTOs;
 using Contracts.Enums;
+using Contracts.Notifications.BoardActions;
+using Contracts.Notifications.BoardActions.Payloads;
 using Domain.Constants;
 using FluentValidation;
 using MediatR;
@@ -14,6 +18,8 @@ public record UpdateBoardCommand(Guid BoardId, string Name, string? Description)
 public class UpdateBoardCommandHandler(
     IBoardAccessService boardAccessService,
     IBoardRepository boardRepository,
+    IBoardActionNotifier boardActionNotifier,
+    IDateTimeProvider dateTimeProvider,
     IUnitOfWork unitOfWork) : IRequestHandler<UpdateBoardCommand, BoardPreviewDto>
 {
     public async Task<BoardPreviewDto> Handle(UpdateBoardCommand request, CancellationToken ct)
@@ -31,6 +37,13 @@ public class UpdateBoardCommandHandler(
         board.Description = request.Description;
 
         await unitOfWork.SaveChangesAsync(ct);
+
+        await boardActionNotifier.NotifyAsync(new BoardActionNotification(
+            board.Id,
+            BoardActionNotificationType.BoardRenamed,
+            boardAccessContext.UserId,
+            dateTimeProvider.UtcNow,
+            new BoardRenamedPayload(request.Name)), ct);
 
         return new BoardPreviewDto(
             Id: board.Id,

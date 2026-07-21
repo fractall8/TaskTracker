@@ -1,6 +1,6 @@
 ﻿using Contracts.DTOs;
 
-namespace Contracts.Notifications;
+namespace Contracts.Notifications.BoardExport;
 
 public record BoardExportStatusChangedNotification(
     Guid BoardId,

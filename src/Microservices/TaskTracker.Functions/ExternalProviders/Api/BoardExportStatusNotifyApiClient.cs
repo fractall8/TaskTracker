@@ -1,7 +1,7 @@
 ﻿using System.Net.Http.Json;
 using System.Text.Json;
 using Contracts.DTOs;
-using Contracts.Notifications;
+using Contracts.Notifications.BoardExport;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using TaskTracker.Functions.Interfaces;

@@ -39,4 +39,9 @@ public class AttachmentRepository(TaskTrackerDbContext dbContext)
             .Select(a => a.FileUrl)
             .ToListAsync(ct);
     }
+
+    public async Task<List<Attachment>> GetByTaskIdAsync(Guid taskId, CancellationToken ct = default)
+    {
+        return await DbContext.Attachments.Where(a => a.TaskId == taskId && !a.IsDeleted).ToListAsync(ct);
+    }
 }

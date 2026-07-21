@@ -1,11 +1,12 @@
-﻿@using System.Globalization
+﻿@implements IDisposable
+@using System.Globalization
 @using Contracts.DTOs
 @using Contracts.Requests.Comments
 @using Services.Abstractions.Tasks
 @using WebApp.Shared.Dialogs
 @using WebApp.Shared.Helpers
 @using WebApp.Shared.Toast
-@inject ITaskApiService TaskApi
+@inject ITaskDetailsStore Store
 @inject CustomToastService Toast
 @inject IDialogService DialogService
 @inject IProfileStore ProfileStore
@@ -32,13 +33,13 @@
 }
 
 <div class="comment-list">
-    @if (_isLoading)
+    @if (Store.IsLoading)
     {
         <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Small" Class="mt-2"/>
     }
-    else if (_comments != null && _comments.Any())
+    else if (Store.Comments != null && Store.Comments.Any())
     {
-        @foreach (var comment in _comments.OrderByDescending(c => c.CreatedAt))
+        @foreach (var comment in Store.Comments.OrderByDescending(c => c.CreatedAt))
         {
             <div class="comment-row">
                 <div class="avatar-round @AvatarColorHelper.GetColorClass(comment.AuthorName)">
@@ -124,9 +125,6 @@
     [Parameter, EditorRequired] public Guid TaskId { get; set; }
     [Parameter] public bool IsReadOnly { get; set; }
 
-    private bool _isLoading = true;
-    private List<CommentDto>? _comments;
-
     private string _newCommentText = string.Empty;
     private bool _isSubmittingComment;
 
@@ -144,26 +142,13 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Store.StateChanged += StateHasChanged;
         await ProfileStore.EnsureLoadedAsync();
-        await LoadCommentsAsync();
     }
 
-    private async Task LoadCommentsAsync()
+    public void Dispose()
     {
-        try
-        {
-            _isLoading = true;
-            _comments = await TaskApi.GetCommentsAsync(BoardId, TaskId);
-        }
-        catch (Exception ex)
-        {
-            Toast.ShowError($"Failed to load comments: {ex.Message}");
-            _comments = new List<CommentDto>();
-        }
-        finally
-        {
-            _isLoading = false;
-        }
+        Store.StateChanged -= StateHasChanged;
     }
 
     private async Task SubmitCommentAsync()
@@ -174,9 +159,8 @@
         {
             _isSubmittingComment = true;
             var request = new CreateCommentRequest(_newCommentText);
-            var newComment = await TaskApi.CreateCommentAsync(BoardId, TaskId, request);
 
-            _comments?.Add(newComment);
+            await Store.CreateCommentAsync(BoardId, TaskId, request);
             _newCommentText = string.Empty;
         }
         catch (Exception ex)
@@ -212,16 +196,9 @@
         try
         {
             _isUpdatingComment = true;
-
             var request = new UpdateCommentRequest(_editingCommentText);
-            var updatedComment = await TaskApi.UpdateCommentAsync(BoardId, TaskId, comment.Id, request);
 
-            var index = _comments?.FindIndex(c => c.Id == comment.Id) ?? -1;
-            if (index != -1 && _comments != null)
-            {
-                _comments[index] = updatedComment;
-            }
-
+            await Store.UpdateCommentAsync(BoardId, TaskId, comment.Id, request);
             CancelEdit();
             Toast.ShowSuccess("Comment updated");
         }
@@ -252,8 +229,7 @@
         {
             try
             {
-                await TaskApi.DeleteCommentAsync(BoardId, TaskId, comment.Id);
-                _comments?.Remove(comment);
+                await Store.DeleteCommentAsync(BoardId, TaskId, comment.Id);
                 Toast.ShowInfo("Comment deleted");
             }
             catch (Exception ex)

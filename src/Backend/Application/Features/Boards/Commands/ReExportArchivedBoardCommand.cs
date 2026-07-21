@@ -2,7 +2,7 @@
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
-using Contracts.Notifications;
+using Contracts.Notifications.BoardExport;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;

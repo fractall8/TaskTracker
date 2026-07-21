@@ -1,4 +1,5 @@
 using Contracts.DTOs;
+using Contracts.Notifications.BoardActions;
 using Contracts.Requests.Tasks;
 
 namespace Services.Abstractions.Boards;
@@ -16,6 +17,8 @@ public interface IBoardDetailsStore
     string? ErrorMessage { get; }
 
     event Action? StateChanged;
+
+    event Action? RemoteBoardNameApplied;
 
     void Reset();
 
@@ -48,4 +51,6 @@ public interface IBoardDetailsStore
     void SetBoardArchived(BoardExportOptionsDto exportOptions);
 
     void SetBoardReExporting(BoardExportOptionsDto options);
+
+    void ApplyAction(BoardActionNotification notification, Guid currentUserId);
 }

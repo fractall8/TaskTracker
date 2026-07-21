@@ -1,4 +1,4 @@
-﻿using Contracts.Notifications;
+﻿using Contracts.Notifications.BoardExport;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Options;

@@ -1,6 +1,11 @@
-﻿using Application.Interfaces.Repositories;
+﻿using Application.Common.Interfaces;
+using Application.Common.Mappings;
+using Application.Interfaces.Notifiers;
+using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
+using Contracts.Notifications.BoardActions;
+using Contracts.Notifications.BoardActions.Payloads;
 using FluentValidation;
 using MediatR;
 
@@ -16,16 +21,23 @@ public class MoveTaskCommandHandler(
     IBoardAccessService accessService,
     ITaskRepository taskRepository,
     IColumnRepository columnRepository,
+    IBoardActionNotifier  boardActionNotifier,
+    IDateTimeProvider dateTimeProvider,
     IUnitOfWork unitOfWork)
     : IRequestHandler<MoveTaskCommand>
 {
     public async Task Handle(MoveTaskCommand request, CancellationToken ct)
     {
-        await accessService.EnsureCanManageTasksAsync(request.BoardId, ct);
+        var boardAccessContext = await accessService.EnsureCanManageTasksAsync(request.BoardId, ct);
 
         var taskToMove = await taskRepository.GetTaskWithColumnAsync(request.TaskId, ct);
 
-        if (taskToMove?.Column?.BoardId != request.BoardId)
+        if (taskToMove == null)
+        {
+            throw new KeyNotFoundException("Task not found.");
+        }
+
+        if (taskToMove.Column?.BoardId != request.BoardId)
         {
             throw new KeyNotFoundException("Task not found on this board.");
         }
@@ -41,41 +53,67 @@ public class MoveTaskCommandHandler(
         var oldPosition = taskToMove.Position;
 
         var targetColumnMaxPosition = await taskRepository.GetMaxPositionAsync(request.TargetColumnId, ct);
-
+        var isSameColumnMove = oldColumnId == request.TargetColumnId;
         int safeNewPosition;
 
-        if (oldColumnId == request.TargetColumnId)
+        await unitOfWork.ExecuteInTransactionAsync(async token =>
         {
-            safeNewPosition = Math.Min(request.NewPosition, targetColumnMaxPosition);
-
-            if (oldPosition == safeNewPosition)
+            if (isSameColumnMove)
             {
-                return;
+                safeNewPosition = Math.Min(request.NewPosition, targetColumnMaxPosition);
+
+                if (oldPosition != safeNewPosition)
+                {
+                    await taskRepository.UpdatePositionsOnMoveAsync(oldColumnId, oldPosition, safeNewPosition, token);
+                }
+            }
+            else
+            {
+                var maxAllowedPosition = targetColumnMaxPosition + 1;
+                safeNewPosition = Math.Min(request.NewPosition, maxAllowedPosition);
+
+                await taskRepository.DecrementPositionsAsync(oldColumnId, oldPosition + 1, token);
+                await taskRepository.IncrementPositionsAsync(request.TargetColumnId, safeNewPosition, token);
+
+                taskToMove.ColumnId = request.TargetColumnId;
             }
 
-            await taskRepository.UpdatePositionsOnMoveAsync(oldColumnId, oldPosition, safeNewPosition, ct);
-        }
-        else
+            if (oldPosition != safeNewPosition || !isSameColumnMove)
+            {
+                taskToMove.Position = safeNewPosition;
+                taskRepository.Update(taskToMove);
+                await unitOfWork.SaveChangesAsync(token);
+            }
+        }, ct);
+
+        if (isSameColumnMove && oldPosition == taskToMove.Position)
         {
-            var maxAllowedPosition = targetColumnMaxPosition + 1;
-            safeNewPosition = Math.Min(request.NewPosition, maxAllowedPosition);
-
-            await taskRepository.DecrementPositionsAsync(oldColumnId, oldPosition + 1, ct);
-            await taskRepository.IncrementPositionsAsync(request.TargetColumnId, safeNewPosition, ct);
-
-            taskToMove.ColumnId = request.TargetColumnId;
+            return;
         }
 
-        taskToMove.Position = safeNewPosition;
+        var updatedSourceColumnTasks = await taskRepository.GetTasksByColumnIdAsync(oldColumnId, ct);
+        var updatedTargetColumnTasks = isSameColumnMove
+            ? updatedSourceColumnTasks
+            : await taskRepository.GetTasksByColumnIdAsync(request.TargetColumnId, ct);
 
-        taskRepository.Update(taskToMove);
-        await unitOfWork.SaveChangesAsync(ct);
+        await boardActionNotifier.NotifyAsync(new BoardActionNotification(
+            request.BoardId,
+            BoardActionNotificationType.TasksReordered,
+            boardAccessContext.UserId,
+            dateTimeProvider.UtcNow,
+            new TasksReorderedPayload(
+                request.TaskId,
+                oldColumnId,
+                request.TargetColumnId,
+                taskToMove.Position,
+                BoardActionPositionMappings.ToTaskPositions(updatedSourceColumnTasks),
+                BoardActionPositionMappings.ToTaskPositions(updatedTargetColumnTasks))), ct);
     }
 }
 
-public class MoveColumnCommandValidator : AbstractValidator<MoveTaskCommand>
+public class MoveTaskCommandValidator : AbstractValidator<MoveTaskCommand>
 {
-    public MoveColumnCommandValidator()
+    public MoveTaskCommandValidator()
     {
         RuleFor(x => x.BoardId)
             .NotEmpty().WithMessage("Board ID is required.");

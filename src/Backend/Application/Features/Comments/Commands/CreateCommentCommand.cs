@@ -1,7 +1,11 @@
-﻿using Application.Interfaces.Repositories;
+﻿using Application.Common.Interfaces;
+using Application.Interfaces.Notifiers;
+using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Contracts.DTOs;
+using Contracts.Notifications.BoardActions;
+using Contracts.Notifications.BoardActions.Payloads;
 using Domain.Constants;
 using Domain.Entities;
 using FluentValidation;
@@ -17,12 +21,14 @@ public class CreateCommentCommandHandler(
     ICommentRepository commentRepository,
     ICurrentUserAccessor currentUserAccessor,
     IUserRepository userRepository,
+    IBoardActionNotifier boardActionNotifier,
+    IDateTimeProvider dateTimeProvider,
     IUnitOfWork unitOfWork)
     : IRequestHandler<CreateCommentCommand, CommentDto>
 {
     public async Task<CommentDto> Handle(CreateCommentCommand request, CancellationToken ct)
     {
-        await boardAccessService.EnsureCanManageCommentsAsync(request.BoardId, ct);
+        var boardAccessContext = await boardAccessService.EnsureCanManageCommentsAsync(request.BoardId, ct);
 
         var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, ct);
         if (task == null || task.Column?.BoardId != request.BoardId)
@@ -52,7 +58,7 @@ public class CreateCommentCommandHandler(
         await commentRepository.AddAsync(comment, ct);
         await unitOfWork.SaveChangesAsync(ct);
 
-        return new CommentDto(
+        var commentDto = new CommentDto(
             Id: comment.Id,
             Text: comment.Text,
             TaskId: comment.TaskId,
@@ -61,6 +67,25 @@ public class CreateCommentCommandHandler(
             AuthorName: user.DisplayName ?? string.Empty,
             AuthorAvatarUrl: user.AvatarUrl,
             UpdatedAt: comment.UpdatedAt);
+
+        var commentsCount = await commentRepository.CountAsync(c => c.TaskId == request.TaskId, ct);
+
+        await boardActionNotifier.NotifyAsync(new BoardActionNotification(
+            request.BoardId,
+            BoardActionNotificationType.TaskCommentsCountChanged,
+            boardAccessContext.UserId,
+            dateTimeProvider.UtcNow,
+            new TaskCommentsCountChangedPayload(request.TaskId, commentsCount)), ct);
+
+        await boardActionNotifier.NotifyAsync(new BoardActionNotification(
+            request.BoardId,
+            BoardActionNotificationType.CommentAdded,
+            boardAccessContext.UserId,
+            dateTimeProvider.UtcNow,
+            new CommentAddedPayload(request.TaskId, commentDto)
+        ), ct);
+
+        return commentDto;
     }
 }
 

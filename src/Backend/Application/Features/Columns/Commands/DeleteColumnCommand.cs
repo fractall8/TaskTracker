@@ -1,5 +1,11 @@
-﻿using Application.Interfaces.Repositories;
+﻿using Application.Common.Interfaces;
+using Application.Common.Mappings;
+using Application.Interfaces.Notifiers;
+using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
+using Application.Interfaces.UOW;
+using Contracts.Notifications.BoardActions;
+using Contracts.Notifications.BoardActions.Payloads;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -14,12 +20,15 @@ public class DeleteColumnCommandHandler(
     IColumnRepository columnRepository,
     IAttachmentRepository attachmentRepository,
     IFileService fileService,
+    IUnitOfWork unitOfWork,
+    IBoardActionNotifier boardActionNotifier,
+    IDateTimeProvider dateTimeProvider,
     ILogger<DeleteColumnCommandHandler> logger)
     : IRequestHandler<DeleteColumnCommand>
 {
     public async Task Handle(DeleteColumnCommand request, CancellationToken ct)
     {
-        await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, ct);
+        var boardAccessContext = await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, ct);
 
         var board = await boardRepository.GetByIdAsync(request.BoardId, ct);
 
@@ -38,9 +47,15 @@ public class DeleteColumnCommandHandler(
         var positionToShift = column.Position;
         var fileUrlsToDelete = await attachmentRepository.GetUrlsByColumnIdAsync(request.ColumnId, ct);
 
-        await columnRepository.SoftDeleteCascadeAsync(request.ColumnId, ct);
+        await unitOfWork.ExecuteInTransactionAsync(async (token) =>
+        {
+            await columnRepository.SoftDeleteCascadeAsync(request.ColumnId, token);
+            await columnRepository.DecrementPositionsAsync(request.BoardId, positionToShift, token);
 
-        await columnRepository.DecrementPositionsAsync(request.BoardId, positionToShift, ct);
+            await unitOfWork.SaveChangesAsync(token);
+        }, ct);
+
+        var updatedRemainingColumns = await columnRepository.GetListByBoardIdAsync(request.BoardId, ct);
 
         foreach (var fileUrl in fileUrlsToDelete)
         {
@@ -53,6 +68,15 @@ public class DeleteColumnCommandHandler(
                 logger.LogError(ex, "Failed to delete orphaned blob for Column {ColumnId}: {FileUrl}", request.ColumnId, fileUrl);
             }
         }
+
+        await boardActionNotifier.NotifyAsync(new BoardActionNotification(
+            request.BoardId,
+            BoardActionNotificationType.ColumnDeleted,
+            boardAccessContext.UserId,
+            dateTimeProvider.UtcNow,
+            new ColumnDeletedPayload(
+                request.ColumnId,
+                BoardActionPositionMappings.ToColumnPositions(updatedRemainingColumns))), ct);
     }
 }
 

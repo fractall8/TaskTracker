@@ -1,7 +1,11 @@
+using Application.Common.Interfaces;
+using Application.Interfaces.Notifiers;
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Contracts.DTOs;
+using Contracts.Notifications.BoardActions;
+using Contracts.Notifications.BoardActions.Payloads;
 using Domain.Constants;
 using FluentValidation;
 using MediatR;
@@ -15,12 +19,13 @@ public class UpdateCommentCommandHandler(
     ICurrentUserAccessor currentUserAccessor,
     IUserRepository userRepository,
     ICommentRepository commentRepository,
-
+    IBoardActionNotifier boardActionNotifier,
+    IDateTimeProvider dateTimeProvider,
     IUnitOfWork unitOfWork) : IRequestHandler<UpdateCommentCommand, CommentDto>
 {
     public async Task<CommentDto> Handle(UpdateCommentCommand request, CancellationToken cancellationToken)
     {
-        await boardAccessService.EnsureCanManageCommentsAsync(request.BoardId, cancellationToken);
+        var boardAccessContext = await boardAccessService.EnsureCanManageCommentsAsync(request.BoardId, cancellationToken);
 
         var comment = await commentRepository.GetCommentWithDetailsAsync(request.CommentId, cancellationToken);
 
@@ -48,6 +53,13 @@ public class UpdateCommentCommandHandler(
 
         commentRepository.Update(comment);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        await boardActionNotifier.NotifyAsync(new BoardActionNotification(
+            request.BoardId,
+            BoardActionNotificationType.CommentUpdated,
+            boardAccessContext.UserId,
+            dateTimeProvider.UtcNow,
+            new CommentUpdatedPayload(request.TaskId, request.CommentId, request.Text)), cancellationToken);
 
         return new CommentDto(
             Id: comment.Id,

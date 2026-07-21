@@ -1,5 +1,5 @@
 ﻿using Application.Interfaces.Notifiers;
-using Contracts.Notifications;
+using Contracts.Notifications.BoardExport;
 using Infrastructure.Boards.Hubs;
 using Microsoft.AspNetCore.SignalR;
 

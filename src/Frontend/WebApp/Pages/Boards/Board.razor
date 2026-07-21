@@ -16,6 +16,7 @@
 @inject IDialogService DialogService
 @inject CustomToastService Toast
 @inject IBoardExportStatusHubService ExportHubService
+@inject IBoardActionsHubService ActionsHubService
 
 <PageTitle>@(IsCurrentBoardLoaded ? BoardDetailsStore.Board!.Name : "Board") - TaskTracker</PageTitle>
 
@@ -175,6 +176,7 @@
             if (_loadedBoardId != Guid.Empty)
             {
                 await ExportHubService.DisconnectAsync();
+                await ActionsHubService.DisconnectAsync();
             }
 
             await BoardDetailsStore.LoadAsync(BoardId);
@@ -184,6 +186,7 @@
 
             await ResolveRolesAsync();
             await ExportHubService.ConnectAsync(BoardId);
+            await ActionsHubService.ConnectAsync(BoardId);
         }
     }
 

@@ -1,33 +1,37 @@
-﻿using Application.Interfaces.Repositories;
+﻿using Application.Common.Interfaces;
+using Application.Interfaces.Notifiers;
+using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Contracts.DTOs;
+using Contracts.Notifications.BoardActions;
+using Contracts.Notifications.BoardActions.Payloads;
 using Domain.Constants;
 using FluentValidation;
 using MediatR;
 
 namespace Application.Features.Tasks.Commands;
 
-public record UpdateTaskCommand(
+public record UpdateTaskDetailsCommand(
     Guid BoardId,
     Guid TaskId,
     string Title,
     string? Description,
     DateTimeOffset? DueDate,
-    Guid? AssigneeId,
-    Guid ColumnId) : IRequest<TaskDto>;
+    Guid? AssigneeId) : IRequest<TaskDto>;
 
 public class UpdateTaskCommandHandler(
     IBoardAccessService boardAccessService,
     IBoardRepository boardRepository,
     ITaskRepository taskRepository,
-    IColumnRepository columnRepository,
+    IBoardActionNotifier boardActionNotifier,
+    IDateTimeProvider dateTimeProvider,
     IUnitOfWork unitOfWork)
-    : IRequestHandler<UpdateTaskCommand, TaskDto>
+    : IRequestHandler<UpdateTaskDetailsCommand, TaskDto>
 {
-    public async Task<TaskDto> Handle(UpdateTaskCommand request, CancellationToken ct)
+    public async Task<TaskDto> Handle(UpdateTaskDetailsCommand request, CancellationToken ct)
     {
-        await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, ct);
+        var boardAccessContext = await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, ct);
 
         if (request.AssigneeId.HasValue)
         {
@@ -55,32 +59,37 @@ public class UpdateTaskCommandHandler(
         task.DueDate = request.DueDate;
         task.AssigneeId = request.AssigneeId;
 
-        if (task.ColumnId != request.ColumnId)
-        {
-            var targetColumn = await columnRepository.GetByIdAsync(request.ColumnId, ct);
-
-            if (targetColumn == null)
-            {
-                throw new Exception("Target column not found.");
-            }
-
-            if (targetColumn.BoardId != request.BoardId)
-            {
-                throw new Exception("Target column not found on this board.");
-            }
-
-            await taskRepository.DecrementPositionsAsync(task.ColumnId, task.Position + 1, ct);
-
-            var maxPosition = await taskRepository.GetMaxPositionAsync(request.ColumnId, ct);
-
-            task.ColumnId = request.ColumnId;
-            task.Position = maxPosition + 1;
-        }
-
         taskRepository.Update(task);
         await unitOfWork.SaveChangesAsync(ct);
 
         await taskRepository.LoadUsersForTaskAsync(task, ct);
+
+        await boardActionNotifier.NotifyAsync(new BoardActionNotification(
+            request.BoardId,
+            BoardActionNotificationType.TaskUpdated,
+            boardAccessContext.UserId,
+            dateTimeProvider.UtcNow,
+            new TaskUpdatedPayload(
+                task.ColumnId,
+                task.Id,
+                task.Title,
+                task.Description,
+                task.AssigneeId)), ct);
+
+        await boardActionNotifier.NotifyAsync(new BoardActionNotification(
+            request.BoardId,
+            BoardActionNotificationType.TaskDetailsUpdated,
+            boardAccessContext.UserId,
+            dateTimeProvider.UtcNow,
+            new TaskDetailsUpdatedPayload(
+                task.Id,
+                task.Title,
+                task.Description,
+                task.AssigneeId,
+                task.Assignee?.DisplayName,
+                task.Assignee?.AvatarUrl
+            )
+        ), ct);
 
         return new TaskDto(
             task.Id, task.Title, task.Description, task.Position, task.DueDate,
@@ -91,15 +100,13 @@ public class UpdateTaskCommandHandler(
     }
 }
 
-public class UpdateTaskCommandValidator : AbstractValidator<UpdateTaskCommand>
+public class UpdateTaskCommandValidator : AbstractValidator<UpdateTaskDetailsCommand>
 {
     public UpdateTaskCommandValidator()
     {
         RuleFor(x => x.BoardId).NotEmpty();
 
         RuleFor(x => x.TaskId).NotEmpty();
-
-        RuleFor(x => x.ColumnId).NotEmpty();
 
         RuleFor(x => x.Title)
             .NotEmpty().WithMessage("Task title is required.")

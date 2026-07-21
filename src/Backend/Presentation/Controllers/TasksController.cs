@@ -62,14 +62,13 @@ public class TasksController(ISender sender) : ControllerBase
         [FromBody] UpdateTaskRequest request,
         CancellationToken ct)
     {
-        var command = new UpdateTaskCommand(
+        var command = new UpdateTaskDetailsCommand(
             boardId,
             taskId,
             request.Title,
             request.Description,
             request.DueDate,
-            request.AssigneeId,
-            request.ColumnId);
+            request.AssigneeId);
 
         var result = await sender.Send(command, ct);
         return Ok(result);

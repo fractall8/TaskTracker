@@ -1,5 +1,11 @@
-﻿using Application.Interfaces.Repositories;
+﻿using Application.Common.Interfaces;
+using Application.Common.Mappings;
+using Application.Interfaces.Notifiers;
+using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
+using Application.Interfaces.UOW;
+using Contracts.Notifications.BoardActions;
+using Contracts.Notifications.BoardActions.Payloads;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -13,12 +19,15 @@ public class DeleteTaskCommandHandler(
     ITaskRepository taskRepository,
     IAttachmentRepository attachmentRepository,
     IFileService fileService,
+    IUnitOfWork unitOfWork,
+    IBoardActionNotifier boardActionNotifier,
+    IDateTimeProvider dateTimeProvider,
     ILogger<DeleteTaskCommandHandler> logger)
     : IRequestHandler<DeleteTaskCommand>
 {
     public async Task Handle(DeleteTaskCommand request, CancellationToken ct)
     {
-        await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, ct);
+        var boardAccessContext = await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, ct);
 
         var task = await taskRepository.GetTaskWithColumnAsync(request.TaskId, ct);
 
@@ -34,9 +43,13 @@ public class DeleteTaskCommandHandler(
 
         var fileUrlsToDelete = await attachmentRepository.GetUrlsByTaskIdAsync(request.TaskId, ct);
 
-        await taskRepository.DecrementPositionsAsync(task.ColumnId, task.Position + 1, ct);
+        await unitOfWork.ExecuteInTransactionAsync(async token =>
+        {
+            await taskRepository.DecrementPositionsAsync(task.ColumnId, task.Position + 1, token);
+            await taskRepository.SoftDeleteCascadeAsync(request.TaskId, token);
 
-        await taskRepository.SoftDeleteCascadeAsync(request.TaskId, ct);
+            await unitOfWork.SaveChangesAsync(token);
+        }, ct);
 
         foreach (var fileUrl in fileUrlsToDelete)
         {
@@ -49,6 +62,18 @@ public class DeleteTaskCommandHandler(
                 logger.LogError(ex, "Failed to delete orphaned blob for Task {TaskId}: {FileUrl}", request.TaskId, fileUrl);
             }
         }
+
+        var updatedRemainingTasks = await taskRepository.GetTasksByColumnIdAsync(task.ColumnId, ct);
+
+        await boardActionNotifier.NotifyAsync(new BoardActionNotification(
+            request.BoardId,
+            BoardActionNotificationType.TaskDeleted,
+            boardAccessContext.UserId,
+            dateTimeProvider.UtcNow,
+            new TaskDeletedPayload(
+                task.ColumnId,
+                request.TaskId,
+                BoardActionPositionMappings.ToTaskPositions(updatedRemainingTasks))), ct);
     }
 }
 

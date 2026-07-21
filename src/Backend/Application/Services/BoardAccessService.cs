@@ -43,10 +43,10 @@ public class BoardAccessService(
         EnsureAccessAsync(boardId, BoardRolePermissions.CanManageComments, "You don't have permission to create comments.", requiresActiveBoard: true, ct);
 
     public Task<BoardAccessContext> EnsureCanManageAttachmentsAsync(Guid boardId, CancellationToken ct = default) =>
-        EnsureAccessAsync(boardId, BoardRolePermissions.CanManageAttachemnts, "You don't have permission to manage attachments.", requiresActiveBoard: true, ct);
+        EnsureAccessAsync(boardId, BoardRolePermissions.CanManageAttachments, "You don't have permission to manage attachments.", requiresActiveBoard: true, ct);
 
     public Task<BoardAccessContext> EnsureCanViewBoardAsync(Guid boardId, CancellationToken ct = default) =>
-        EnsureAccessAsync(boardId, _ => true, "You don't have access to this board.", requiresActiveBoard: false, ct);
+        EnsureAccessAsync(boardId, BoardRolePermissions.CanViewBoard, "You don't have access to this board.", requiresActiveBoard: false, ct);
 
     public Task<BoardAccessContext> EnsureCanExportBoardAsync(Guid boardId, CancellationToken ct = default) =>
         EnsureAccessAsync(boardId, _ => true, "You don't have permission to export this board.", requiresActiveBoard: false, ct);

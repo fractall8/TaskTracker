@@ -11,4 +11,6 @@ public interface IAttachmentRepository : IRepository<Attachment, Guid>
     Task<List<string>> GetUrlsByColumnIdAsync(Guid columnId, CancellationToken ct = default);
 
     Task<List<string>> GetUrlsByTaskIdAsync(Guid taskId, CancellationToken ct = default);
+
+    Task<List<Attachment>> GetByTaskIdAsync(Guid taskId, CancellationToken ct = default);
 }

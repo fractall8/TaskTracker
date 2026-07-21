@@ -11,6 +11,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddAuthenticationModule(configuration);
         services.AddBlobModule(configuration);
         services.AddBoardExportJobModule(configuration);
+        services.AddBoardActionsModule();
 
         return services;
     }

@@ -1,7 +1,7 @@
 ﻿using Application.Features.Boards.Queries;
 using Application.Interfaces.Notifiers;
 using Contracts.DTOs;
-using Contracts.Notifications;
+using Contracts.Notifications.BoardExport;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 

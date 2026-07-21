@@ -1,7 +1,11 @@
-﻿using Application.Interfaces.Repositories;
+﻿using Application.Common.Interfaces;
+using Application.Interfaces.Notifiers;
+using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Contracts.DTOs;
+using Contracts.Notifications.BoardActions;
+using Contracts.Notifications.BoardActions.Payloads;
 using Domain.Constants;
 using FluentValidation;
 using MediatR;
@@ -13,12 +17,14 @@ public record UpdateColumnCommand(Guid BoardId, Guid ColumnId, string Name) : IR
 public class UpdateColumnCommandHandler(
     IBoardAccessService boardAccessService,
     IColumnRepository columnRepository,
+    IBoardActionNotifier boardActionNotifier,
+    IDateTimeProvider dateTimeProvider,
     IUnitOfWork unitOfWork)
     : IRequestHandler<UpdateColumnCommand, ColumnDto>
 {
     public async Task<ColumnDto> Handle(UpdateColumnCommand request, CancellationToken ct)
     {
-        await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, ct);
+        var boardAccessContext = await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, ct);
 
         var column = await columnRepository.GetByIdAsync(request.ColumnId, ct);
 
@@ -47,6 +53,13 @@ public class UpdateColumnCommandHandler(
 
         columnRepository.Update(column);
         await unitOfWork.SaveChangesAsync(ct);
+
+        await boardActionNotifier.NotifyAsync(new BoardActionNotification(
+            request.BoardId,
+            BoardActionNotificationType.ColumnRenamed,
+            boardAccessContext.UserId,
+            dateTimeProvider.UtcNow,
+            new ColumnRenamedPayload(column.Id, request.Name)), ct);
 
         return new ColumnDto(
             column.Id,
