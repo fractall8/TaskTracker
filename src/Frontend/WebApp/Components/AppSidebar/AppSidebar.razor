@@ -3,8 +3,10 @@
 @inject IProfileStore ProfileStore
 @inject IWorkspaceStore WorkspaceStore
 @inject NavigationManager Navigation
+@inject IBrowserViewportService BrowserViewportService
 
-<MudDrawer Open="@_drawerOpen" Elevation="0" Variant="DrawerVariant.Mini" Width="280px" MiniWidth="76px"
+<MudDrawer @bind-Open="_drawerOpen" Elevation="0" Variant="DrawerVariant.Mini" Width="280px" MiniWidth="76px"
+           Breakpoint="Breakpoint.None"
            Style="border-right: 1px solid rgba(100, 110, 120, 0.2); background-color: var(--mud-palette-drawer-background); overflow: visible !important;">
 
     <div class="sidebar-wrapper @(_drawerOpen ? "" : "mini")">
@@ -205,6 +207,19 @@
     {
         ProfileStore.StateChanged += OnStoreStateChanged;
         WorkspaceStore.StateChanged += OnStoreStateChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var breakpoint = await BrowserViewportService.GetCurrentBreakpointAsync();
+            if (breakpoint < Breakpoint.Lg)
+            {
+                _drawerOpen = false;
+                StateHasChanged();
+            }
+        }
     }
 
     public void Dispose()
