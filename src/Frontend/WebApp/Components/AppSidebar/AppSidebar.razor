@@ -143,6 +143,10 @@
                                     <p class="profile-name">@ProfileStore.Profile?.DisplayName</p>
                                     <p class="profile-email">@ProfileStore.Profile?.Email</p>
                                 </div>
+
+                                <MudIcon Class="profile-chevron"
+                                         Icon="@(_isMenuOpen ? Icons.Material.Filled.KeyboardArrowDown : Icons.Material.Filled.KeyboardArrowUp)"
+                                         Size="Size.Small" Style="color: var(--mud-palette-text-secondary);"/>
                             }
                         </div>
                     </button>

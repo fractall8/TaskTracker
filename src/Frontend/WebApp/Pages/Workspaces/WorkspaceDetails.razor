@@ -18,7 +18,7 @@
 }
 else if (!string.IsNullOrEmpty(WorkspaceStore.ErrorMessage))
 {
-    <div class="workspace-details" @key="WorkspaceId">
+    <div class="workspace-details @(IsDarkMode ? "dark" : "")" @key="WorkspaceId">
         <div class="custom-alert error">
             <MudIcon Icon="@Icons.Material.Outlined.ErrorOutline" Size="Size.Small" Class="custom-alert-icon"/>
             <div class="custom-alert-content">
@@ -33,7 +33,7 @@ else if (!string.IsNullOrEmpty(WorkspaceStore.ErrorMessage))
 }
 else if (WorkspaceStore.CurrentWorkspace is { } workspace)
 {
-    <div class="workspace-details" @key="WorkspaceId">
+    <div class="workspace-details @(IsDarkMode ? "dark" : "")" @key="WorkspaceId">
         <button class="crumb" @onclick="@(() => Navigation.NavigateTo("/dashboard"))">
             <MudIcon Icon="@Icons.Material.Filled.ChevronLeft" Size="Size.Small"/>
             All workspaces
@@ -99,11 +99,14 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
 
 @code {
     [Parameter] public Guid WorkspaceId { get; set; }
+
+    [CascadingParameter] public bool IsDarkMode { get; set; }
+
     private WorkspaceRoleDto? _currentUserRole;
     private Guid? _currentUserId;
 
     private string _activeTab = "boards";
-    
+
     protected override async Task OnInitializedAsync()
     {
         WorkspaceStore.StateChanged += OnStoreStateChanged;

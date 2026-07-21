@@ -79,13 +79,11 @@
     --c-green-txt: #27500A;
 }
 
-:global(.dark-mode) .workspace-details,
-:global([data-theme="dark"]) .workspace-details,
-:global(.mud-theme-dark) .workspace-details {
-    --c-gray-bg: #3A3A37;
-    --c-gray-txt: #D3D1C7;
-    --c-green-bg: #223F0C;
-    --c-green-txt: #C0DD97;
+.workspace-details.dark {
+    --c-gray-bg: #323337;
+    --c-gray-txt: #B5B7BA;
+    --c-green-bg: #1E2D1A;
+    --c-green-txt: #8DDA2C;
 }
 
 ::deep .badge {

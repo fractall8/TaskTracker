@@ -21,7 +21,9 @@
                 OnSignOut="BeginSignOut"/>
 
     <MudMainContent Class="custom-main-content">
-        @Body
+        <CascadingValue Value="_isDarkMode">
+            @Body
+        </CascadingValue>
     </MudMainContent>
 </MudLayout>
 
