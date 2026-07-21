@@ -73,7 +73,23 @@ public class UpdateTaskCommandHandler(
                 task.ColumnId,
                 task.Id,
                 task.Title,
+                task.Description,
                 task.AssigneeId)), ct);
+
+        await boardActionNotifier.NotifyAsync(new BoardActionNotification(
+            request.BoardId,
+            BoardActionNotificationType.TaskDetailsUpdated,
+            boardAccessContext.UserId,
+            dateTimeProvider.UtcNow,
+            new TaskDetailsUpdatedPayload(
+                task.Id,
+                task.Title,
+                task.Description,
+                task.AssigneeId,
+                task.Assignee?.DisplayName,
+                task.Assignee?.AvatarUrl
+            )
+        ), ct);
 
         return new TaskDto(
             task.Id, task.Title, task.Description, task.Position, task.DueDate,

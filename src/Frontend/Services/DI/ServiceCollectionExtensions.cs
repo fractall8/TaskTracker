@@ -19,6 +19,7 @@ using Services.Configuration;
 using Services.Hubs;
 using Services.Profile;
 using Services.Tasks;
+using Services.Tasks.Stores;
 using Services.Workspaces;
 using Services.Workspaces.Stores;
 
@@ -89,6 +90,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IColumnApiService, ColumnApiService>();
         services.AddScoped<ITaskApiService, TaskApiService>();
         services.AddScoped<IBoardDetailsStore, BoardDetailsStore>();
+
+        services.AddScoped<ITaskDetailsStore, TaskDetailsStore>();
 
         services.AddScoped<ICurrentUserService, CurrentUserService>();
 

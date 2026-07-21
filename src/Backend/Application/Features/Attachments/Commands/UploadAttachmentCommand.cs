@@ -101,13 +101,22 @@ public class UploadAttachmentCommandHandler(
                 dateTimeProvider.UtcNow,
                 new TaskAttachmentsCountChangedPayload(request.TaskId, attachmentsCount)), cancellationToken);
 
-            return new AttachmentDto(
+            var attachmentDto = new AttachmentDto(
                 attachment.Id,
                 attachment.FileName,
                 attachment.FileUrl,
                 attachment.SizeInBytes,
                 attachment.CreatedAt,
                 attachment.CreatedById);
+
+            await boardActionNotifier.NotifyAsync(new BoardActionNotification(
+                request.BoardId,
+                BoardActionNotificationType.AttachmentAdded,
+                boardAccessContext.UserId,
+                dateTimeProvider.UtcNow,
+                new AttachmentAddedPayload(request.TaskId, attachmentDto)), cancellationToken);
+
+            return attachmentDto;
     }
 }
 

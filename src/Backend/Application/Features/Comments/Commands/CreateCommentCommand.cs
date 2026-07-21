@@ -58,6 +58,16 @@ public class CreateCommentCommandHandler(
         await commentRepository.AddAsync(comment, ct);
         await unitOfWork.SaveChangesAsync(ct);
 
+        var commentDto = new CommentDto(
+            Id: comment.Id,
+            Text: comment.Text,
+            TaskId: comment.TaskId,
+            CreatedAt: comment.CreatedAt,
+            AuthorId: comment.CreatedById.Value,
+            AuthorName: user.DisplayName ?? string.Empty,
+            AuthorAvatarUrl: user.AvatarUrl,
+            UpdatedAt: comment.UpdatedAt);
+
         var commentsCount = await commentRepository.CountAsync(c => c.TaskId == request.TaskId, ct);
 
         await boardActionNotifier.NotifyAsync(new BoardActionNotification(
@@ -67,15 +77,15 @@ public class CreateCommentCommandHandler(
             dateTimeProvider.UtcNow,
             new TaskCommentsCountChangedPayload(request.TaskId, commentsCount)), ct);
 
-        return new CommentDto(
-            Id: comment.Id,
-            Text: comment.Text,
-            TaskId: comment.TaskId,
-            CreatedAt: comment.CreatedAt,
-            AuthorId: comment.CreatedById.Value,
-            AuthorName: user.DisplayName ?? string.Empty,
-            AuthorAvatarUrl: user.AvatarUrl,
-            UpdatedAt: comment.UpdatedAt);
+        await boardActionNotifier.NotifyAsync(new BoardActionNotification(
+            request.BoardId,
+            BoardActionNotificationType.CommentAdded,
+            boardAccessContext.UserId,
+            dateTimeProvider.UtcNow,
+            new CommentAddedPayload(request.TaskId, commentDto)
+        ), ct);
+
+        return commentDto;
     }
 }
 

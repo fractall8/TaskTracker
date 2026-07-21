@@ -66,5 +66,12 @@ public class DeleteAttachmentCommandHandler(
             userInfo.UserId,
             dateTimeProvider.UtcNow,
             new TaskAttachmentsCountChangedPayload(request.TaskId, remainingAttachmentsCount)), cancellationToken);
+
+        await boardActionNotifier.NotifyAsync(new BoardActionNotification(
+            request.BoardId,
+            BoardActionNotificationType.AttachmentDeleted,
+            userInfo.UserId,
+            dateTimeProvider.UtcNow,
+            new AttachmentDeletedPayload(request.TaskId, request.AttachmentId)), cancellationToken);
     }
 }

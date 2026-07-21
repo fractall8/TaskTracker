@@ -650,6 +650,7 @@ public class BoardDetailsStore(
         Tasks[taskIndex] = task with
         {
             Title = payload.Title,
+            Description = payload.Description,
             AssigneeId = payload.AssigneeId
         };
 

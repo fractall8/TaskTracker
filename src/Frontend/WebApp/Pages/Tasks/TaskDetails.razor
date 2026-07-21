@@ -1,4 +1,5 @@
 ﻿@page "/boards/{BoardId:guid}/tasks/{TaskId:guid}"
+@implements IDisposable
 @using Contracts.DTOs
 @using Contracts.Enums
 @using Contracts.Requests.Tasks
@@ -8,7 +9,7 @@
 @using WebApp.Shared.Dialogs
 @using WebApp.Shared.Helpers
 @using WebApp.Shared.Toast
-@inject ITaskApiService TaskApi
+@inject ITaskDetailsStore TaskStore
 @inject IBoardDetailsStore BoardDetailsStore
 @inject NavigationManager Navigation
 @inject CustomToastService Toast
@@ -20,13 +21,13 @@
         Back to board
     </button>
 
-    @if (_isLoading || (BoardDetailsStore.IsLoading && BoardDetailsStore.Board == null))
+    @if (TaskStore.IsLoading || (BoardDetailsStore.IsLoading && BoardDetailsStore.Board == null))
     {
         <div class="d-flex justify-center mt-8">
             <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large"/>
         </div>
     }
-    else if (_task != null)
+    else if (TaskStore.Task != null)
     {
         @if (IsArchived)
         {
@@ -42,7 +43,7 @@
         <div class="task-detail-grid">
             <div class="task-detail-main">
                 <div class="task-detail-head">
-                    <h1>@_task.Title</h1>
+                    <h1>@TaskStore.Task.Title</h1>
                     @if (CanManageTasks)
                     {
                         <button class="icon-btn sm ghost" aria-label="Edit task info" @onclick="OpenEditTaskDialog">
@@ -53,9 +54,9 @@
 
                 <section class="task-section">
                     <p class="task-section-title">Description</p>
-                    @if (!string.IsNullOrWhiteSpace(_task.Description))
+                    @if (!string.IsNullOrWhiteSpace(TaskStore.Task.Description))
                     {
-                        <p class="task-desc-full">@_task.Description</p>
+                        <p class="task-desc-full">@TaskStore.Task.Description</p>
                     }
                     else
                     {
@@ -64,8 +65,7 @@
                 </section>
 
                 <div class="task-section mt-8">
-                    <TaskAttachment BoardId="BoardId" TaskId="TaskId" Attachments="_task.Attachments"
-                                    IsReadOnly="IsArchived"/>
+                    <TaskAttachment BoardId="BoardId" TaskId="TaskId" IsReadOnly="IsArchived"/>
                 </div>
 
                 <div class="task-section mt-8">
@@ -77,18 +77,19 @@
                 <div class="side-meta-row">
                     <p class="info-label">Created by</p>
                     <div class="cell-member">
-                        <div class="avatar-round @AvatarColorHelper.GetColorClass(_task.ReporterName)">
-                            @if (!string.IsNullOrEmpty(_task.ReporterAvatarUrl))
+                        <div class="avatar-round @AvatarColorHelper.GetColorClass(TaskStore.Task.ReporterName)">
+                            @if (!string.IsNullOrEmpty(TaskStore.Task.ReporterAvatarUrl))
                             {
-                                <img src="@_task.ReporterAvatarUrl" alt="Avatar"
+                                <img src="@TaskStore.Task.ReporterAvatarUrl" alt="Avatar"
                                      style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"/>
                             }
                             else
                             {
-                                @GetInitials(_task.ReporterName)
+                                @GetInitials(TaskStore.Task.ReporterName)
                             }
                         </div>
-                        <span class="info-value" style="font-size: 13px">@(_task.ReporterName ?? "Unknown User")</span>
+                        <span class="info-value"
+                              style="font-size: 13px">@(TaskStore.Task.ReporterName ?? "Unknown User")</span>
                     </div>
                 </div>
 
@@ -97,20 +98,21 @@
                     <button class="fake-select" style="width: 100%; justify-content: space-between;"
                             @onclick="OpenEditTaskDialog" disabled="@(!CanManageTasks)">
                         <span style="display: flex; align-items: center; gap: 8px;">
-                            @if (_task.AssigneeId.HasValue)
+                            @if (TaskStore.Task.AssigneeId.HasValue)
                             {
-                                <span class="avatar-round tiny @AvatarColorHelper.GetColorClass(_task.AssigneeName)">
-                                    @if (!string.IsNullOrEmpty(_task.AssigneeAvatarUrl))
+                                <span
+                                    class="avatar-round tiny @AvatarColorHelper.GetColorClass(TaskStore.Task.AssigneeName)">
+                                    @if (!string.IsNullOrEmpty(TaskStore.Task.AssigneeAvatarUrl))
                                     {
-                                        <img src="@_task.AssigneeAvatarUrl" alt="Avatar"
+                                        <img src="@TaskStore.Task.AssigneeAvatarUrl" alt="Avatar"
                                              style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;"/>
                                     }
                                     else
                                     {
-                                        @GetInitials(_task.AssigneeName)
+                                        @GetInitials(TaskStore.Task.AssigneeName)
                                     }
                                 </span>
-                                @(_task.AssigneeName ?? "Unknown User")
+                                @(TaskStore.Task.AssigneeName ?? "Unknown User")
                             }
                             else
                             {
@@ -129,7 +131,7 @@
 
                     <div style="position: absolute; width: 0; height: 0; overflow: hidden;">
                         <MudDatePicker @ref="_datePicker"
-                                       Date="_task.DueDate?.ToLocalTime().Date"
+                                       Date="TaskStore.Task.DueDate?.ToLocalTime().Date"
                                        DateChanged="OnDueDateChanged"
                                        PickerVariant="PickerVariant.Dialog"
                                        Clearable="true"/>
@@ -141,7 +143,7 @@
                         <span style="display: flex; align-items: center; gap: 8px;">
                             <MudIcon Icon="@Icons.Material.Outlined.CalendarToday" Size="Size.Small"
                                      Style="flex-shrink: 0;"/>
-                            @{ var due = GetDueInfo(_task.DueDate); }
+                            @{ var due = GetDueInfo(TaskStore.Task.DueDate); }
 
                             <span class="d-flex flex-column align-start text-left" style="line-height: 1.3;">
                                 <span class="due-text due-@due.tone">@due.dateStr</span>
@@ -168,14 +170,11 @@
     [Parameter] public Guid BoardId { get; set; }
     [Parameter] public Guid TaskId { get; set; }
 
-    private TaskDto? _task;
-    private bool _isLoading = true;
-
     private MudDatePicker _datePicker = null!;
 
     private bool IsArchived => BoardDetailsStore.Board?.IsArchived == true;
     private bool CanManageTasks => !IsArchived && BoardDetailsStore.Board?.BoardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
-    
+
     private string GetInitials(string? name)
     {
         if (string.IsNullOrWhiteSpace(name)) return "U";
@@ -203,29 +202,19 @@
 
     protected override async Task OnInitializedAsync()
     {
+        TaskStore.StateChanged += StateHasChanged;
+
         if (BoardDetailsStore.Board?.Id != BoardId)
         {
             await BoardDetailsStore.LoadAsync(BoardId);
         }
 
-        await LoadTaskAsync();
+        await TaskStore.LoadAsync(BoardId, TaskId);
     }
 
-    private async Task LoadTaskAsync()
+    public void Dispose()
     {
-        try
-        {
-            _isLoading = true;
-            _task = await TaskApi.GetTaskByIdAsync(BoardId, TaskId);
-        }
-        catch (Exception ex)
-        {
-            Toast.ShowError(ex.Message);
-        }
-        finally
-        {
-            _isLoading = false;
-        }
+        TaskStore.StateChanged -= StateHasChanged;
     }
 
     private async Task OpenDatePickerAsync()
@@ -235,7 +224,7 @@
 
     private async Task OnDueDateChanged(DateTime? newDate)
     {
-        if (_task == null) return;
+        if (TaskStore.Task == null) return;
 
         DateTimeOffset? newOffset = null;
         if (newDate.HasValue)
@@ -244,19 +233,13 @@
             newOffset = new DateTimeOffset(localDate).ToUniversalTime();
         }
 
-        if (_task.DueDate == newOffset) return;
+        if (TaskStore.Task.DueDate == newOffset) return;
 
         try
         {
             var request = new UpdateTaskDueDateRequest(newOffset);
-            var updatedTask = await BoardDetailsStore.UpdateTaskDueDateAsync(TaskId, request);
-
-            if (updatedTask != null)
-            {
-                var currentAttachments = _task.Attachments;
-                _task = updatedTask with { Attachments = currentAttachments ?? new List<AttachmentDto>() };
-                Toast.ShowSuccess("Due date updated");
-            }
+            await TaskStore.UpdateTaskDueDateAsync(BoardId, TaskId, request);
+            Toast.ShowSuccess("Due date updated");
         }
         catch (Exception ex)
         {
@@ -268,7 +251,7 @@
     {
         var parameters = new DialogParameters<TaskDialog>
         {
-            { x => x.Task, _task },
+            { x => x.Task, TaskStore.Task },
             { x => x.BoardId, BoardId }
         };
 
@@ -283,8 +266,7 @@
             {
                 try
                 {
-                    await BoardDetailsStore.UpdateTaskAsync(TaskId, request);
-                    await LoadTaskAsync();
+                    await TaskStore.UpdateTaskAsync(BoardId, TaskId, request);
                     Toast.ShowSuccess("Task updated");
                 }
                 catch (Exception ex)
@@ -303,7 +285,7 @@
                 {
                     try
                     {
-                        await BoardDetailsStore.DeleteTaskAsync(TaskId);
+                        await TaskStore.DeleteTaskAsync(BoardId, TaskId);
                         Toast.ShowSuccess("Task deleted");
                         Navigation.NavigateTo($"/boards/{BoardId}");
                     }

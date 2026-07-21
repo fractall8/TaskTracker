@@ -1,8 +1,10 @@
-﻿@using Contracts.DTOs
+﻿@implements IDisposable
+@using Contracts.DTOs
 @using Refit
+@using Services.Abstractions.Tasks
 @using WebApp.Shared.Dialogs
 @using WebApp.Shared.Toast
-@inject IBoardDetailsStore Store
+@inject ITaskDetailsStore Store
 @inject CustomToastService Toast
 @inject IJSRuntime Js
 @inject IProfileStore ProfileStore
@@ -106,7 +108,6 @@
 @code {
     [Parameter, EditorRequired] public Guid BoardId { get; set; }
     [Parameter, EditorRequired] public Guid TaskId { get; set; }
-    [Parameter] public ICollection<AttachmentDto> Attachments { get; set; } = new List<AttachmentDto>();
     [Parameter] public bool IsReadOnly { get; set; }
 
     private bool _isUploading;
@@ -114,9 +115,17 @@
     private string? _selectedFileName;
     private bool _isExpanded = true;
 
+    private List<AttachmentDto>? Attachments => Store.Task?.Attachments;
+
     protected override async Task OnInitializedAsync()
     {
+        Store.StateChanged += StateHasChanged;
         await ProfileStore.EnsureLoadedAsync();
+    }
+
+    public void Dispose()
+    {
+        Store.StateChanged -= StateHasChanged;
     }
 
     private void ToggleAttachments() => _isExpanded = !_isExpanded;
@@ -149,7 +158,7 @@
         var file = e.File;
         if (file == null) return;
 
-        const long maxAllowedSize = 10 * 1024 * 1024; // 10 MB
+        const long maxAllowedSize = 10 * 1024 * 1024;
 
         if (file.Size > maxAllowedSize)
         {
@@ -166,9 +175,8 @@
             await using var stream = file.OpenReadStream(maxAllowedSize);
             var streamPart = new StreamPart(stream, file.Name, file.ContentType);
 
-            var newAttachment = await Store.UploadTaskAttachmentAsync(TaskId, streamPart);
+            await Store.UploadAttachmentAsync(BoardId, TaskId, streamPart);
 
-            Attachments.Add(newAttachment);
             Toast.ShowSuccess("File uploaded successfully");
 
             _isExpanded = true;
@@ -190,7 +198,7 @@
         try
         {
             _isDownloading = attachment.Id;
-            var downloadInfo = await Store.GetTaskAttachmentDownloadUrlAsync(TaskId, attachment.Id);
+            var downloadInfo = await Store.GetAttachmentDownloadUrlAsync(BoardId, TaskId, attachment.Id);
 
             var module = await Js.InvokeAsync<IJSObjectReference>("import", "./js/fileDownload.js");
             await module.InvokeVoidAsync("downloadFromUrl", downloadInfo.DownloadUrl, downloadInfo.FileName);
@@ -223,9 +231,7 @@
         {
             try
             {
-                await Store.DeleteTaskAttachmentAsync(TaskId, attachment.Id);
-
-                Attachments.Remove(attachment);
+                await Store.DeleteAttachmentAsync(BoardId, TaskId, attachment.Id);
                 Toast.ShowSuccess("Attachment deleted");
             }
             catch (Exception ex)

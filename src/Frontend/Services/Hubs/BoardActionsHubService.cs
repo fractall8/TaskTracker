@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using Services.Abstractions.Auth;
 using Services.Abstractions.Boards;
 using Services.Abstractions.Hubs;
+using Services.Abstractions.Tasks;
 using Services.Configuration;
 
 namespace Services.Hubs;
@@ -17,6 +18,7 @@ public class BoardActionsHubService(
     IAccessTokenProvider tokenProvider,
     IOptions<ApiClientOptions> options,
     IBoardDetailsStore boardDetailsStore,
+    ITaskDetailsStore taskDetailsStore,
     IProfileStore profileStore,
     ILogger<BoardActionsHubService> logger)
     : IBoardActionsHubService, IAsyncDisposable
@@ -42,7 +44,8 @@ public class BoardActionsHubService(
             {
                 opts.AccessTokenProvider = async () =>
                 {
-                    var result = await tokenProvider.RequestAccessToken(new AccessTokenRequestOptions { Scopes = _options.Scopes });
+                    var result = await tokenProvider.RequestAccessToken(new AccessTokenRequestOptions
+                        { Scopes = _options.Scopes });
                     return result.TryGetToken(out var token) ? token.Value : null;
                 };
             })
@@ -60,17 +63,47 @@ public class BoardActionsHubService(
         {
             var currentUserId = profileStore.Profile?.Id ?? Guid.Empty;
             boardDetailsStore.ApplyAction(notification, currentUserId);
+            taskDetailsStore.ApplyAction(notification, currentUserId);
         });
 
-        await _connection.StartAsync(ct);
+        const int maxRetries = 5;
+        int retryCount = 0;
+        bool isConnected = false;
 
-        try
+        while (retryCount < maxRetries && !ct.IsCancellationRequested)
         {
-            await _connection.InvokeAsync("SubscribeAsync", boardId, ct);
+            try
+            {
+                await _connection.StartAsync(ct);
+                isConnected = true;
+                break;
+            }
+            catch (Exception ex)
+            {
+                retryCount++;
+                logger.LogWarning(ex, "[SignalR] Initial connection failed. Retry {RetryCount}/{MaxRetries}",
+                    retryCount, maxRetries);
+
+                if (retryCount >= maxRetries)
+                {
+                    logger.LogError("[SignalR] Could not connect after {MaxRetries} attempts.", maxRetries);
+                    return;
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(Random.Shared.Next(1, 5)), ct);
+            }
         }
-        catch (Exception ex)
+
+        if (isConnected)
         {
-            logger.LogError("[SignalR] Failed to subscribe to BoardActions: {Message}", ex.Message);
+            try
+            {
+                await _connection.InvokeAsync("SubscribeAsync", boardId, ct);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError("[SignalR] Failed to subscribe to BoardActions: {Message}", ex.Message);
+            }
         }
     }
 
@@ -78,7 +111,15 @@ public class BoardActionsHubService(
     {
         if (_connection is not null)
         {
-            try { await _connection.InvokeAsync("UnsubscribeAsync", _currentBoardId, ct); } catch { }
+            try
+            {
+                await _connection.InvokeAsync("UnsubscribeAsync", _currentBoardId, ct);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError("Error during disconect: {Message}", ex.Message);
+            }
+
             await _connection.DisposeAsync();
             _connection = null;
         }

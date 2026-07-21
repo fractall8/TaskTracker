@@ -13,4 +13,11 @@ public enum BoardActionNotificationType : byte
     TasksReordered = 9,
     TaskCommentsCountChanged = 10,
     TaskAttachmentsCountChanged = 11,
+    CommentAdded = 12,
+    CommentUpdated = 13,
+    CommentDeleted = 14,
+    AttachmentAdded = 15,
+    AttachmentDeleted = 16,
+    TaskDetailsUpdated = 17,
+    TaskDueDateUpdated = 18,
 }

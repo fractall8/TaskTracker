@@ -57,6 +57,13 @@ public class DeleteCommentCommandHandler(
             boardAccessContext.UserId,
             dateTimeProvider.UtcNow,
             new TaskCommentsCountChangedPayload(request.TaskId, commentsCount)), ct);
+
+        await boardActionNotifier.NotifyAsync(new BoardActionNotification(
+            request.BoardId,
+            BoardActionNotificationType.CommentDeleted,
+            boardAccessContext.UserId,
+            dateTimeProvider.UtcNow,
+            new CommentDeletedPayload(request.TaskId, request.CommentId)), ct);
     }
 }
 
