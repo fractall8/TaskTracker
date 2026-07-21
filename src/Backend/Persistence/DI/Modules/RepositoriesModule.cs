@@ -20,6 +20,7 @@ internal static class RepositoriesModule
         services.AddScoped<IWorkspaceMemberRepository, WorkspaceMemberRepository>();
         services.AddScoped<IWorkspaceInviteRepository, WorkspaceInviteRepository>();
         services.AddScoped<IAttachmentRepository, AttachmentRepository>();
+        services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
         services.AddScoped(typeof(IRepository<,>), typeof(Repository<,>));
 
         return services;
