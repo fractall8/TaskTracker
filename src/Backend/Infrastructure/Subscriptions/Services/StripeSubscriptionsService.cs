@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 using Stripe;
 using Stripe.Checkout;
 
-namespace Infrastructure.Services;
+namespace Infrastructure.Subscriptions.Services;
 
 public class StripeSubscriptionsService(
     IStripeClient stripeClient,
@@ -224,7 +224,4 @@ public class StripeSubscriptionsService(
 
     private static Guid? TryParseGuid(string? value) =>
         Guid.TryParse(value, out var userId) ? userId : null;
-
-    private static DateTime? ToUtc(DateTime value) =>
-        value == default ? null : value;
 }

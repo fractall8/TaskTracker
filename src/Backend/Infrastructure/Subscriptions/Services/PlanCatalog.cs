@@ -2,7 +2,7 @@
 using Contracts.DTOs;
 using Infrastructure.Subscriptions.Options;
 
-namespace Infrastructure.Services;
+namespace Infrastructure.Subscriptions.Services;
 
 internal class PlanCatalog(SubscriptionOptions subscriptionOptions) : IPlanCatalog
 {

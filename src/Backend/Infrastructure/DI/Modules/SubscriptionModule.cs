@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces.Services;
-using Infrastructure.Services;
 using Infrastructure.Subscriptions.Options;
+using Infrastructure.Subscriptions.Services;
+using Infrastructure.Subscriptions.Webhooks;
 using Microsoft.Extensions.DependencyInjection;
 using Stripe;
 
@@ -36,6 +37,11 @@ internal static class SubscriptionModule
         });
 
         services.AddScoped<ISubscriptionService, StripeSubscriptionsService>();
+        services.AddSingleton<IPlanCatalog, PlanCatalog>();
+
+        services.AddScoped<ISubscriptionWebhookEventHandler, CustomerSubscriptionCreatedWebhookHandler>();
+        services.AddScoped<ISubscriptionWebhookEventHandler, CustomerSubscriptionUpdatedWebhookHandler>();
+        services.AddScoped<ISubscriptionWebhookEventHandler, CustomerSubscriptionDeletedWebhookHandler>();
 
         return services;
     }
