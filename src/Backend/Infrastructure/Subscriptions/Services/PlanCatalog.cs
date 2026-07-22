@@ -1,19 +1,21 @@
 ﻿using Application.Interfaces.Services;
 using Contracts.DTOs;
 using Infrastructure.Subscriptions.Options;
+using Microsoft.Extensions.Options;
 
 namespace Infrastructure.Subscriptions.Services;
 
-internal class PlanCatalog(SubscriptionOptions subscriptionOptions) : IPlanCatalog
+internal class PlanCatalog(IOptions<SubscriptionOptions> options) : IPlanCatalog
 {
-    public string DefaultPlanId => subscriptionOptions.DefaultPlanId;
+    private readonly SubscriptionOptions _subscriptionOptions = options.Value;
+    public string DefaultPlanId => _subscriptionOptions.DefaultPlanId;
 
     public PlanDto GetPlan(string planId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(planId);
 
-        if (subscriptionOptions.Plans is null
-            || !subscriptionOptions.Plans.TryGetValue(planId, out var plan))
+        if (_subscriptionOptions.Plans is null
+            || !_subscriptionOptions.Plans.TryGetValue(planId, out var plan))
         {
             throw new InvalidOperationException($"Billing plan '{planId}' is not defined in configuration.");
         }
@@ -23,12 +25,12 @@ internal class PlanCatalog(SubscriptionOptions subscriptionOptions) : IPlanCatal
 
     public IReadOnlyList<PlanDto> GetAllPlans()
     {
-        if (subscriptionOptions.Plans is null || subscriptionOptions.Plans.Count == 0)
+        if (_subscriptionOptions.Plans is null || _subscriptionOptions.Plans.Count == 0)
         {
             return [];
         }
 
-        return subscriptionOptions.Plans
+        return _subscriptionOptions.Plans
             .Values
             .Select(ToPlanDto)
             .ToList();
@@ -38,8 +40,8 @@ internal class PlanCatalog(SubscriptionOptions subscriptionOptions) : IPlanCatal
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(planId);
 
-        if (subscriptionOptions.Plans is null
-            || !subscriptionOptions.Plans.TryGetValue(planId, out var plan))
+        if (_subscriptionOptions.Plans is null
+            || !_subscriptionOptions.Plans.TryGetValue(planId, out var plan))
         {
             throw new InvalidOperationException($"Billing plan '{planId}' is not defined in configuration.");
         }

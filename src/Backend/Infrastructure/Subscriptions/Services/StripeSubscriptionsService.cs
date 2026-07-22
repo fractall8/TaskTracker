@@ -14,9 +14,11 @@ public class StripeSubscriptionsService(
     IPlanCatalog planCatalog) : ISubscriptionService
 {
     private const string _metadataUserIdKey = "userId";
+    private const string _metadataWorkspaceIdKey = "workspaceId";
     private const string _metadataPlanIdKey = "planId";
 
     public async Task<CheckoutSessionResultDto> CreateCheckoutSessionAsync(
+        Guid workspaceId,
         Guid userId,
         string email,
         string planId,
@@ -28,6 +30,7 @@ public class StripeSubscriptionsService(
         ArgumentException.ThrowIfNullOrWhiteSpace(planId);
 
         var priceId = planCatalog.GetPriceId(planId);
+        var workspaceIdValue = workspaceId.ToString("D");
         var userIdValue = userId.ToString("D");
 
         var options = new SessionCreateOptions
@@ -47,6 +50,7 @@ public class StripeSubscriptionsService(
             Metadata = new Dictionary<string, string>
             {
                 [_metadataUserIdKey] = userIdValue,
+                [_metadataWorkspaceIdKey] = workspaceIdValue,
                 [_metadataPlanIdKey] = planId,
             },
             SubscriptionData = new SessionSubscriptionDataOptions
@@ -54,6 +58,7 @@ public class StripeSubscriptionsService(
                 Metadata = new Dictionary<string, string>
                 {
                     [_metadataUserIdKey] = userIdValue,
+                    [_metadataWorkspaceIdKey] = workspaceIdValue,
                     [_metadataPlanIdKey] = planId,
                 },
             },
@@ -154,6 +159,7 @@ public class StripeSubscriptionsService(
                 StripeCustomerId: null,
                 StripeSubscriptionId: null,
                 StripePriceId: null,
+                WorkspaceId: null,
                 PlanId: null,
                 Status: null,
                 CurrentPeriodStartAt: null,
@@ -176,6 +182,7 @@ public class StripeSubscriptionsService(
             subscription.CustomerId,
             subscription.Id,
             priceId,
+            TryGetWorkspaceId(subscription.Metadata),
             TryGetMetadataValue(subscription.Metadata, _metadataPlanIdKey),
             subscription.Status,
             items.Select(item => item.CurrentPeriodStart).DefaultIfEmpty().Min(),
@@ -197,6 +204,7 @@ public class StripeSubscriptionsService(
             session.CustomerId,
             session.SubscriptionId,
             StripePriceId: null,
+            TryGetWorkspaceId(session.Metadata),
             TryGetMetadataValue(session.Metadata, _metadataPlanIdKey),
             Status: session.Status,
             CurrentPeriodStartAt: null,
@@ -209,6 +217,12 @@ public class StripeSubscriptionsService(
     {
         var value = TryGetMetadataValue(metadata, _metadataUserIdKey);
 
+        return TryParseGuid(value);
+    }
+
+    private static Guid? TryGetWorkspaceId(IDictionary<string, string>? metadata)
+    {
+        var value = TryGetMetadataValue(metadata, _metadataWorkspaceIdKey);
         return TryParseGuid(value);
     }
 

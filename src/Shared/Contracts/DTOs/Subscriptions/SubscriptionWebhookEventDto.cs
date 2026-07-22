@@ -6,6 +6,7 @@ public record SubscriptionWebhookEventDto(
     string? StripeCustomerId,
     string? StripeSubscriptionId,
     string? StripePriceId,
+    Guid? WorkspaceId,
     string? PlanId,
     string? Status,
     DateTimeOffset? CurrentPeriodStartAt,

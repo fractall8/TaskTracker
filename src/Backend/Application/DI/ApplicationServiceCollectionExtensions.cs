@@ -25,6 +25,7 @@ public static class ApplicationServiceCollectionExtensions
 
             config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
             config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+            config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(WorkspaceFeatureGuardBehavior<,>));
         });
 
         services.AddValidatorsFromAssembly(executingAssembly);

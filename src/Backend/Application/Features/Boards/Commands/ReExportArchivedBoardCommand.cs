@@ -3,6 +3,7 @@ using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
 using Contracts.Notifications.BoardExport;
+using Domain.Constants;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -17,6 +18,7 @@ public class ReExportArchivedBoardCommandHandler(
     IBoardRepository boardRepository,
     IBoardExportService boardExportService,
     IBoardExportStatusNotifier exportStatusNotifier,
+    IWorkspaceEntitlementService entitlementService,
     ILogger<ReExportArchivedBoardCommandHandler> logger)
     : IRequestHandler<ReExportArchivedBoardCommand>
 {
@@ -28,6 +30,16 @@ public class ReExportArchivedBoardCommandHandler(
         if (board == null)
         {
             throw new KeyNotFoundException($"Board with ID {request.BoardId} not found.");
+        }
+
+        var allowedArchive =
+            await entitlementService.HasFeatureAsync(board.WorkspaceId, FeatureConstants.BoardReExport, ct);
+        var allowedExport =
+            await entitlementService.HasFeatureAsync(board.WorkspaceId, FeatureConstants.BoardArchiveDownload, ct);
+        var hasFeatures = allowedArchive && allowedExport;
+        if (!hasFeatures)
+        {
+            throw new UnauthorizedAccessException("This workspace didn't have access to reexport boards feature.");
         }
 
         if (!board.IsArchived)

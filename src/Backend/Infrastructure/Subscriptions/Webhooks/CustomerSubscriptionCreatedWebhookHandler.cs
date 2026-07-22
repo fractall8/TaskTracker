@@ -1,5 +1,6 @@
 ﻿using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
+using Application.Interfaces.UOW;
 using Contracts.DTOs;
 using Domain.Constants;
 using Domain.Entities;
@@ -10,6 +11,7 @@ namespace Infrastructure.Subscriptions.Webhooks;
 public sealed class CustomerSubscriptionCreatedWebhookHandler(
     ISubscriptionRepository subscriptionRepository,
     IUserRepository userRepository,
+    IUnitOfWork unitOfWork,
     ILogger<CustomerSubscriptionCreatedWebhookHandler> logger)
     : ISubscriptionWebhookEventHandler
 {
@@ -18,41 +20,42 @@ public sealed class CustomerSubscriptionCreatedWebhookHandler(
     public async Task HandleAsync(SubscriptionWebhookEventDto subscriptionWebhookEventDto,
         CancellationToken ct = default)
     {
-        if (!TryGetRequiredFields(subscriptionWebhookEventDto, out var userId, out var planId, out var customerId,
-                out var subscriptionId, out var status))
+        if (!TryGetRequiredFields(subscriptionWebhookEventDto, out var userId, out var workspaceId, out var planId,
+                out var customerId, out var subscriptionId, out var status))
         {
-            throw new InvalidOperationException("Subscription webhook payload is invalid.");
+            logger.LogError("Subscription webhook payload is missing required metadata fields. StripeSubscriptionId: {SubId}", subscriptionWebhookEventDto.StripeSubscriptionId);
+            return;
         }
 
         if (!SubscriptionStatus.IsBillable(status))
         {
-            logger.LogInformation(
-                "Ignoring non-billable subscription status '{Status}' for Stripe subscription {StripeSubscriptionId}.",
-                status,
-                subscriptionId);
-
+            logger.LogInformation("Ignoring non-billable subscription status '{Status}' for Stripe subscription {StripeSubscriptionId}.", status, subscriptionId);
             return;
         }
 
         if (await subscriptionRepository.ExistsByStripeSubscriptionIdAsync(subscriptionId, ct))
         {
+            logger.LogInformation("Stripe subscription {StripeSubscriptionId} already exists. Ignoring duplicate webhook.", subscriptionId);
             return;
         }
 
         if (await userRepository.GetByIdAsync(userId, ct) is null)
         {
-            throw new UnauthorizedAccessException("User not found.");
+            logger.LogWarning("User {UserId} not found for subscription {StripeSubscriptionId}. Cannot process webhook.", userId, subscriptionId);
+            return;
         }
 
-        if (await subscriptionRepository.GetSubscriptionByUserIdAsync(userId, ct) is not null)
+        if (await subscriptionRepository.GetSubscriptionByWorkspaceIdAsync(workspaceId, ct) is not null)
         {
-            throw new InvalidOperationException("Subscription already exists.");
+            logger.LogWarning("Workspace {WorkspaceId} already has an active subscription. Ignoring new subscription {StripeSubscriptionId}.", workspaceId, subscriptionId);
+            return;
         }
 
         await subscriptionRepository.AddAsync(new Subscription
         {
             Id = Guid.NewGuid(),
             UserId = userId,
+            WorkspaceId = workspaceId,
             PlanId = planId,
             StripeCustomerId = customerId,
             StripeSubscriptionId = subscriptionId,
@@ -60,24 +63,31 @@ public sealed class CustomerSubscriptionCreatedWebhookHandler(
             CurrentPeriodStartAt = subscriptionWebhookEventDto.CurrentPeriodStartAt,
             CurrentPeriodEndAt = subscriptionWebhookEventDto.CurrentPeriodEndAt,
             CancelAtPeriodEnd = subscriptionWebhookEventDto.CancelAtPeriodEnd,
-        });
+        }, ct);
+
+        await unitOfWork.SaveChangesAsync(ct);
+
+        logger.LogInformation("Successfully processed and saved subscription {StripeSubscriptionId} for Workspace {WorkspaceId}.", subscriptionId, workspaceId);
     }
 
     private static bool TryGetRequiredFields(
-        SubscriptionWebhookEventDto billingEvent,
+        SubscriptionWebhookEventDto subscriptionWebhookEventDto,
         out Guid userId,
+        out Guid workspaceId,
         out string planId,
         out string customerId,
         out string subscriptionId,
         out string status)
     {
-        userId = billingEvent.UserId ?? Guid.Empty;
-        planId = billingEvent.PlanId ?? string.Empty;
-        customerId = billingEvent.StripeCustomerId ?? string.Empty;
-        subscriptionId = billingEvent.StripeSubscriptionId ?? string.Empty;
-        status = billingEvent.Status ?? string.Empty;
+        userId = subscriptionWebhookEventDto.UserId ?? Guid.Empty;
+        workspaceId = subscriptionWebhookEventDto.WorkspaceId ?? Guid.Empty;
+        planId = subscriptionWebhookEventDto.PlanId ?? string.Empty;
+        customerId = subscriptionWebhookEventDto.StripeCustomerId ?? string.Empty;
+        subscriptionId = subscriptionWebhookEventDto.StripeSubscriptionId ?? string.Empty;
+        status = subscriptionWebhookEventDto.Status ?? string.Empty;
 
-        return billingEvent.UserId is not null
+        return subscriptionWebhookEventDto.UserId is not null
+               && subscriptionWebhookEventDto.WorkspaceId is not null
                && !string.IsNullOrWhiteSpace(planId)
                && !string.IsNullOrWhiteSpace(customerId)
                && !string.IsNullOrWhiteSpace(subscriptionId)

@@ -2,6 +2,8 @@
 
 public class Subscription : BaseEntity<Guid>
 {
+    public required Guid WorkspaceId { get; set; }
+
     public required Guid UserId { get; set; }
 
     public required string PlanId { get; set; }
@@ -17,6 +19,8 @@ public class Subscription : BaseEntity<Guid>
     public DateTimeOffset? CurrentPeriodEndAt { get; set; }
 
     public bool CancelAtPeriodEnd { get; set; }
+
+    public Workspace? Workspace { get; set; }
 
     public User? User { get; set; }
 }

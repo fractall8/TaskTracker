@@ -23,16 +23,21 @@ public class SubscriptionConfiguration : IEntityTypeConfiguration<Subscription>
         builder.HasIndex(s => s.StripeSubscriptionId)
             .IsUnique();
 
-        builder.HasIndex(s => s.UserId)
+        builder.HasOne(s => s.Workspace)
+            .WithMany()
+            .HasForeignKey(s => s.WorkspaceId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(s => s.WorkspaceId)
             .IsUnique()
-            .HasFilter(BuildBillableStatusFilter());
+            .HasFilter(BuildSubscriptionStatusFilter());
 
         builder.HasIndex(s => s.UserId);
 
         builder.HasIndex(s => s.StripeCustomerId);
     }
 
-    private static string BuildBillableStatusFilter()
+    private static string BuildSubscriptionStatusFilter()
     {
         var statuses = string.Join(", ", SubscriptionStatus.AllBillable.Select(s => $"'{s}'"));
         return $"\"Status\" IN ({statuses})";

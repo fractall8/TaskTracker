@@ -5,6 +5,7 @@ using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Contracts.DTOs;
 using Contracts.Notifications.BoardExport;
+using Domain.Constants;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -19,6 +20,7 @@ public class ArchiveAndExportBoardCommandHandler(
     IBoardRepository boardRepository,
     IBoardExportService boardExportService,
     IBoardExportStatusNotifier exportStatusNotifier,
+    IWorkspaceEntitlementService entitlementService,
     IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider,
     ILogger<ArchiveAndExportBoardCommandHandler> logger)
@@ -32,6 +34,16 @@ public class ArchiveAndExportBoardCommandHandler(
         if (board == null)
         {
             throw new KeyNotFoundException($"Board with ID {request.BoardId} not found.");
+        }
+
+        var allowedArchive =
+            await entitlementService.HasFeatureAsync(board.WorkspaceId, FeatureConstants.BoardExport, ct);
+        var allowedExport =
+            await entitlementService.HasFeatureAsync(board.WorkspaceId, FeatureConstants.BoardArchiveDownload, ct);
+        var hasFeatures = allowedArchive && allowedExport;
+        if (!hasFeatures)
+        {
+            throw new UnauthorizedAccessException("This workspace didn't have access to export boards feature.");
         }
 
         var archivedAt = dateTimeProvider.UtcNow;

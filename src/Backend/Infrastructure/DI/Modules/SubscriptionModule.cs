@@ -43,6 +43,8 @@ internal static class SubscriptionModule
         services.AddScoped<ISubscriptionWebhookEventHandler, CustomerSubscriptionUpdatedWebhookHandler>();
         services.AddScoped<ISubscriptionWebhookEventHandler, CustomerSubscriptionDeletedWebhookHandler>();
 
+        services.AddScoped<IWorkspaceEntitlementService, WorkspaceEntitlementService>();
+
         return services;
     }
 }

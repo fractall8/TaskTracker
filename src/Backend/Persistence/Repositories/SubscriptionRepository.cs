@@ -16,9 +16,9 @@ public class SubscriptionRepository(TaskTrackerDbContext dbContext)
             .Select(s => s.PlanId)
             .FirstOrDefaultAsync(ct);
 
-    public Task<SubscriptionDto?> GetSubscriptionByUserIdAsync(Guid userId, CancellationToken ct = default) =>
+    public Task<SubscriptionDto?> GetSubscriptionByWorkspaceIdAsync(Guid workspaceId, CancellationToken ct = default) =>
         DbContext.Subscriptions
-            .Where(s => s.UserId == userId && SubscriptionStatus.AllBillable.Contains(s.Status))
+            .Where(s => s.WorkspaceId == workspaceId && SubscriptionStatus.AllBillable.Contains(s.Status))
             .Select(s => new SubscriptionDto(
                 s.PlanId,
                 s.Status,

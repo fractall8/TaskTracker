@@ -1,12 +1,16 @@
 ﻿using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
+using Application.Interfaces.UOW;
 using Contracts.DTOs;
 using Domain.Constants;
+using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Subscriptions.Webhooks;
 
 public sealed class CustomerSubscriptionUpdatedWebhookHandler(
-    ISubscriptionRepository subscriptionRepository)
+    ISubscriptionRepository subscriptionRepository,
+    IUnitOfWork unitOfWork,
+    ILogger<CustomerSubscriptionUpdatedWebhookHandler> logger)
     : ISubscriptionWebhookEventHandler
 {
     public string EventType => StripeWebhookEventTypes.CustomerSubscriptionUpdated;
@@ -15,7 +19,8 @@ public sealed class CustomerSubscriptionUpdatedWebhookHandler(
     {
         if (string.IsNullOrWhiteSpace(subscriptionWebhookEventDto.StripeSubscriptionId) || string.IsNullOrWhiteSpace(subscriptionWebhookEventDto.Status))
         {
-            throw new InvalidOperationException("Subscription webhook payload is invalid.");
+            logger.LogError("Subscription webhook payload is missing required metadata fields. StripeSubscriptionId: {SubId}", subscriptionWebhookEventDto.StripeSubscriptionId);
+            return;
         }
 
         var subscription = await subscriptionRepository.GetByStripeSubscriptionIdAsync(
@@ -24,6 +29,7 @@ public sealed class CustomerSubscriptionUpdatedWebhookHandler(
 
         if (subscription is null)
         {
+            logger.LogWarning("Received update for Stripe subscription {SubId}, but it was not found in the database. Ignoring.", subscriptionWebhookEventDto.StripeSubscriptionId);
             return;
         }
 
@@ -31,7 +37,8 @@ public sealed class CustomerSubscriptionUpdatedWebhookHandler(
         {
             if (!SubscriptionStatus.IsDocumentedStatus(subscriptionWebhookEventDto.Status))
             {
-                throw new KeyNotFoundException($"Subscription webhook status {subscriptionWebhookEventDto.Status} is not supported.");
+                logger.LogError("Subscription webhook status {Status} is not supported.", subscriptionWebhookEventDto.Status);
+                return;
             }
 
             subscription.Status = subscriptionWebhookEventDto.Status;
@@ -51,5 +58,7 @@ public sealed class CustomerSubscriptionUpdatedWebhookHandler(
         {
             subscription.CurrentPeriodEndAt = periodEnd;
         }
+
+        await unitOfWork.SaveChangesAsync(ct);
     }
 }

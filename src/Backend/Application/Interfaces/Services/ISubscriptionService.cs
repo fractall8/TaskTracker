@@ -5,6 +5,7 @@ namespace Application.Interfaces.Services;
 public interface ISubscriptionService
 {
     Task<CheckoutSessionResultDto> CreateCheckoutSessionAsync(
+        Guid workspaceId,
         Guid userId,
         string email,
         string planId,
