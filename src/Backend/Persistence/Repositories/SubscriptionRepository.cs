@@ -23,6 +23,7 @@ public class SubscriptionRepository(TaskTrackerDbContext dbContext)
                 s.PlanId,
                 s.Status,
                 s.CancelAtPeriodEnd,
+                s.StripeCustomerId,
                 s.CurrentPeriodStartAt,
                 s.CurrentPeriodEndAt))
             .FirstOrDefaultAsync(ct);
