@@ -1,0 +1,155 @@
+﻿@using Contracts.Requests.Subscriptions
+@using Services.Abstractions.Subscriptions
+@using Services.Abstractions.Subscriptions.Stores
+@using WebApp.Shared.Toast
+@inject IWorkspaceSubscriptionsStore SubscriptionsStore
+@inject ISubscriptionApiService SubscriptionApiService
+@inject CustomToastService Toast
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<div class="mb-4">
+    <h2 style="font-size: 18px; font-weight: 600; margin: 0 0 4px 0; color: var(--mud-palette-text-primary);">Workspace
+        Plan</h2>
+    <p style="font-size: 14px; color: var(--mud-palette-text-secondary); margin: 0;">Choose the features that best fit
+        your team's needs.</p>
+</div>
+
+@if (SubscriptionsStore.IsLoading)
+{
+    <div class="d-flex justify-center mt-8">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+    </div>
+}
+else if (!string.IsNullOrEmpty(SubscriptionsStore.ErrorMessage))
+{
+    <div class="custom-alert error mt-4">
+        <MudIcon Icon="@Icons.Material.Outlined.ErrorOutline" Size="Size.Small" Class="custom-alert-icon"/>
+        <div class="custom-alert-content">
+            <p>@SubscriptionsStore.ErrorMessage</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="plans-grid">
+        @{
+            var subscription = SubscriptionsStore.Subscription;
+            var hasPortalAccess = subscription is { HasBillableSubscription: true };
+        }
+
+        @foreach (var plan in SubscriptionsStore.Plans)
+        {
+            var isCurrentPlan = plan.PlanId.Equals(subscription?.PlanId, StringComparison.OrdinalIgnoreCase);
+            var isFree = plan.PlanId.Equals("free", StringComparison.OrdinalIgnoreCase);
+
+            <div class="plan-card @(isCurrentPlan ? "current" : "")">
+                @if (isCurrentPlan)
+                {
+                    <div class="plan-badge">Current Plan</div>
+                }
+
+                <div class="plan-title">@plan.PlanDisplayName</div>
+                <div class="plan-price">
+                    @if (plan.Price != null)
+                    {
+                        <span class="amount">$@(plan.Price.UnitAmount / 100m)</span>
+                        <span class="interval">/@plan.Price.Interval</span>
+                    }
+                    else
+                    {
+                        <span class="amount">Free</span>
+                    }
+                </div>
+
+                <div class="plan-divider"></div>
+
+                <ul class="plan-features">
+                    @foreach (var feature in plan.Features)
+                    {
+                        <li>
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small"
+                                     Style="color: var(--mud-palette-primary); flex-shrink: 0; margin-top: 2px;"/>
+                            <span>@feature</span>
+                        </li>
+                    }
+                </ul>
+
+                <div class="mt-auto">
+                    @if (isCurrentPlan)
+                    {
+                        <button class="btn w-100" disabled style="justify-content: center;">Active</button>
+                        @if (hasPortalAccess)
+                        {
+                            <button class="btn ghost w-100 mt-2" @onclick="ManageBillingAsync" disabled="@_isProcessing"
+                                    style="justify-content: center;">
+                                Manage billing
+                            </button>
+                        }
+                    }
+                    else if (!isFree)
+                    {
+                        <button class="btn btn-primary w-100" @onclick="() => UpgradePlanAsync(plan.PlanId)"
+                                disabled="@_isProcessing" style="justify-content: center;">
+                            Upgrade to @plan.PlanDisplayName
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public Guid WorkspaceId { get; set; }
+
+    private bool _isProcessing;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SubscriptionsStore.StateChanged += StateHasChanged;
+        await SubscriptionsStore.LoadBillingDataAsync(WorkspaceId);
+    }
+
+    public void Dispose()
+    {
+        SubscriptionsStore.StateChanged -= StateHasChanged;
+        SubscriptionsStore.Reset();
+    }
+
+    private async Task UpgradePlanAsync(string planId)
+    {
+        if (_isProcessing) return;
+        _isProcessing = true;
+
+        try
+        {
+            var request = new CreateCheckoutSessionRequest(planId);
+            var session = await SubscriptionApiService.CreateCheckoutSessionAsync(WorkspaceId, request);
+            Navigation.NavigateTo(session.Url, forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Checkout failed: {ex.Message}");
+            _isProcessing = false;
+        }
+    }
+
+    private async Task ManageBillingAsync()
+    {
+        if (_isProcessing) return;
+        _isProcessing = true;
+
+        try
+        {
+            var session = await SubscriptionApiService.CreatePortalSessionAsync(WorkspaceId);
+            Navigation.NavigateTo(session.Url, forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Portal access failed: {ex.Message}");
+            _isProcessing = false;
+        }
+    }
+
+}

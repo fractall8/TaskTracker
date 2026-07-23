@@ -1,4 +1,5 @@
 ﻿using Application.Features.Subscriptions.Commands;
+using Application.Features.Subscriptions.Queries;
 using Contracts.Requests.Subscriptions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -11,6 +12,39 @@ namespace Presentation.Controllers;
 [Route("workspaces/{workspaceId:guid}/subscriptions")]
 public class WorkspaceSubscriptionsController(ISender sender) : ControllerBase
 {
+    [HttpGet("entitlements")]
+    public async Task<IActionResult> GetEntitlements(
+        [FromRoute] Guid workspaceId,
+        CancellationToken ct)
+    {
+        var query = new GetWorkspaceEntitlementsQuery(workspaceId);
+        var result = await sender.Send(query, ct);
+
+        return Ok(result);
+    }
+
+    [HttpGet("plans")]
+    public async Task<IActionResult> GetPlans(
+        [FromRoute] Guid workspaceId,
+        CancellationToken ct)
+    {
+        var query = new GetSubscriptionPlansQuery(workspaceId);
+        var result = await sender.Send(query, ct);
+
+        return Ok(result);
+    }
+
+    [HttpGet("subscription")]
+    public async Task<IActionResult> GetSubscription(
+        [FromRoute] Guid workspaceId,
+        CancellationToken ct)
+    {
+        var query = new GetWorkspaceSubscriptionQuery(workspaceId);
+        var result = await sender.Send(query, ct);
+
+        return Ok(result);
+    }
+
     [HttpPost("checkout")]
     public async Task<IActionResult> CreateCheckoutSession(
         [FromRoute] Guid workspaceId,
@@ -19,9 +53,9 @@ public class WorkspaceSubscriptionsController(ISender sender) : ControllerBase
     {
         var command = new CreateCheckoutSessionCommand(workspaceId, request.PriceId);
 
-        var checkoutUrl = await sender.Send(command, ct);
+        var result = await sender.Send(command, ct);
 
-        return Ok(new { url = checkoutUrl });
+        return Ok(result);
     }
 
     [HttpPost("portal")]
@@ -30,8 +64,8 @@ public class WorkspaceSubscriptionsController(ISender sender) : ControllerBase
         CancellationToken ct)
     {
         var command = new CreateCustomerPortalSessionCommand(workspaceId);
-        var portalUrl = await sender.Send(command, ct);
+        var result = await sender.Send(command, ct);
 
-        return Ok(new { url = portalUrl });
+        return Ok(result);
     }
 }

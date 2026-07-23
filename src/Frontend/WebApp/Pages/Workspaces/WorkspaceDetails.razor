@@ -68,6 +68,10 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
                         @onclick="@(() => _activeTab = "invites")">
                     Invites
                 </button>
+                <button class="tab @(_activeTab == "subscription" ? "active" : "")"
+                        @onclick="@(() => _activeTab = "subscription")">
+                    Subscriptions
+                </button>
             }
         </nav>
 
@@ -92,6 +96,10 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
             else if (_activeTab == "invites" && _currentUserRole is WorkspaceRoleDto.Owner)
             {
                 <WorkspaceInvites WorkspaceId="WorkspaceId" CurrentUserRole="_currentUserRole"/>
+            }
+            else if (_activeTab == "subscription" && _currentUserRole is WorkspaceRoleDto.Owner)
+            {
+                <WorkspaceSubscription WorkspaceId="WorkspaceId" />
             }
         </div>
     </div>

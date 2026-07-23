@@ -12,6 +12,7 @@ public class GetBoardArchiveDownloadQueryHandler(
     IBoardAccessService boardAccessService,
     IBoardRepository boardRepository,
     IBoardExportService boardExportService,
+    IWorkspaceEntitlementService entitlementService,
     IFileService fileService
     )
     : IRequestHandler<GetBoardArchiveDownloadQuery, BoardArchiveDownloadDto>
@@ -24,6 +25,13 @@ public class GetBoardArchiveDownloadQueryHandler(
         if (board == null)
         {
             throw new KeyNotFoundException("Board not found.");
+        }
+
+        var allowedExport =
+            await entitlementService.HasFeatureAsync(board.WorkspaceId, FeatureConstants.BoardArchiveDownload, cancellationToken);
+        if (!allowedExport)
+        {
+            throw new UnauthorizedAccessException("This workspace didn't have access to export boards feature.");
         }
 
         var exportInfo = await boardExportService.GetBoardExportInfoAsync(request.BoardId, cancellationToken);

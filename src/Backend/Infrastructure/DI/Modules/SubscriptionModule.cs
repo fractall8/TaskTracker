@@ -3,6 +3,7 @@ using Infrastructure.Subscriptions.Options;
 using Infrastructure.Subscriptions.Services;
 using Infrastructure.Subscriptions.Webhooks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Stripe;
 
 namespace Infrastructure.DI.Modules;
@@ -31,7 +32,7 @@ internal static class SubscriptionModule
 
         services.AddSingleton<IStripeClient>(sp =>
         {
-            var stripeOptions = sp.GetRequiredService<StripeOptions>();
+            var stripeOptions = sp.GetRequiredService<IOptions<StripeOptions>>().Value;
 
             return new StripeClient(stripeOptions.SecretKey);
         });

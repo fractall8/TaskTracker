@@ -13,6 +13,7 @@ public interface ISubscriptionService
         CancellationToken ct = default);
 
     Task<string> CreateCustomerPortalSessionAsync(
+        Guid workspaceId,
         string stripeCustomerId,
         CancellationToken ct = default);
 

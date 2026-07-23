@@ -1,37 +1,30 @@
-﻿using Application.Interfaces.Repositories;
-using Application.Interfaces.Services;
+﻿using Application.Interfaces.Services;
+using Contracts.DTOs;
 using MediatR;
 
 namespace Application.Features.Subscriptions.Commands;
 
-public record CreateCheckoutSessionCommand(Guid WorkspaceId, string PriceId) : IRequest<string>;
+public record CreateCheckoutSessionCommand(Guid WorkspaceId, string PriceId) : IRequest<CheckoutSessionResultDto>;
 
 public class CreateCheckoutSessionCommandHandler(
     ISubscriptionService subscriptionService,
-    IWorkspaceAccessService workspaceAccessService,
-    ICurrentUserAccessor currentUserAccessor,
-    IUserRepository userRepository)
-    : IRequestHandler<CreateCheckoutSessionCommand, string>
+    IWorkspaceAccessService workspaceAccessService)
+    : IRequestHandler<CreateCheckoutSessionCommand, CheckoutSessionResultDto>
 {
-    public async Task<string> Handle(CreateCheckoutSessionCommand request, CancellationToken ct)
+    public async Task<CheckoutSessionResultDto> Handle(CreateCheckoutSessionCommand request, CancellationToken ct)
     {
-        var userInfo = await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => u, ct);
+        await workspaceAccessService.EnsureCanManageSubscriptionsAsync(request.WorkspaceId, ct);
 
-        if (userInfo == null)
-        {
-            throw new UnauthorizedAccessException("User not found");
-        }
-
-        await workspaceAccessService.EnsureCanManageSubscriptionsMembersAsync(userInfo.Id, ct);
+        var userInfo = await workspaceAccessService.GetCurrentUserInfoAsync(ct);
 
         var checkoutSessionResultDto = await subscriptionService.CreateCheckoutSessionAsync(
             request.WorkspaceId,
-            userInfo.Id,
+            userInfo.UserId,
             userInfo.Email,
             request.PriceId,
             null,
             ct);
 
-        return checkoutSessionResultDto.Url;
+        return checkoutSessionResultDto;
     }
 }

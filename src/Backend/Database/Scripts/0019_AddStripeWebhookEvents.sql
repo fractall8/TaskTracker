@@ -7,6 +7,7 @@ CREATE TABLE "StripeWebhookEvents"
     "EventType"   character varying(128)   NOT NULL,
     "ReceivedAt"  timestamp with time zone NOT NULL,
     "ProcessedAt" timestamp with time zone NULL,
+    "LastError"   text NULL,
 
     "CreatedAt"   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "CreatedById" UUID NULL,

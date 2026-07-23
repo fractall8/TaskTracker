@@ -2,8 +2,8 @@
 
 public record SubscriptionDetailsDto(
     string PlanId,
-    string Status,
+    string? Status,
     bool CancelAtPeriodEnd,
     bool HasBillableSubscription,
-    DateTime? CurrentPeriodStartAt,
-    DateTime? CurrentPeriodEndAt);
+    DateTimeOffset? CurrentPeriodStartAt,
+    DateTimeOffset? CurrentPeriodEndAt);

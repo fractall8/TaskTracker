@@ -33,11 +33,18 @@ public class StripeSubscriptionsService(
         var workspaceIdValue = workspaceId.ToString("D");
         var userIdValue = userId.ToString("D");
 
+        var successUrl = stripeOptions.Value.SuccessUrl
+            .Replace("{workspaceId}", workspaceIdValue)
+            .Replace("{planId}", planId);
+
+        var cancelUrl = stripeOptions.Value.CancelUrl
+            .Replace("{workspaceId}", workspaceIdValue);
+
         var options = new SessionCreateOptions
         {
             Mode = "subscription",
-            SuccessUrl = $"{stripeOptions.Value.SuccessUrl}?planId={planId}",
-            CancelUrl = stripeOptions.Value.CancelUrl,
+            SuccessUrl = successUrl,
+            CancelUrl = cancelUrl,
             ClientReferenceId = userIdValue,
             LineItems =
             [
@@ -85,15 +92,19 @@ public class StripeSubscriptionsService(
     }
 
     public async Task<string> CreateCustomerPortalSessionAsync(
+        Guid workspaceId,
         string stripeCustomerId,
         CancellationToken ct = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(stripeCustomerId);
 
+        var returnUrl = stripeOptions.Value.CancelUrl
+            .Replace("{workspaceId}", workspaceId.ToString("D"));
+
         var options = new Stripe.BillingPortal.SessionCreateOptions
         {
             Customer = stripeCustomerId,
-            ReturnUrl = stripeOptions.Value.CancelUrl,
+            ReturnUrl = returnUrl,
         };
 
         var portalService = new Stripe.BillingPortal.SessionService(stripeClient);

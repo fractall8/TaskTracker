@@ -75,7 +75,7 @@ public class WorkspaceAccessService(
             "You don't have permission to manage board roles.", ct);
     }
 
-    public async Task EnsureCanManageSubscriptionsMembersAsync(Guid workspaceId, CancellationToken ct = default)
+    public async Task EnsureCanManageSubscriptionsAsync(Guid workspaceId, CancellationToken ct = default)
     {
         await EnsureAccessAsync(workspaceId, WorkspaceRolePermissions.CanManageSubscriptions,
             "You don't have permission to manage subscriptions.", ct);

@@ -1,29 +1,21 @@
 ﻿using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
+using Contracts.DTOs;
 using MediatR;
 
 namespace Application.Features.Subscriptions.Commands;
 
-public record CreateCustomerPortalSessionCommand(Guid WorkspaceId) : IRequest<string>;
+public record CreateCustomerPortalSessionCommand(Guid WorkspaceId) : IRequest<PortalSessionResultDto>;
 
 public class CreateCustomerPortalSessionCommandHandler(
     ISubscriptionRepository subscriptionRepository,
     ISubscriptionService subscriptionService,
-    IWorkspaceAccessService workspaceAccessService,
-    ICurrentUserAccessor currentUserAccessor,
-    IUserRepository userRepository)
-    : IRequestHandler<CreateCustomerPortalSessionCommand, string>
+    IWorkspaceAccessService workspaceAccessService)
+    : IRequestHandler<CreateCustomerPortalSessionCommand, PortalSessionResultDto>
 {
-    public async Task<string> Handle(CreateCustomerPortalSessionCommand request, CancellationToken ct)
+    public async Task<PortalSessionResultDto> Handle(CreateCustomerPortalSessionCommand request, CancellationToken ct)
     {
-        var userInfo = await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => u, ct);
-
-        if (userInfo is null)
-        {
-            throw new UnauthorizedAccessException("User not found");
-        }
-
-        await workspaceAccessService.EnsureCanManageSubscriptionsMembersAsync(userInfo.Id, ct);
+        await workspaceAccessService.EnsureCanManageSubscriptionsAsync(request.WorkspaceId, ct);
 
         var subscription = await subscriptionRepository.GetSubscriptionByWorkspaceIdAsync(request.WorkspaceId, ct);
 
@@ -33,9 +25,10 @@ public class CreateCustomerPortalSessionCommandHandler(
         }
 
         var portalUrl = await subscriptionService.CreateCustomerPortalSessionAsync(
+            request.WorkspaceId,
             subscription.StripeCustomerId,
             ct);
 
-        return portalUrl;
+        return new PortalSessionResultDto(portalUrl);
     }
 }
