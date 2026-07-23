@@ -1,4 +1,4 @@
-﻿namespace Domain.Constants;
+﻿namespace Contracts.Constants;
 
 public static class FeatureConstants
 {

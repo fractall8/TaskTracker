@@ -1,11 +1,14 @@
-﻿@using Contracts.DTOs
+﻿@using Contracts.Constants
+@using Contracts.DTOs
 @using Contracts.Enums
+@using Services.Abstractions.Subscriptions.Stores
 @using WebApp.Shared.Dialogs
 @using WebApp.Shared.Toast
 @implements IDisposable
 
 @inject IBoardDetailsStore BoardDetailsStore
 @inject IBoardApiService BoardApi
+@inject IWorkspaceSubscriptionsStore SubscriptionsStore
 @inject IDialogService DialogService
 @inject CustomToastService Toast
 @inject IJSRuntime Js
@@ -15,10 +18,14 @@
     <div class="d-flex align-center gap-3">
         @if (!board.IsArchived && board.BoardRole == BoardRoleDto.Admin)
         {
-            <button class="btn btn-warning" type="button" @onclick="ArchiveBoardAsync">
-                <MudIcon Icon="@Icons.Material.Filled.Archive" Size="Size.Small"/>
-                Archive board
-            </button>
+            <MudTooltip Text="Upgrade workspace subscription to unlock board archiving and export" Disabled="@HasExportFeature">
+                <span class="d-inline-block">
+                    <button class="btn btn-warning" type="button" @onclick="ArchiveBoardAsync" disabled="@(!HasExportFeature)">
+                        <MudIcon Icon="@(HasExportFeature ? Icons.Material.Filled.Archive : Icons.Material.Filled.Lock)" Size="Size.Small"/>
+                        Archive board
+                    </button>
+                </span>
+            </MudTooltip>
         }
         else if (board.IsArchived)
         {
@@ -33,14 +40,18 @@
                     </button>
                 </MudTooltip>
             }
-            else // or condition for success
+            else
             {
                 @if (board.ExportStatus != BoardExportStatusDto.Failed)
                 {
-                    <button class="btn btn-success" type="button" @onclick="DownloadArchiveAsync">
-                        <MudIcon Icon="@Icons.Material.Filled.Download" Size="Size.Small"/>
-                        Download archive
-                    </button>
+                    <MudTooltip Text="Upgrade workspace subscription to download archives" Disabled="@HasDownloadFeature">
+                        <span class="d-inline-block">
+                            <button class="btn btn-success" type="button" @onclick="DownloadArchiveAsync" disabled="@(!HasDownloadFeature)">
+                                <MudIcon Icon="@(HasDownloadFeature ? Icons.Material.Filled.Download : Icons.Material.Filled.Lock)" Size="Size.Small"/>
+                                Download archive
+                            </button>
+                        </span>
+                    </MudTooltip>
                 }
 
                 @if (board.ReExportStatus is BoardExportStatusDto.Requested or BoardExportStatusDto.Pending or BoardExportStatusDto.Processing)
@@ -53,19 +64,25 @@
                 }
                 else if (board.ReExportStatus == BoardExportStatusDto.Failed || board.ExportStatus == BoardExportStatusDto.Failed)
                 {
-                    <MudTooltip Text="Export failed. Click to try again.">
-                        <button class="btn btn-error" type="button" @onclick="ReExportBoardAsync">
-                            <MudIcon Icon="@Icons.Material.Filled.Refresh" Size="Size.Small"/>
-                            @(board.ExportStatus == BoardExportStatusDto.Failed ? "Retry export" : "Retry re-export")
-                        </button>
+                    <MudTooltip Text="@(HasExportFeature ? "Export failed. Click to try again." : "Upgrade workspace subscription to re-export archives")">
+                        <span class="d-inline-block">
+                            <button class="btn btn-error" type="button" @onclick="ReExportBoardAsync" disabled="@(!HasReExportFeature)">
+                                <MudIcon Icon="@(HasReExportFeature ? Icons.Material.Filled.Refresh : Icons.Material.Filled.Lock)" Size="Size.Small"/>
+                                @(board.ExportStatus == BoardExportStatusDto.Failed ? "Retry export" : "Retry re-export")
+                            </button>
+                        </span>
                     </MudTooltip>
                 }
                 else
                 {
-                    <button class="btn" type="button" @onclick="ReExportBoardAsync">
-                        <MudIcon Icon="@Icons.Material.Filled.Refresh" Size="Size.Small"/>
-                        Re-export
-                    </button>
+                    <MudTooltip Text="Upgrade workspace subscription to re-export archives" Disabled="@HasReExportFeature">
+                        <span class="d-inline-block">
+                            <button class="btn" type="button" @onclick="ReExportBoardAsync" disabled="@(!HasReExportFeature)">
+                                <MudIcon Icon="@(HasReExportFeature ? Icons.Material.Filled.Refresh : Icons.Material.Filled.Lock)" Size="Size.Small"/>
+                                Re-export
+                            </button>
+                        </span>
+                    </MudTooltip>
                 }
             }
         }
@@ -73,24 +90,41 @@
 }
 
 @code {
-
+    private Guid? _loadedWorkspaceId;
+    
+    private bool HasDownloadFeature => SubscriptionsStore.HasFeature(FeatureConstants.BoardArchiveDownload);
+    private bool HasExportFeature => SubscriptionsStore.HasFeature(FeatureConstants.BoardExport);
+    private bool HasReExportFeature => SubscriptionsStore.HasFeature(FeatureConstants.BoardReExport);
+    
     protected override void OnInitialized()
     {
         BoardDetailsStore.StateChanged += OnStoreStateChanged;
+        SubscriptionsStore.StateChanged += OnSubscriptionStateChanged;
     }
 
     public void Dispose()
     {
         BoardDetailsStore.StateChanged -= OnStoreStateChanged;
+        SubscriptionsStore.StateChanged -= OnSubscriptionStateChanged;
     }
+
+    private void OnSubscriptionStateChanged() => InvokeAsync(StateHasChanged);
 
     private void OnStoreStateChanged()
     {
+        if (BoardDetailsStore.Board != null && _loadedWorkspaceId != BoardDetailsStore.Board.WorkspaceId)
+        {
+            _loadedWorkspaceId = BoardDetailsStore.Board.WorkspaceId;
+            _ = SubscriptionsStore.LoadBillingDataAsync(_loadedWorkspaceId.Value);
+        }
+        
         InvokeAsync(StateHasChanged);
     }
 
     private async Task ArchiveBoardAsync()
     {
+        if (!HasExportFeature) return;
+
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
         var dialog = await DialogService.ShowAsync<ArchiveBoardDialog>("Archive Board", options);
         var result = await dialog.Result;
@@ -112,6 +146,8 @@
 
     private async Task ReExportBoardAsync()
     {
+        if (!HasReExportFeature) return;
+
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
         var dialog = await DialogService.ShowAsync<ExportOptionsDialog>("Update Archive", options);
         var result = await dialog.Result;
@@ -133,10 +169,11 @@
 
     private async Task DownloadArchiveAsync()
     {
+        if (!HasDownloadFeature) return;
+        
         try
         {
             var downloadInfo = await BoardApi.GetBoardArchiveDownloadUrlAsync(BoardDetailsStore.Board!.Id);
-
             var module = await Js.InvokeAsync<IJSObjectReference>("import", "./js/fileDownload.js");
             await module.InvokeVoidAsync("downloadFromUrl", downloadInfo.DownloadUrl, downloadInfo.FileName);
         }
@@ -145,5 +182,4 @@
             Toast.ShowError(ex.Message);
         }
     }
-
 }

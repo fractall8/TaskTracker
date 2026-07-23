@@ -1,9 +1,9 @@
 ﻿using Application.Interfaces.Notifiers;
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
+using Contracts.Constants;
 using Contracts.DTOs;
 using Contracts.Notifications.BoardExport;
-using Domain.Constants;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;

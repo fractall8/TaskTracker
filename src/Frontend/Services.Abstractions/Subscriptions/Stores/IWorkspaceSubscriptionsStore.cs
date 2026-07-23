@@ -9,6 +9,8 @@ public interface IWorkspaceSubscriptionsStore
 
     SubscriptionDetailsDto? Subscription { get; }
 
+    EntitlementDto? Entitlements { get; }
+
     bool IsLoading { get; }
 
     string? ErrorMessage { get; }
@@ -16,6 +18,8 @@ public interface IWorkspaceSubscriptionsStore
     PaymentConfirmationStatusDto PaymentStatus { get; }
 
     event Action? StateChanged;
+
+    bool HasFeature(string featureName);
 
     Task LoadBillingDataAsync(Guid workspaceId, CancellationToken ct = default);
 

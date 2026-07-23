@@ -1,4 +1,4 @@
-﻿using Domain.Constants;
+﻿using Contracts.Constants;
 
 namespace Infrastructure.Subscriptions.Options;
 

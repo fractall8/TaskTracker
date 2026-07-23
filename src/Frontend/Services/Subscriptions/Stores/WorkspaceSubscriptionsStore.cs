@@ -9,12 +9,19 @@ public class WorkspaceSubscriptionsStore(ISubscriptionApiService subscriptionApi
 {
     public IReadOnlyList<PlanCardDto> Plans { get; private set; } = [];
     public SubscriptionDetailsDto? Subscription { get; private set; }
+
+    public EntitlementDto? Entitlements { get; private set; }
     public bool IsLoading { get; private set; }
     public string? ErrorMessage { get; private set; }
     public PaymentConfirmationStatusDto PaymentStatus { get; private set; } = PaymentConfirmationStatusDto.Idle;
 
     public event Action? StateChanged;
     private void NotifyStateChanged() => StateChanged?.Invoke();
+
+    public bool HasFeature(string featureName)
+    {
+        return Entitlements?.Features.Contains(featureName, StringComparer.OrdinalIgnoreCase) == true;
+    }
 
     public async Task LoadBillingDataAsync(Guid workspaceId, CancellationToken ct = default)
     {
@@ -26,11 +33,13 @@ public class WorkspaceSubscriptionsStore(ISubscriptionApiService subscriptionApi
         {
             var subTask = subscriptionApiService.GetSubscriptionAsync(workspaceId, ct);
             var plansTask = subscriptionApiService.GetPlansAsync(workspaceId, ct);
+            var entitlementsTask = subscriptionApiService.GetEntitlementsAsync(workspaceId, ct);
 
             await Task.WhenAll(subTask, plansTask);
 
             Subscription = subTask.Result;
             Plans = plansTask.Result;
+            Entitlements = entitlementsTask.Result;
         }
         catch (Exception ex)
         {
@@ -82,6 +91,7 @@ public class WorkspaceSubscriptionsStore(ISubscriptionApiService subscriptionApi
     {
         Plans = [];
         Subscription = null;
+        Entitlements = null;
         IsLoading = false;
         ErrorMessage = null;
         PaymentStatus = PaymentConfirmationStatusDto.Idle;
