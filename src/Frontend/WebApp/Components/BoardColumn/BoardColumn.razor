@@ -60,7 +60,7 @@
     @if (CanManageTasks)
     {
         <MudTooltip Text="@TaskLimitReachedMessage" Disabled="@(!IsTaskLimitReached)">
-            <span class="d-inline-block" style="width: 100%;">
+            <span class="d-inline-block" style="width: 100%; flex-shrink: 0;">
                 <button class="add-task-btn" @onclick="OpenCreateTaskDialog" disabled="@IsTaskLimitReached">
                     <MudIcon Icon="@(IsTaskLimitReached ? Icons.Material.Filled.Lock : Icons.Material.Filled.Add)" Size="Size.Small"/>
                     Add a task
