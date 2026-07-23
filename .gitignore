@@ -5,6 +5,7 @@
 
 .env
 *.txt
+CLAUDE.md
 
 # User-specific files
 *.rsuser

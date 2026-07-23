@@ -2,6 +2,7 @@ using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Domain.Authorization;
 using Domain.Enums;
+using Domain.Exceptions;
 
 namespace Application.Services;
 
@@ -19,7 +20,7 @@ public class WorkspaceAccessService(
 
         if (userInfo == null || userInfo.Id == null)
         {
-            throw new UnauthorizedAccessException("User is not authenticated.");
+            throw new ForbiddenException("User is not authenticated.");
         }
 
         return (userInfo.Id.Value, userInfo.Email);
@@ -32,7 +33,7 @@ public class WorkspaceAccessService(
 
         if (role == null)
         {
-            throw new UnauthorizedAccessException("Workspace not found or you don't have permission to view it.");
+            throw new ForbiddenException("Workspace not found or you don't have permission to view it.");
         }
 
         return new (userInfo.UserId,  userInfo.Email, role.Value);
@@ -89,12 +90,12 @@ public class WorkspaceAccessService(
 
         if (userRole == null)
         {
-            throw new UnauthorizedAccessException("You are not a member of this workspace.");
+            throw new ForbiddenException("You are not a member of this workspace.");
         }
 
         if (!permissionCheck(userRole.Value))
         {
-            throw new UnauthorizedAccessException(errorMessage);
+            throw new ForbiddenException(errorMessage);
         }
 
         return userInfo;

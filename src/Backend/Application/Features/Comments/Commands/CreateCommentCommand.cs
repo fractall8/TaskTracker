@@ -8,6 +8,7 @@ using Contracts.Notifications.BoardActions;
 using Contracts.Notifications.BoardActions.Payloads;
 using Domain.Constants;
 using Domain.Entities;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 
@@ -33,7 +34,7 @@ public class CreateCommentCommandHandler(
         var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, ct);
         if (task == null || task.Column?.BoardId != request.BoardId)
         {
-            throw new KeyNotFoundException("Task not found.");
+            throw new NotFoundException("Task not found.");
         }
 
         var user =
@@ -41,7 +42,7 @@ public class CreateCommentCommandHandler(
 
         if (user == null)
         {
-            throw new UnauthorizedAccessException("User is not authenticated.");
+            throw new ForbiddenException("User is not authenticated.");
         }
 
         var comment = new Comment

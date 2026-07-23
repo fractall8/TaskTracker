@@ -6,6 +6,7 @@ using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Contracts.Notifications.BoardActions;
 using Contracts.Notifications.BoardActions.Payloads;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -38,7 +39,7 @@ public class DeleteTaskCommandHandler(
 
         if (task.Column?.BoardId != request.BoardId)
         {
-            throw new KeyNotFoundException("Task not found on this board.");
+            throw new NotFoundException("Task not found on this board.");
         }
 
         var fileUrlsToDelete = await attachmentRepository.GetUrlsByTaskIdAsync(request.TaskId, ct);

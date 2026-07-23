@@ -16,6 +16,7 @@ public class AcceptWorkspaceInviteCommandHandler(
     IWorkspaceAccessService workspaceAccessService,
     IWorkspaceInviteRepository workspaceInviteRepository,
     IRepository<WorkspaceMember, Guid> workspaceMemberRepository,
+    IWorkspaceLimitService workspaceLimitService,
     IUnitOfWork unitOfWork)
     : IRequestHandler<AcceptWorkspaceInviteCommand, Unit>
 {
@@ -36,6 +37,8 @@ public class AcceptWorkspaceInviteCommandHandler(
         {
             throw new ValidationException([new ValidationFailure("Token", "You are already a member of this workspace.")]);
         }
+
+        await workspaceLimitService.EnsureCanAddWorkspaceMemberAsync(invite.WorkspaceId, ct);
 
         var member = new WorkspaceMember
         {

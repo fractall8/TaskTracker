@@ -5,6 +5,7 @@ using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Contracts.Notifications.BoardActions;
 using Contracts.Notifications.BoardActions.Payloads;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 
@@ -30,20 +31,20 @@ public class DeleteCommentCommandHandler(
         var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, ct);
         if (task == null || task.Column?.BoardId != request.BoardId)
         {
-            throw new KeyNotFoundException("Task not found on this board.");
+            throw new NotFoundException("Task not found on this board.");
         }
 
         var comment = await commentRepository.GetByIdAsync(request.CommentId, ct);
         if (comment == null || comment.TaskId != request.TaskId)
         {
-            throw new KeyNotFoundException("Comment not found.");
+            throw new NotFoundException("Comment not found.");
         }
 
         var currentUserId = await userRepository.GetUserByAzureAdIdAsync(currentUserAccessor.AzureAdObjectId, u => u.Id, ct);
 
         if (comment.CreatedById != currentUserId)
         {
-            throw new UnauthorizedAccessException("You can only delete your own comments.");
+            throw new ForbiddenException("You can only delete your own comments.");
         }
 
         commentRepository.Delete(comment);

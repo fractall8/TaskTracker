@@ -5,6 +5,7 @@ using Contracts.DTOs;
 using Domain.Constants;
 using Domain.Entities;
 using Domain.Enums;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 
@@ -16,6 +17,7 @@ public class CreateBoardCommandHandler(
     IWorkspaceAccessService workspaceAccessService,
     IWorkspaceMemberRepository workspaceMemberRepository,
     IBoardRepository boardRepository,
+    IWorkspaceLimitService workspaceLimitService,
     IUnitOfWork unitOfWork)
     : IRequestHandler<CreateBoardCommand, BoardDto>
 {
@@ -23,12 +25,14 @@ public class CreateBoardCommandHandler(
     {
         var userInfo = await workspaceAccessService.EnsureCanManageWorkspaceAsync(request.WorkspaceId, ct);
 
+        await workspaceLimitService.EnsureCanAddBoardAsync(request.WorkspaceId, ct);
+
         var workspaceMember =
             await workspaceMemberRepository.GetByWorkspaceAndUserIdAsync(request.WorkspaceId, userInfo.UserId, ct);
 
         if (workspaceMember == null)
         {
-            throw new InvalidOperationException("User is not a member of this workspace.");
+            throw new BusinessRuleValidationException("User is not a member of this workspace.");
         }
 
         var workspaceAdminsAndOwners = await workspaceMemberRepository.FindAsync(
@@ -38,7 +42,7 @@ public class CreateBoardCommandHandler(
 
         if (!workspaceAdminsAndOwners.Any())
         {
-            throw new InvalidOperationException("Workspace has no owner or admins.");
+            throw new BusinessRuleValidationException("Workspace has no owner or admins.");
         }
 
         var board = new Board

@@ -1,4 +1,5 @@
-﻿using Application.Interfaces.Services;
+﻿using Application.Common.Models;
+using Application.Interfaces.Services;
 using Contracts.DTOs;
 using Infrastructure.Subscriptions.Options;
 using Microsoft.Extensions.Options;
@@ -62,6 +63,28 @@ internal class PlanCatalog(IOptions<SubscriptionOptions> options) : IPlanCatalog
         return priceId;
     }
 
+    public WorkspaceLimits GetLimits(string planId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(planId);
+
+        if (_subscriptionOptions.Plans is null
+            || !_subscriptionOptions.Plans.TryGetValue(planId, out var plan))
+        {
+            throw new InvalidOperationException($"Billing plan '{planId}' is not defined in configuration.");
+        }
+
+        return ToWorkspaceLimits(plan.Limits);
+    }
+
     private static PlanDto ToPlanDto(PlanOptions plan) =>
         new(plan.Id, plan.DisplayName, plan.Features);
+
+    private static WorkspaceLimits ToWorkspaceLimits(SubscriptionLimitsOptions limits) =>
+        new(
+            limits.MaxMembersPerWorkspace,
+            limits.MaxBoardsPerWorkspace,
+            limits.MaxColumnsPerBoard,
+            limits.MaxTasksPerBoard,
+            limits.MaxAttachmentSizeMb,
+            limits.CanExportBoard);
 }

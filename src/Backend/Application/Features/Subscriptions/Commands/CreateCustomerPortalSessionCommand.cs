@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
+using Domain.Exceptions;
 using MediatR;
 
 namespace Application.Features.Subscriptions.Commands;
@@ -21,7 +22,7 @@ public class CreateCustomerPortalSessionCommandHandler(
 
         if (subscription is null || string.IsNullOrWhiteSpace(subscription.StripeCustomerId))
         {
-            throw new InvalidOperationException("This workspace does not have an active billing profile.");
+            throw new BusinessRuleValidationException("This workspace does not have an active billing profile.");
         }
 
         var portalUrl = await subscriptionService.CreateCustomerPortalSessionAsync(

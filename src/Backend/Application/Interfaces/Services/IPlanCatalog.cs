@@ -1,4 +1,5 @@
-﻿using Contracts.DTOs;
+﻿using Application.Common.Models;
+using Contracts.DTOs;
 
 namespace Application.Interfaces.Services;
 
@@ -13,4 +14,6 @@ public interface IPlanCatalog
     string? TryGetPriceId(string planId);
 
     string GetPriceId(string planId);
+
+    WorkspaceLimits GetLimits(string planId);
 }

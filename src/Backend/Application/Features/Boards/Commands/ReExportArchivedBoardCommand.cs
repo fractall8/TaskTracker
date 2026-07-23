@@ -4,6 +4,7 @@ using Application.Interfaces.Services;
 using Contracts.Constants;
 using Contracts.DTOs;
 using Contracts.Notifications.BoardExport;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -29,7 +30,7 @@ public class ReExportArchivedBoardCommandHandler(
         var board = await boardRepository.GetByIdAsync(request.BoardId, ct);
         if (board == null)
         {
-            throw new KeyNotFoundException($"Board with ID {request.BoardId} not found.");
+            throw new NotFoundException($"Board with ID {request.BoardId} not found.");
         }
 
         var allowedArchive =
@@ -39,12 +40,12 @@ public class ReExportArchivedBoardCommandHandler(
         var hasFeatures = allowedArchive && allowedExport;
         if (!hasFeatures)
         {
-            throw new UnauthorizedAccessException("This workspace didn't have access to reexport boards feature.");
+            throw new SubscriptionFeatureRequiredException(FeatureConstants.BoardReExport);
         }
 
         if (!board.IsArchived)
         {
-            throw new InvalidOperationException(
+            throw new BusinessRuleValidationException(
                 $"Board with ID {request.BoardId} is not archived. Only archived boards can be re-exported.");
         }
 
@@ -54,7 +55,7 @@ public class ReExportArchivedBoardCommandHandler(
                 or BoardExportStatusDto.Pending
                 or BoardExportStatusDto.Processing)
         {
-            throw new InvalidOperationException("A re-export process is already in progress for this board.");
+            throw new ConflictException("A re-export process is already in progress for this board.");
         }
 
         try

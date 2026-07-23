@@ -2,6 +2,7 @@ using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
 using Contracts.Enums;
+using Domain.Exceptions;
 using MediatR;
 
 namespace Application.Features.Workspaces.Queries;
@@ -18,7 +19,7 @@ public class GetWorkspaceByIdQueryHandler(
         var userInfo = await workspaceAccessService.EnsureIsMemberAsync(request.WorkspaceId, ct);
 
         var workspace = await workspaceRepository.GetByIdWithMembersAsync(request.WorkspaceId, ct)
-                        ?? throw new KeyNotFoundException("Workspace not found.");
+                        ?? throw new NotFoundException("Workspace not found.");
 
         var members = workspace.Members
             .Select(m => new WorkspaceMemberDto(

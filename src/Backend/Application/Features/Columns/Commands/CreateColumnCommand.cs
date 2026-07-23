@@ -8,6 +8,7 @@ using Contracts.Notifications.BoardActions;
 using Contracts.Notifications.BoardActions.Payloads;
 using Domain.Constants;
 using Domain.Entities;
+using Domain.Exceptions;
 using FluentValidation;
 using FluentValidation.Results;
 using MediatR;
@@ -20,6 +21,7 @@ public class CreateColumnCommandHandler(
     IBoardAccessService boardAccessService,
     IBoardRepository boardRepository,
     IColumnRepository columnRepository,
+    IWorkspaceLimitService workspaceLimitService,
     IBoardActionNotifier boardActionNotifier,
     IDateTimeProvider dateTimeProvider,
     IUnitOfWork unitOfWork)
@@ -29,11 +31,13 @@ public class CreateColumnCommandHandler(
     {
         var boardAccessContext = await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, ct);
 
+        await workspaceLimitService.EnsureCanAddColumnAsync(request.BoardId, ct);
+
         var board = await boardRepository.GetByIdAsync(request.BoardId, ct);
 
         if (board is null)
         {
-            throw new KeyNotFoundException($"Board {request.BoardId} does not exist");
+            throw new NotFoundException($"Board {request.BoardId} does not exist");
         }
 
         var existingNamesEnumerable = await columnRepository.GetNameListByBoardIdAsync(request.BoardId, ct);

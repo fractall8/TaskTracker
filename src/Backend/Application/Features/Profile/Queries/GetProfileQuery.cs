@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
+using Domain.Exceptions;
 using MediatR;
 
 namespace Application.Features.Profile.Queries;
@@ -21,7 +22,7 @@ public class GetProfileQueryHandler(
 
         if (user == null)
         {
-            throw new UnauthorizedAccessException("User not found.");
+            throw new ForbiddenException("User not found.");
         }
 
         return user;

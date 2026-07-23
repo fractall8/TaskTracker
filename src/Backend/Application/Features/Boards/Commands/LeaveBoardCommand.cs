@@ -2,6 +2,7 @@
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Domain.Enums;
+using Domain.Exceptions;
 using MediatR;
 
 namespace Application.Features.Boards.Commands;
@@ -21,23 +22,23 @@ public class LeaveBoardCommandHandler(
         var (currentUserId, _) = await boardAccessService.GetCurrentUserAsync(ct);
 
         var board = await boardRepository.GetByIdAsync(request.BoardId, ct)
-                    ?? throw new KeyNotFoundException("Board not found.");
+                    ?? throw new NotFoundException("Board not found.");
 
         var workspaceRole = await workspaceRepository.GetUserRoleAsync(board.WorkspaceId, currentUserId, ct);
 
         if (workspaceRole == null)
         {
-            throw new UnauthorizedAccessException("You are not a member of this workspace.");
+            throw new BusinessRuleValidationException("You are not a member of this workspace.");
         }
 
         if (workspaceRole == WorkspaceRole.Owner)
         {
-            throw new InvalidOperationException("As a Workspace Owner, you cannot leave the board.");
+            throw new BusinessRuleValidationException("As a Workspace Owner, you cannot leave the board.");
         }
 
         if (workspaceRole == WorkspaceRole.Member)
         {
-            throw new InvalidOperationException("You cannot voluntarily leave a board. Please ask a Board Admin to remove you.");
+            throw new BusinessRuleValidationException("You cannot voluntarily leave a board. Please ask a Board Admin to remove you.");
         }
 
         await boardMemberRepository.RemoveUserFromBoardAsync(request.BoardId, currentUserId, ct);

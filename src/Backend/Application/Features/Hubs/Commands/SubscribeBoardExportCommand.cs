@@ -1,5 +1,6 @@
 ﻿using Application.Interfaces.Repositories;
 using Domain.Authorization;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 
@@ -27,12 +28,12 @@ public class SubscribeBoardExportStatusCommandHandler(
 
         if (rolesByBoardId.Count != distinctBoardIds.Count)
         {
-            throw new UnauthorizedAccessException("Some boards were not found or access is denied.");
+            throw new ForbiddenException("Some boards were not found or access is denied.");
         }
 
         if (rolesByBoardId.Values.Any(role => !BoardRolePermissions.CanExportBoard(role)))
         {
-            throw new UnauthorizedAccessException("You do not have permission to export one or more of these boards.");
+            throw new ForbiddenException("You do not have permission to export one or more of these boards.");
         }
 
         return distinctBoardIds;

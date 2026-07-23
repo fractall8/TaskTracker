@@ -6,6 +6,7 @@ using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Contracts.Notifications.BoardActions;
 using Contracts.Notifications.BoardActions.Payloads;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 
@@ -30,14 +31,14 @@ public class MoveColumnCommandHandler(
 
         if (board is null)
         {
-            throw new KeyNotFoundException($"Board {request.BoardId} does not exist");
+            throw new NotFoundException($"Board {request.BoardId} does not exist");
         }
 
         var column = await columnRepository.GetByIdAsync(request.ColumnId, ct);
 
         if (column is null || column.BoardId != request.BoardId)
         {
-            throw new KeyNotFoundException($"Column {request.ColumnId} does not exist on this board");
+            throw new NotFoundException($"Column {request.ColumnId} does not exist on this board");
         }
 
         var maxPosition = await columnRepository.GetMaxPositionAsync(request.BoardId, ct);

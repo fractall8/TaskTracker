@@ -7,6 +7,7 @@ using Contracts.DTOs;
 using Contracts.Notifications.BoardActions;
 using Contracts.Notifications.BoardActions.Payloads;
 using Domain.Constants;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 
@@ -31,7 +32,7 @@ public class UpdateCommentCommandHandler(
 
         if (comment == null || comment.Task?.Id != request.TaskId || comment.Task?.Column?.BoardId != request.BoardId)
         {
-            throw new KeyNotFoundException("Comment not found or does not belong to this task/board.");
+            throw new NotFoundException("Comment not found or does not belong to this task/board.");
         }
 
         var userInfo = await userRepository.GetUserByAzureAdIdAsync(
@@ -41,12 +42,12 @@ public class UpdateCommentCommandHandler(
 
         if (userInfo == null)
         {
-            throw new UnauthorizedAccessException("User is not authenticated.");
+            throw new ForbiddenException("User is not authenticated.");
         }
 
         if (comment.CreatedById != userInfo.Id)
         {
-            throw new UnauthorizedAccessException("You can only edit your own comments.");
+            throw new ForbiddenException("You can only edit your own comments.");
         }
 
         comment.Text = request.Text;

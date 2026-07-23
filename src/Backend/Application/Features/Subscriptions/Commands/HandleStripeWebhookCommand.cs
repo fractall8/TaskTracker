@@ -4,6 +4,7 @@ using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Contracts.DTOs;
 using Domain.Entities;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -35,7 +36,7 @@ public class HandleStripeWebhookCommandHandler(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Rejected Stripe webhook due to invalid signature or payload.");
-            throw new ArgumentException("Invalid Stripe signature or payload.", ex);
+            throw new BusinessRuleValidationException("Invalid Stripe signature or payload.");
         }
 
         var webhookEvent = await webhookEventRepository.GetByEventIdAsync(subscriptionWebhookEventDto.EventId, ct);

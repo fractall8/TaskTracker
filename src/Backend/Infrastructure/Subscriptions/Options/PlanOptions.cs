@@ -8,9 +8,12 @@ public class PlanOptions
     public required string DisplayName { get; set; }
     public string? PriceId { get; set; }
     public string[] Features { get; set; } = [];
+    public SubscriptionLimitsOptions Limits { get; set; } = new();
 
     internal void Validate(string sectionPath)
     {
+        Limits.Validate($"{sectionPath}:{nameof(Limits)}");
+
         if (string.IsNullOrWhiteSpace(Id))
         {
             throw new InvalidOperationException($"{sectionPath}:{nameof(Id)} is not configured.");

@@ -6,6 +6,7 @@ using Application.Interfaces.UOW;
 using Contracts.DTOs;
 using Contracts.Notifications.BoardActions;
 using Contracts.Notifications.BoardActions.Payloads;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 
@@ -29,7 +30,7 @@ public class UpdateTaskDueDateCommandHandler(
 
         if (task == null)
         {
-            throw new KeyNotFoundException("Task not found.");
+            throw new NotFoundException("Task not found.");
         }
 
         task.DueDate = request.DueDate;

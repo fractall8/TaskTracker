@@ -1,6 +1,7 @@
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 
@@ -20,12 +21,12 @@ public class GetTaskByIdQueryHandler(
         var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, cancellationToken);
         if (task == null)
         {
-            throw new KeyNotFoundException("Task not found.");
+            throw new NotFoundException("Task not found.");
         }
 
         if (task.Column?.BoardId != request.BoardId)
         {
-            throw new KeyNotFoundException("Task not found on this board.");
+            throw new NotFoundException("Task not found on this board.");
         }
 
         var attachments = task.Attachments.Select(a => new AttachmentDto(

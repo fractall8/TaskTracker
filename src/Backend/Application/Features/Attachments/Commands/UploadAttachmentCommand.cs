@@ -9,6 +9,7 @@ using Contracts.Notifications.BoardActions;
 using Contracts.Notifications.BoardActions.Payloads;
 using Domain.Constants;
 using Domain.Entities;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -31,6 +32,7 @@ public class UploadAttachmentCommandHandler(
     IFileService fileService,
     IUserRepository userRepository,
     ICurrentUserAccessor currentUserAccessor,
+    IWorkspaceLimitService workspaceLimitService,
     IBoardActionNotifier boardActionNotifier,
     IDateTimeProvider dateTimeProvider,
     IUnitOfWork unitOfWork,
@@ -41,10 +43,12 @@ public class UploadAttachmentCommandHandler(
     {
             var boardAccessContext = await boardAccessService.EnsureCanManageAttachmentsAsync(request.BoardId, cancellationToken);
 
+            await workspaceLimitService.EnsureAttachmentSizeIsAllowedAsync(request.BoardId, request.SizeInBytes, cancellationToken);
+
             var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, cancellationToken);
             if (task == null || task.Column?.BoardId != request.BoardId)
             {
-                throw new KeyNotFoundException("Task not found on this board.");
+                throw new NotFoundException("Task not found on this board.");
             }
 
             // for default blob container is private
@@ -61,7 +65,7 @@ public class UploadAttachmentCommandHandler(
 
             if (currentUser == null)
             {
-                throw new UnauthorizedAccessException("User not found.");
+                throw new ForbiddenException("User not found.");
             }
 
             var attachment = new Attachment

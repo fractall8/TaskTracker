@@ -2,6 +2,7 @@
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Domain.Constants;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 
@@ -20,7 +21,7 @@ public class UpdateWorkspaceCommandHandler(
         await workspaceAccessService.EnsureCanManageWorkspaceAsync(request.WorkspaceId, cancellationToken);
 
         var workspace = await workspaceRepository.GetByIdAsync(request.WorkspaceId, cancellationToken)
-                        ?? throw new KeyNotFoundException("Workspace not found.");
+                        ?? throw new NotFoundException("Workspace not found.");
 
         workspace.Name = request.Name;
         workspace.Description = request.Description;

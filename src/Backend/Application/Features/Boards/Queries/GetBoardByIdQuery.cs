@@ -3,6 +3,7 @@ using Application.Interfaces.Services;
 using Application.Options;
 using Contracts.DTOs;
 using Contracts.Enums;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Options;
@@ -25,7 +26,7 @@ public class GetBoardByIdQueryHandler(
 
         if (board is null)
         {
-            throw new KeyNotFoundException($"Board {request.BoardId} does not exist");
+            throw new NotFoundException($"Board {request.BoardId} does not exist");
         }
 
         var columnDtos = board.Columns

@@ -1,5 +1,6 @@
 ﻿using Application.Common.Interfaces;
 using Application.Interfaces.Services;
+using Domain.Exceptions;
 using MediatR;
 
 namespace Application.Behaviors;
@@ -26,8 +27,7 @@ public class WorkspaceFeatureGuardBehavior<TRequest, TResponse>(
 
         if (!hasFeature)
         {
-            throw new UnauthorizedAccessException(
-                $"This workspace requires an upgraded subscription to use the '{featureRequest.Feature}' feature.");
+            throw new SubscriptionFeatureRequiredException(featureRequest.Feature);
         }
 
         return await next(ct);

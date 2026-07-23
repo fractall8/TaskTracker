@@ -2,6 +2,7 @@
 using Application.Interfaces.Services;
 using Domain.Authorization;
 using Domain.Enums;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 
@@ -23,26 +24,26 @@ public class SubscribeBoardActionsCommandHandler(
 
         if (user == null)
         {
-            throw new UnauthorizedAccessException("User is unauthorized");
+            throw new ForbiddenException("User is unauthorized");
         }
 
         var boardRole = await boardRepository.GetUserRoleAsync(request.BoardId,  user.Id, ct);
 
         if (boardRole == null)
         {
-            throw new UnauthorizedAccessException("User is unauthorized");
+            throw new ForbiddenException("User is unauthorized");
         }
 
         if (!BoardRolePermissions.CanViewBoard((BoardRole)boardRole))
         {
-            throw new UnauthorizedAccessException("You cannot view the board");
+            throw new ForbiddenException("You cannot view the board");
         }
 
         var isArchivedBoard = await boardRepository.IsBoardArchivedAsync(request.BoardId, ct);
 
         if (isArchivedBoard)
         {
-            throw new InvalidOperationException($"Board {request.BoardId} is archived");
+            throw new BusinessRuleValidationException($"Board {request.BoardId} is archived");
         }
     }
 }
