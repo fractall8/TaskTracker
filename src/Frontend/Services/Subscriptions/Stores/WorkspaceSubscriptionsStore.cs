@@ -11,9 +11,12 @@ public class WorkspaceSubscriptionsStore(ISubscriptionApiService subscriptionApi
     public SubscriptionDetailsDto? Subscription { get; private set; }
 
     public EntitlementDto? Entitlements { get; private set; }
+    public SubscriptionLimitsDto? Limits => Entitlements?.Limits;
     public bool IsLoading { get; private set; }
     public string? ErrorMessage { get; private set; }
     public PaymentConfirmationStatusDto PaymentStatus { get; private set; } = PaymentConfirmationStatusDto.Idle;
+
+    private Guid? _loadedWorkspaceId;
 
     public event Action? StateChanged;
     private void NotifyStateChanged() => StateChanged?.Invoke();
@@ -23,8 +26,13 @@ public class WorkspaceSubscriptionsStore(ISubscriptionApiService subscriptionApi
         return Entitlements?.Features.Contains(featureName, StringComparer.OrdinalIgnoreCase) == true;
     }
 
-    public async Task LoadBillingDataAsync(Guid workspaceId, CancellationToken ct = default)
+    public async Task LoadBillingDataAsync(Guid workspaceId, bool forceReload = false, CancellationToken ct = default)
     {
+        if (!forceReload && _loadedWorkspaceId == workspaceId && Entitlements != null && ErrorMessage == null)
+        {
+            return;
+        }
+
         IsLoading = true;
         ErrorMessage = null;
         NotifyStateChanged();
@@ -40,6 +48,7 @@ public class WorkspaceSubscriptionsStore(ISubscriptionApiService subscriptionApi
             Subscription = subTask.Result;
             Plans = plansTask.Result;
             Entitlements = entitlementsTask.Result;
+            _loadedWorkspaceId = workspaceId;
         }
         catch (Exception ex)
         {
@@ -60,7 +69,7 @@ public class WorkspaceSubscriptionsStore(ISubscriptionApiService subscriptionApi
 
         try
         {
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 5; i++) // 5 retries
             {
                 var entitlements = await subscriptionApiService.GetEntitlementsAsync(workspaceId, ct);
 
@@ -95,6 +104,7 @@ public class WorkspaceSubscriptionsStore(ISubscriptionApiService subscriptionApi
         IsLoading = false;
         ErrorMessage = null;
         PaymentStatus = PaymentConfirmationStatusDto.Idle;
+        _loadedWorkspaceId = null;
         NotifyStateChanged();
     }
 }

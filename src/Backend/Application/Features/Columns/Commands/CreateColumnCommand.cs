@@ -31,8 +31,6 @@ public class CreateColumnCommandHandler(
     {
         var boardAccessContext = await boardAccessService.EnsureCanManageColumnsAsync(request.BoardId, ct);
 
-        await workspaceLimitService.EnsureCanAddColumnAsync(request.BoardId, ct);
-
         var board = await boardRepository.GetByIdAsync(request.BoardId, ct);
 
         if (board is null)
@@ -40,27 +38,36 @@ public class CreateColumnCommandHandler(
             throw new NotFoundException($"Board {request.BoardId} does not exist");
         }
 
-        var existingNamesEnumerable = await columnRepository.GetNameListByBoardIdAsync(request.BoardId, ct);
-        var existingNames = existingNamesEnumerable.ToList();
+        Column column = null!;
 
-        if (existingNames.Any(existingName =>
-                string.Equals(existingName, request.Name, StringComparison.OrdinalIgnoreCase)))
+        await unitOfWork.ExecuteInTransactionAsync(async token =>
         {
-            throw new ValidationException([
-                new ValidationFailure("Name", "A column with this name already exists on the board.")
-            ]);
-        }
+            await unitOfWork.AcquireDistributedLockAsync($"board:{request.BoardId}:columns", token);
 
-        var column = new Column
-        {
-            BoardId = request.BoardId,
-            Name = request.Name,
-            Position = existingNames.Count
-        };
+            await workspaceLimitService.EnsureCanAddColumnAsync(request.BoardId, board.WorkspaceId, token);
 
-        await columnRepository.AddAsync(column, ct);
+            var existingNamesEnumerable = await columnRepository.GetNameListByBoardIdAsync(request.BoardId, token);
+            var existingNames = existingNamesEnumerable.ToList();
 
-        await unitOfWork.SaveChangesAsync(ct);
+            if (existingNames.Any(existingName =>
+                    string.Equals(existingName, request.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new ValidationException([
+                    new ValidationFailure("Name", "A column with this name already exists on the board.")
+                ]);
+            }
+
+            column = new Column
+            {
+                BoardId = request.BoardId,
+                Name = request.Name,
+                Position = existingNames.Count
+            };
+
+            await columnRepository.AddAsync(column, token);
+
+            await unitOfWork.SaveChangesAsync(token);
+        }, ct);
 
         await boardActionNotifier.NotifyAsync(new BoardActionNotification(
             request.BoardId,

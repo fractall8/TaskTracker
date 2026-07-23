@@ -9,6 +9,7 @@ public record BoardWithColumnsDto(
     Guid WorkspaceId,
     BoardRoleDto BoardRole,
     IEnumerable<ColumnDto> Columns,
+    int TotalTaskCount = 0,
     bool IsArchived = false,
     BoardExportStatusDto? ExportStatus = BoardExportStatusDto.None,
     BoardExportStatusDto? ReExportStatus = BoardExportStatusDto.None,

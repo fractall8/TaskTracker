@@ -1,4 +1,5 @@
 ﻿@using Contracts.Requests.Subscriptions
+@using Domain.Subscriptions
 @using Services.Abstractions.Subscriptions
 @using Services.Abstractions.Subscriptions.Stores
 @using WebApp.Shared.Toast
@@ -65,12 +66,12 @@ else
                 <div class="plan-divider"></div>
 
                 <ul class="plan-features">
-                    @foreach (var feature in plan.Features)
+                    @foreach (var sellingPoint in PlanCopyCatalog.BuildSellingPoints(plan.Limits, plan.Features))
                     {
                         <li>
                             <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small"
                                      Style="color: var(--mud-palette-primary); flex-shrink: 0; margin-top: 2px;"/>
-                            <span>@feature</span>
+                            <span>@sellingPoint</span>
                         </li>
                     }
                 </ul>
@@ -114,7 +115,6 @@ else
     public void Dispose()
     {
         SubscriptionsStore.StateChanged -= StateHasChanged;
-        SubscriptionsStore.Reset();
     }
 
     private async Task UpgradePlanAsync(string planId)

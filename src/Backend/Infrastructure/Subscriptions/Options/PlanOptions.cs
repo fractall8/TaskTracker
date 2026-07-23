@@ -7,6 +7,7 @@ public class PlanOptions
     public required string Id { get; set; }
     public required string DisplayName { get; set; }
     public string? PriceId { get; set; }
+    public int SortOrder { get; set; }
     public string[] Features { get; set; } = [];
     public SubscriptionLimitsOptions Limits { get; set; } = new();
 

@@ -1,4 +1,5 @@
-﻿using Application.Interfaces.Services;
+﻿using Application.Common.Mappings;
+using Application.Interfaces.Services;
 using Contracts.DTOs;
 using MediatR;
 
@@ -33,7 +34,8 @@ public class GetSubscriptionPlansQueryHandler(
                 PlanId: plan.PlanId,
                 PlanDisplayName: plan.PlanDisplayName,
                 Price: priceDto,
-                Features: plan.Features
+                Features: plan.Features,
+                Limits: planCatalog.GetLimits(plan.PlanId).ToDto()
             ));
         }
 

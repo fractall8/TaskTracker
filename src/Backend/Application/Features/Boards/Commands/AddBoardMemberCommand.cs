@@ -31,6 +31,11 @@ public class AddBoardMemberCommandHandler(
             throw new NotFoundException("Board not found.");
         }
 
+        if (board.IsArchived)
+        {
+            throw new BusinessRuleValidationException("Cannot manage members on an archived board.");
+        }
+
         await workspaceAccessService.EnsureCanManageBoardMembersAsync(board.WorkspaceId, ct);
 
         var targetMember = await workspaceMemberRepository.GetByIdAsync(request.WorkspaceMemberId, ct);

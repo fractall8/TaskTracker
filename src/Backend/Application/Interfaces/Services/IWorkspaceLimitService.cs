@@ -6,7 +6,7 @@ public interface IWorkspaceLimitService
 
     Task EnsureCanAddBoardAsync(Guid workspaceId, CancellationToken ct = default);
 
-    Task EnsureCanAddColumnAsync(Guid boardId, CancellationToken ct = default);
+    Task EnsureCanAddColumnAsync(Guid boardId, Guid workspaceId, CancellationToken ct = default);
 
     Task EnsureCanAddTaskAsync(Guid boardId, CancellationToken ct = default);
 

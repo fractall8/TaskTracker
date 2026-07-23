@@ -38,20 +38,25 @@ public class AcceptWorkspaceInviteCommandHandler(
             throw new ValidationException([new ValidationFailure("Token", "You are already a member of this workspace.")]);
         }
 
-        await workspaceLimitService.EnsureCanAddWorkspaceMemberAsync(invite.WorkspaceId, ct);
-
-        var member = new WorkspaceMember
+        await unitOfWork.ExecuteInTransactionAsync(async token =>
         {
-            Id = Guid.NewGuid(),
-            WorkspaceId = invite.WorkspaceId,
-            UserId = userInfo.UserId,
-            Role = WorkspaceRole.Member,
-            JoinedAt = DateTimeOffset.UtcNow
-        };
+            await unitOfWork.AcquireDistributedLockAsync($"workspace:{invite.WorkspaceId}:members", token);
 
-        await workspaceMemberRepository.AddAsync(member, ct);
+            await workspaceLimitService.EnsureCanAddWorkspaceMemberAsync(invite.WorkspaceId, token);
 
-        await unitOfWork.SaveChangesAsync(ct);
+            var member = new WorkspaceMember
+            {
+                Id = Guid.NewGuid(),
+                WorkspaceId = invite.WorkspaceId,
+                UserId = userInfo.UserId,
+                Role = WorkspaceRole.Member,
+                JoinedAt = DateTimeOffset.UtcNow
+            };
+
+            await workspaceMemberRepository.AddAsync(member, token);
+
+            await unitOfWork.SaveChangesAsync(token);
+        }, ct);
 
         return Unit.Value;
     }

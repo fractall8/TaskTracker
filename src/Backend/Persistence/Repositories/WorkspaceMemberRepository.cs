@@ -27,6 +27,8 @@ public class WorkspaceMemberRepository(TaskTrackerDbContext dbContext)
         }
 
         return await query
+            .OrderBy(wm => wm.JoinedAt)
+            .ThenBy(wm => wm.Id)
             .Select(wm => new WorkspaceMemberDto(
                 wm.Id,
                 wm.UserId,

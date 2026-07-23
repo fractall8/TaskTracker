@@ -33,6 +33,7 @@ internal class PlanCatalog(IOptions<SubscriptionOptions> options) : IPlanCatalog
 
         return _subscriptionOptions.Plans
             .Values
+            .OrderBy(p => p.SortOrder)
             .Select(ToPlanDto)
             .ToList();
     }

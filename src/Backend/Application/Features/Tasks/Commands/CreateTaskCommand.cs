@@ -37,8 +37,6 @@ public class CreateTaskCommandHandler(
     {
         var boardAccessContext = await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, ct);
 
-        await workspaceLimitService.EnsureCanAddTaskAsync(request.BoardId, ct);
-
         if (request.AssigneeId.HasValue)
         {
             var assigneeRole = await boardRepository.GetUserRoleAsync(request.BoardId, request.AssigneeId.Value, ct);
@@ -60,22 +58,31 @@ public class CreateTaskCommandHandler(
             throw new NotFoundException("Column not found on this board.");
         }
 
-        var maxPosition = await taskRepository.GetMaxPositionAsync(request.ColumnId, ct);
+        TaskItem task = null!;
 
-        var task = new TaskItem
+        await unitOfWork.ExecuteInTransactionAsync(async token =>
         {
-            Id = Guid.NewGuid(),
-            ColumnId = request.ColumnId,
-            Title = request.Title,
-            Description = request.Description,
-            DueDate = request.DueDate,
-            AssigneeId = request.AssigneeId,
-            ReporterId = boardAccessContext.UserId,
-            Position = maxPosition + 1
-        };
+            await unitOfWork.AcquireDistributedLockAsync($"board:{request.BoardId}:tasks", token);
 
-        await taskRepository.AddAsync(task, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+            await workspaceLimitService.EnsureCanAddTaskAsync(request.BoardId, token);
+
+            var maxPosition = await taskRepository.GetMaxPositionAsync(request.ColumnId, token);
+
+            task = new TaskItem
+            {
+                Id = Guid.NewGuid(),
+                ColumnId = request.ColumnId,
+                Title = request.Title,
+                Description = request.Description,
+                DueDate = request.DueDate,
+                AssigneeId = request.AssigneeId,
+                ReporterId = boardAccessContext.UserId,
+                Position = maxPosition + 1
+            };
+
+            await taskRepository.AddAsync(task, token);
+            await unitOfWork.SaveChangesAsync(token);
+        }, ct);
 
         await taskRepository.LoadUsersForTaskAsync(task, ct);
 

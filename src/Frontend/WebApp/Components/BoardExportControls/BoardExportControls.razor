@@ -133,9 +133,12 @@
         {
             try
             {
+                var workspaceId = BoardDetailsStore.Board!.WorkspaceId;
                 await BoardApi.ArchiveAndExportBoardAsync(BoardDetailsStore.Board!.Id, exportOptions);
                 BoardDetailsStore.SetBoardArchived(exportOptions);
                 Toast.ShowSuccess("Board archived and export queued successfully.");
+
+                await SubscriptionsStore.LoadBillingDataAsync(workspaceId, forceReload: true);
             }
             catch (Exception ex)
             {

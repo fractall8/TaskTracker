@@ -2,9 +2,11 @@
 @attribute [Authorize]
 @implements IDisposable
 @inject IWorkspaceStore WorkspaceStore
+@inject IWorkspaceSubscriptionsStore SubscriptionsStore
 @inject NavigationManager Navigation
 @inject IProfileStore ProfileStore
 @using Contracts.Enums
+@using Services.Abstractions.Subscriptions.Stores
 @using WebApp.Pages.Workspaces.Components
 @using WebApp.Shared.Helpers
 
@@ -47,6 +49,10 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
                 <div class="ws-title-row">
                     <h1>@workspace.Name</h1>
                     <span class="badge badge-purple">@_currentUserRole.ToString()</span>
+                    @if (SubscriptionsStore.Entitlements is { } entitlements)
+                    {
+                        <span class="badge @PlanBadgeColorClass(entitlements.PlanId)">@entitlements.PlanDisplayName Plan</span>
+                    }
                 </div>
                 <p>@(string.IsNullOrWhiteSpace(workspace.Description) ? "No description provided." : workspace.Description)</p>
             </div>
@@ -118,17 +124,33 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
     protected override async Task OnInitializedAsync()
     {
         WorkspaceStore.StateChanged += OnStoreStateChanged;
+        SubscriptionsStore.StateChanged += OnSubscriptionsStateChanged;
         await ProfileStore.EnsureLoadedAsync();
         _currentUserId = ProfileStore.Profile?.Id;
     }
 
     protected override async Task OnParametersSetAsync()
     {
-        await WorkspaceStore.LoadWorkspaceDetailsAsync(WorkspaceId);
+        await Task.WhenAll(
+            WorkspaceStore.LoadWorkspaceDetailsAsync(WorkspaceId),
+            SubscriptionsStore.LoadBillingDataAsync(WorkspaceId));
         ResolveCurrentUserRole();
     }
 
-    public void Dispose() => WorkspaceStore.StateChanged -= OnStoreStateChanged;
+    public void Dispose()
+    {
+        WorkspaceStore.StateChanged -= OnStoreStateChanged;
+        SubscriptionsStore.StateChanged -= OnSubscriptionsStateChanged;
+    }
+
+    private void OnSubscriptionsStateChanged() => InvokeAsync(StateHasChanged);
+
+    private static string PlanBadgeColorClass(string planId) => planId.ToLowerInvariant() switch
+    {
+        "pro" => "badge-blue",
+        "business" => "badge-teal",
+        _ => "badge-gray"
+    };
 
     private void OnStoreStateChanged()
     {

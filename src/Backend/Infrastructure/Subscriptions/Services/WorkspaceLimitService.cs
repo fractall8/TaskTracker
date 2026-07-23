@@ -47,9 +47,8 @@ public class WorkspaceLimitService(
         }
     }
 
-    public async Task EnsureCanAddColumnAsync(Guid boardId, CancellationToken ct = default)
+    public async Task EnsureCanAddColumnAsync(Guid boardId, Guid workspaceId, CancellationToken ct = default)
     {
-        var workspaceId = await GetWorkspaceIdForBoardAsync(boardId, ct);
         var limits = await GetLimitsAsync(workspaceId, ct);
 
         if (limits.MaxColumnsPerBoard is not { } max)

@@ -1,4 +1,5 @@
-﻿using Application.Interfaces.Repositories;
+﻿using Application.Common.Mappings;
+using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
 using MediatR;
@@ -9,7 +10,9 @@ public record GetWorkspaceEntitlementsQuery(Guid WorkspaceId) : IRequest<Entitle
 
 public class GetWorkspaceEntitlementsQueryHandler(
     ISubscriptionRepository subscriptionRepository,
-    IPlanCatalog planCatalog)
+    IPlanCatalog planCatalog,
+    IWorkspaceMemberRepository workspaceMemberRepository,
+    IBoardRepository boardRepository)
     : IRequestHandler<GetWorkspaceEntitlementsQuery, EntitlementDto>
 {
     public async Task<EntitlementDto> Handle(
@@ -23,11 +26,18 @@ public class GetWorkspaceEntitlementsQueryHandler(
         var planId = subscription?.PlanId ?? "free";
         var planConfig = planCatalog.GetPlan(planId);
 
+        var membersCount = await workspaceMemberRepository.CountAsync(
+            m => m.WorkspaceId == request.WorkspaceId, cancellationToken);
+        var boardsCount = await boardRepository.CountAsync(
+            b => b.WorkspaceId == request.WorkspaceId && !b.IsArchived, cancellationToken);
+
         return new EntitlementDto(
             PlanId: planId,
             PlanDisplayName: planConfig.PlanDisplayName,
             Status: subscription?.Status ?? "free",
-            Features: planConfig.Features
+            Features: planConfig.Features,
+            Limits: planCatalog.GetLimits(planId).ToDto(),
+            Usage: new SubscriptionUsageDto(membersCount, boardsCount)
         );
     }
 }

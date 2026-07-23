@@ -1,8 +1,11 @@
+@implements IDisposable
 @using Contracts.DTOs
 @using Contracts.Requests.Tasks
+@using Services.Abstractions.Subscriptions.Stores
 @using WebApp.Shared.Dialogs
 @using WebApp.Shared.Toast
 @inject IBoardDetailsStore BoardDetailsStore
+@inject IWorkspaceSubscriptionsStore SubscriptionsStore
 @inject IDialogService DialogService
 @inject CustomToastService Toast
 
@@ -56,10 +59,14 @@
 
     @if (CanManageTasks)
     {
-        <button class="add-task-btn" @onclick="OpenCreateTaskDialog">
-            <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small"/>
-            Add a task
-        </button>
+        <MudTooltip Text="@TaskLimitReachedMessage" Disabled="@(!IsTaskLimitReached)">
+            <span class="d-inline-block" style="width: 100%;">
+                <button class="add-task-btn" @onclick="OpenCreateTaskDialog" disabled="@IsTaskLimitReached">
+                    <MudIcon Icon="@(IsTaskLimitReached ? Icons.Material.Filled.Lock : Icons.Material.Filled.Add)" Size="Size.Small"/>
+                    Add a task
+                </button>
+            </span>
+        </MudTooltip>
     }
 </div>
 
@@ -77,6 +84,35 @@
     [Parameter] public EventCallback OnColumnDragEnd { get; set; }
 
     private bool _isMenuOpen;
+
+    // Uses Board.TotalTaskCount (always the true per-board total from the server), NOT
+    // BoardDetailsStore.Tasks.Count — that list only contains the tasks matching the active board
+    // search filter, so it undercounts (and would wrongly re-enable "Add a task") while searching.
+    private bool IsTaskLimitReached =>
+        SubscriptionsStore.Limits?.MaxTasksPerBoard is { } max &&
+        (BoardDetailsStore.Board?.TotalTaskCount ?? 0) >= max;
+
+    private string TaskLimitReachedMessage =>
+        SubscriptionsStore.Limits?.MaxTasksPerBoard is { } max
+            ? $"Your plan allows up to {max} task{(max == 1 ? "" : "s")} per board. Upgrade to add more."
+            : string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SubscriptionsStore.StateChanged += HandleSubscriptionsStateChanged;
+
+        if (BoardDetailsStore.Board != null)
+        {
+            await SubscriptionsStore.LoadBillingDataAsync(BoardDetailsStore.Board.WorkspaceId);
+        }
+    }
+
+    private void HandleSubscriptionsStateChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        SubscriptionsStore.StateChanged -= HandleSubscriptionsStateChanged;
+    }
 
     private void ToggleMenu() => _isMenuOpen = !_isMenuOpen;
     private void CloseMenu() => _isMenuOpen = false;
@@ -152,6 +188,8 @@
 
     private async Task OpenCreateTaskDialog()
     {
+        if (IsTaskLimitReached) return;
+
         var parameters = new DialogParameters<TaskDialog> { { x => x.BoardId, BoardId } };
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
         var dialog = await DialogService.ShowAsync<TaskDialog>("Create Task", parameters, options);

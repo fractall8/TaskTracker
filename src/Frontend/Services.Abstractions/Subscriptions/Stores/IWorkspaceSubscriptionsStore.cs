@@ -11,6 +11,8 @@ public interface IWorkspaceSubscriptionsStore
 
     EntitlementDto? Entitlements { get; }
 
+    SubscriptionLimitsDto? Limits { get; }
+
     bool IsLoading { get; }
 
     string? ErrorMessage { get; }
@@ -21,7 +23,7 @@ public interface IWorkspaceSubscriptionsStore
 
     bool HasFeature(string featureName);
 
-    Task LoadBillingDataAsync(Guid workspaceId, CancellationToken ct = default);
+    Task LoadBillingDataAsync(Guid workspaceId, bool forceReload = false, CancellationToken ct = default);
 
     Task ConfirmPurchasedPlanAsync(Guid workspaceId, string expectedPlanId, CancellationToken ct = default);
 

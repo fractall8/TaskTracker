@@ -89,9 +89,14 @@
     transition: background 0.2s, color 0.2s;
 }
 
-.add-task-btn:hover {
+.add-task-btn:hover:not(:disabled) {
     background: var(--mud-palette-action-default-hover);
     color: var(--mud-palette-text-primary);
+}
+
+.add-task-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .column-options-trigger {

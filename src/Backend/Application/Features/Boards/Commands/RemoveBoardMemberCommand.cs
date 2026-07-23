@@ -27,6 +27,11 @@ public class RemoveBoardMemberCommandHandler(
         var board = await boardRepository.GetByIdAsync(request.BoardId, ct)
                     ?? throw new NotFoundException("Board not found.");
 
+        if (board.IsArchived)
+        {
+            throw new BusinessRuleValidationException("Cannot manage members on an archived board.");
+        }
+
         await workspaceAccessService.EnsureCanManageBoardMembersAsync(board.WorkspaceId, ct);
 
         var initiatorId = await userRepository.GetUserByAzureAdIdAsync(

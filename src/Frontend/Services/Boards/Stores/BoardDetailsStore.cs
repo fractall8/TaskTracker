@@ -142,6 +142,8 @@ public class BoardDetailsStore(
 
         await columnsApi.DeleteColumnAsync(BoardId.Value, columnId, ct);
 
+        var removedTaskCount = Tasks.RemoveAll(t => t.ColumnId == columnId);
+
         var updatedColumns = Board.Columns
             .Where(c => c.Id != columnId)
             .Select(c => c.Position > columnToDelete.Position
@@ -149,7 +151,11 @@ public class BoardDetailsStore(
                 : c)
             .ToList();
 
-        Board = Board with { Columns = updatedColumns };
+        Board = Board with
+        {
+            Columns = updatedColumns,
+            TotalTaskCount = Math.Max(0, Board.TotalTaskCount - removedTaskCount)
+        };
         NotifyStateChanged();
     }
 
@@ -320,6 +326,8 @@ public class BoardDetailsStore(
             .ThenBy(t => t.Position)
             .ToList();
 
+        DecrementTotalTaskCount();
+
         NotifyStateChanged();
     }
 
@@ -336,7 +344,25 @@ public class BoardDetailsStore(
 
         Tasks = Tasks.OrderBy(t => t.ColumnId).ThenBy(t => t.Position).ToList();
 
+        IncrementTotalTaskCount();
+
         NotifyStateChanged();
+    }
+
+    private void IncrementTotalTaskCount()
+    {
+        if (Board != null)
+        {
+            Board = Board with { TotalTaskCount = Board.TotalTaskCount + 1 };
+        }
+    }
+
+    private void DecrementTotalTaskCount()
+    {
+        if (Board != null)
+        {
+            Board = Board with { TotalTaskCount = Math.Max(0, Board.TotalTaskCount - 1) };
+        }
     }
     public async Task MoveTaskAsync(Guid taskId, Guid targetColumnId, int dropIndex, CancellationToken ct = default)
 {
@@ -574,14 +600,15 @@ public class BoardDetailsStore(
             return false;
         }
 
+        var removedTaskCount = Tasks.RemoveAll(t => t.ColumnId == payload.ColumnId);
+
         Board = Board with
         {
             Columns = Board.Columns
                 .Where(column => column.Id != payload.ColumnId)
                 .ToList(),
+            TotalTaskCount = Math.Max(0, Board.TotalTaskCount - removedTaskCount)
         };
-
-        Tasks.RemoveAll(t => t.ColumnId == payload.ColumnId);
 
         ApplyColumnPositions(payload.RemainingColumns);
 
@@ -629,6 +656,7 @@ public class BoardDetailsStore(
 
         Tasks.Add(newTask);
         Tasks = Tasks.OrderBy(t => t.ColumnId).ThenBy(t => t.Position).ToList();
+        IncrementTotalTaskCount();
 
         return true;
     }
@@ -665,6 +693,11 @@ public class BoardDetailsStore(
         }
 
         var removed = Tasks.RemoveAll(t => t.Id == payload.BoardTaskId) > 0;
+        if (removed)
+        {
+            DecrementTotalTaskCount();
+        }
+
         if (removed && payload.RemainingTasks != null)
         {
             ApplyColumnTaskPositions(payload.ColumnId, payload.RemainingTasks);

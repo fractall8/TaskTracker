@@ -42,7 +42,7 @@ public class WorkspaceRepository(TaskTrackerDbContext dbContext)
 
     public async Task<Workspace?> GetByIdWithMembersAsync(Guid workspaceId, CancellationToken ct = default) =>
         await DbSet
-            .Include(w => w.Members)
+            .Include(w => w.Members.OrderBy(m => m.JoinedAt).ThenBy(m => m.Id))
             .ThenInclude(m => m.User)
             .FirstOrDefaultAsync(w => w.Id == workspaceId, ct);
 
