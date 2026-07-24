@@ -16,6 +16,7 @@ public record InviteUserToWorkspaceCommand(Guid WorkspaceId) : IRequest<InviteRe
 public class InviteUserToWorkspaceCommandHandler(
     IWorkspaceAccessService workspaceAccessService,
     IWorkspaceInviteRepository workspaceInviteRepository,
+    IWorkspaceLimitService workspaceLimitService,
     IUnitOfWork unitOfWork,
     IOptions<WorkspaceSettings> workspaceSettings)
     : IRequestHandler<InviteUserToWorkspaceCommand, InviteResultDto>
@@ -23,6 +24,8 @@ public class InviteUserToWorkspaceCommandHandler(
     public async Task<InviteResultDto> Handle(InviteUserToWorkspaceCommand request, CancellationToken ct)
     {
         await workspaceAccessService.EnsureCanManageInvitesAsync(request.WorkspaceId, ct);
+
+        await workspaceLimitService.EnsureCanAddWorkspaceMemberAsync(request.WorkspaceId, ct);
 
         var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48))
             .Replace("+", "-")

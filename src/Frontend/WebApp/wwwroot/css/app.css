@@ -47,6 +47,9 @@ html, body {
     --pink-text: #72243E;
     --gray-bg: #F1EFE8;
     --gray-text: #444441;
+    --warning-bg: #FBF0D2;
+    --warning-text: #8A6100;
+    --warning-border: rgba(138, 97, 0, 0.3);
 
     --purple-solid: var(--mud-palette-primary);
     --blue-solid: #378ADD;
@@ -86,6 +89,9 @@ html, body {
     --pink-text: #F4C0D1;
     --gray-bg: #3A3A37;
     --gray-text: #D3D1C7;
+    --warning-bg: #4A3B12;
+    --warning-text: #F5D76E;
+    --warning-border: rgba(245, 215, 110, 0.35);
 
     --purple-solid: var(--mud-palette-primary);
     --blue-solid: #4A9BE4;
@@ -469,9 +475,9 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 
 /* Warning / Archive */
 .custom-alert.warning {
-    background-color: rgba(242, 201, 76, 0.1); /* Based on --mud-palette-warning */
-    border-color: rgba(242, 201, 76, 0.3);
-    color: var(--mud-palette-warning);
+    background-color: var(--warning-bg);
+    border-color: var(--warning-border);
+    color: var(--warning-text);
 }
 
 /* Info */

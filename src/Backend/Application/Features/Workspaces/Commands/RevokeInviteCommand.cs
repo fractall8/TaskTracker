@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
+using Domain.Exceptions;
 using MediatR;
 
 namespace Application.Features.Workspaces.Commands;
@@ -18,11 +19,11 @@ public class RevokeInviteCommandHandler(
         await workspaceAccessService.EnsureCanManageInvitesAsync(request.WorkspaceId, ct);
 
         var invite = await inviteRepository.GetByIdAsync(request.InviteId, ct)
-                     ?? throw new KeyNotFoundException("Invite not found.");
+                     ?? throw new NotFoundException("Invite not found.");
 
         if (invite.WorkspaceId != request.WorkspaceId)
         {
-            throw new UnauthorizedAccessException("Invite does not belong to this workspace.");
+            throw new ForbiddenException("Invite does not belong to this workspace.");
         }
 
         inviteRepository.Delete(invite);

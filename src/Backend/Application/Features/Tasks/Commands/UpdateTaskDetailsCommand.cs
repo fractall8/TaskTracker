@@ -7,6 +7,7 @@ using Contracts.DTOs;
 using Contracts.Notifications.BoardActions;
 using Contracts.Notifications.BoardActions.Payloads;
 using Domain.Constants;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 
@@ -38,7 +39,7 @@ public class UpdateTaskCommandHandler(
             var assigneeRole = await boardRepository.GetUserRoleAsync(request.BoardId, request.AssigneeId.Value, ct);
             if (!assigneeRole.HasValue)
             {
-                throw new InvalidOperationException("The selected user is not a physical member of this board.");
+                throw new BusinessRuleValidationException("The selected user is not a physical member of this board.");
             }
         }
 
@@ -46,12 +47,12 @@ public class UpdateTaskCommandHandler(
 
         if (task == null)
         {
-            throw new Exception("Task not found.");
+            throw new NotFoundException("Task not found.");
         }
 
         if (task.Column?.BoardId != request.BoardId)
         {
-            throw new KeyNotFoundException("Task not found on this board.");
+            throw new NotFoundException("Task not found on this board.");
         }
 
         task.Title = request.Title;

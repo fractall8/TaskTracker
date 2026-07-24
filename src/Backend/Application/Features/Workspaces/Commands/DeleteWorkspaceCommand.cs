@@ -1,5 +1,6 @@
 ﻿using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
+using Domain.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -20,7 +21,7 @@ public class DeleteWorkspaceCommandHandler(
         await workspaceAccessService.EnsureCanDeleteWorkspaceAsync(request.WorkspaceId, cancellationToken);
 
         var workspace = await workspaceRepository.GetByIdAsync(request.WorkspaceId, cancellationToken)
-                        ?? throw new KeyNotFoundException("Workspace not found.");
+                        ?? throw new NotFoundException("Workspace not found.");
 
         var fileUrlsToDelete = await attachmentRepository.GetUrlsByWorkspaceIdAsync(request.WorkspaceId, cancellationToken);
 

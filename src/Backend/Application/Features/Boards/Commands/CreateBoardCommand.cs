@@ -5,6 +5,7 @@ using Contracts.DTOs;
 using Domain.Constants;
 using Domain.Entities;
 using Domain.Enums;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 
@@ -16,30 +17,13 @@ public class CreateBoardCommandHandler(
     IWorkspaceAccessService workspaceAccessService,
     IWorkspaceMemberRepository workspaceMemberRepository,
     IBoardRepository boardRepository,
+    IWorkspaceLimitService workspaceLimitService,
     IUnitOfWork unitOfWork)
     : IRequestHandler<CreateBoardCommand, BoardDto>
 {
     public async Task<BoardDto> Handle(CreateBoardCommand request, CancellationToken ct)
     {
         var userInfo = await workspaceAccessService.EnsureCanManageWorkspaceAsync(request.WorkspaceId, ct);
-
-        var workspaceMember =
-            await workspaceMemberRepository.GetByWorkspaceAndUserIdAsync(request.WorkspaceId, userInfo.UserId, ct);
-
-        if (workspaceMember == null)
-        {
-            throw new InvalidOperationException("User is not a member of this workspace.");
-        }
-
-        var workspaceAdminsAndOwners = await workspaceMemberRepository.FindAsync(
-            m => m.WorkspaceId == request.WorkspaceId &&
-                 (m.Role == WorkspaceRole.Owner || m.Role == WorkspaceRole.Admin),
-            ct);
-
-        if (!workspaceAdminsAndOwners.Any())
-        {
-            throw new InvalidOperationException("Workspace has no owner or admins.");
-        }
 
         var board = new Board
         {
@@ -50,21 +34,49 @@ public class CreateBoardCommandHandler(
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
-        foreach (var member in workspaceAdminsAndOwners)
+        await unitOfWork.ExecuteInTransactionAsync(async token =>
         {
-            var boardMember = new BoardMember
-            {
-                Id = Guid.NewGuid(),
-                BoardId = board.Id,
-                WorkspaceMemberId = member.Id,
-                Role = BoardRole.Admin,
-                JoinedAt = DateTimeOffset.UtcNow
-            };
+            // using this lock to prevent two concurrent
+            // "create board" requests both read the count as one-under-the-limit and both succeed
+            await unitOfWork.AcquireDistributedLockAsync($"workspace:{request.WorkspaceId}:boards", token);
 
-            board.Members.Add(boardMember);
-        }
-        await boardRepository.AddAsync(board, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+            await workspaceLimitService.EnsureCanAddBoardAsync(request.WorkspaceId, token);
+
+            var workspaceMember =
+                await workspaceMemberRepository.GetByWorkspaceAndUserIdAsync(request.WorkspaceId, userInfo.UserId, token);
+
+            if (workspaceMember == null)
+            {
+                throw new BusinessRuleValidationException("User is not a member of this workspace.");
+            }
+
+            var workspaceAdminsAndOwners = await workspaceMemberRepository.FindAsync(
+                m => m.WorkspaceId == request.WorkspaceId &&
+                     (m.Role == WorkspaceRole.Owner || m.Role == WorkspaceRole.Admin),
+                token);
+
+            if (!workspaceAdminsAndOwners.Any())
+            {
+                throw new BusinessRuleValidationException("Workspace has no owner or admins.");
+            }
+
+            foreach (var member in workspaceAdminsAndOwners)
+            {
+                var boardMember = new BoardMember
+                {
+                    Id = Guid.NewGuid(),
+                    BoardId = board.Id,
+                    WorkspaceMemberId = member.Id,
+                    Role = BoardRole.Admin,
+                    JoinedAt = DateTimeOffset.UtcNow
+                };
+
+                board.Members.Add(boardMember);
+            }
+
+            await boardRepository.AddAsync(board, token);
+            await unitOfWork.SaveChangesAsync(token);
+        }, ct);
 
         return new BoardDto(
             Id: board.Id,

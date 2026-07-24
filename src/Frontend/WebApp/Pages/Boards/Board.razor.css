@@ -1,12 +1,12 @@
 ﻿.board-main {
+    box-sizing: border-box;
     padding: 24px 32px 0;
-    height: calc(100vh - 64px);
+    height: 100vh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     font-family: "Inter", sans-serif;
     background-color: var(--mud-palette-background);
-    min-height: 100vh;
 }
 
 .crumb {
@@ -123,6 +123,9 @@
 }
 
 .board-drop-container {
+    box-sizing: border-box;
+    min-height: 0;
+    height: 100%;
     display: flex;
     flex-direction: column;
     flex-grow: 1;
@@ -131,6 +134,8 @@
 }
 
 .board-columns {
+    box-sizing: border-box;
+    min-height: 0;
     display: flex;
     gap: 14px;
     height: 100%;

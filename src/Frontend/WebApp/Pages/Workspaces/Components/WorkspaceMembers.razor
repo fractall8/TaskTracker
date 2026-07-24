@@ -1,8 +1,10 @@
 ﻿@inject IWorkspaceStore WorkspaceStore
+@inject IWorkspaceSubscriptionsStore SubscriptionsStore
 @inject IDialogService DialogService
 @inject CustomToastService Toast
 @using Contracts.DTOs
 @using Contracts.Enums
+@using Services.Abstractions.Subscriptions.Stores
 @using WebApp.Shared.Dialogs
 @using WebApp.Shared.Helpers
 @using WebApp.Shared.Toast
@@ -220,8 +222,8 @@ else
             {
                 await WorkspaceStore.RemoveMemberAsync(WorkspaceId, userId);
                 Toast.ShowSuccess("Member removed.");
-
-                await RefreshMembersAsync();
+                
+                await Task.WhenAll(RefreshMembersAsync(), SubscriptionsStore.LoadBillingDataAsync(WorkspaceId, forceReload: true));
             }
             catch (Exception ex)
             {

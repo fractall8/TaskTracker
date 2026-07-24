@@ -2,6 +2,7 @@
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Domain.Enums;
+using Domain.Exceptions;
 using MediatR;
 
 namespace Application.Features.Workspaces.Commands;
@@ -21,18 +22,18 @@ public class RemoveWorkspaceMemberCommandHandler(
 
         var targetMember = await workspaceMemberRepository.GetByWorkspaceAndUserIdAsync(
             request.WorkspaceId, request.UserIdToRemove, cancellationToken)
-            ?? throw new KeyNotFoundException("User is not a member of this workspace.");
+            ?? throw new BusinessRuleValidationException("User is not a member of this workspace.");
 
         var currentMember = await workspaceAccessService.GetCurrentUserInfoAsync(cancellationToken);
 
         if (currentMember.UserId == targetMember.UserId)
         {
-            throw new InvalidOperationException("You cannot remove yourself from the workspace using this command. Use 'Leave Workspace' instead.");
+            throw new BusinessRuleValidationException("You cannot remove yourself from the workspace using this command. Use 'Leave Workspace' instead.");
         }
 
         if (targetMember.Role == WorkspaceRole.Owner)
         {
-            throw new InvalidOperationException("The Owner cannot be removed from the workspace. Transfer ownership first.");
+            throw new BusinessRuleValidationException("The Owner cannot be removed from the workspace. Transfer ownership first.");
         }
 
         var userBoardMemberships = await boardMemberRepository.GetByWorkspaceMemberIdAsync(targetMember.Id, cancellationToken);

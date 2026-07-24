@@ -3,6 +3,7 @@ using Application.Interfaces.Services;
 using Application.Options;
 using Contracts.DTOs;
 using Contracts.Enums;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Options;
@@ -14,7 +15,8 @@ public record GetBoardByIdQuery(Guid BoardId, string? SearchTerm = null) : IRequ
 public class GetBoardByIdQueryHandler(
     IBoardAccessService boardAccessService,
     IBoardExportService boardExportService,
-    IBoardRepository boardRepository)
+    IBoardRepository boardRepository,
+    ITaskRepository taskRepository)
     : IRequestHandler<GetBoardByIdQuery, BoardWithColumnsDto>
 {
     public async Task<BoardWithColumnsDto> Handle(GetBoardByIdQuery request, CancellationToken ct)
@@ -25,7 +27,7 @@ public class GetBoardByIdQueryHandler(
 
         if (board is null)
         {
-            throw new KeyNotFoundException($"Board {request.BoardId} does not exist");
+            throw new NotFoundException($"Board {request.BoardId} does not exist");
         }
 
         var columnDtos = board.Columns
@@ -54,6 +56,8 @@ public class GetBoardByIdQueryHandler(
 
         var boardExportInfo = await boardExportService.GetBoardExportInfoAsync(request.BoardId, ct);
 
+        var totalTaskCount = await taskRepository.CountByBoardIdAsync(request.BoardId, ct);
+
         return new BoardWithColumnsDto(
             Id: board.Id,
             Name: board.Name,
@@ -61,6 +65,7 @@ public class GetBoardByIdQueryHandler(
             WorkspaceId: board.WorkspaceId,
             BoardRole: (BoardRoleDto)accessContext.Role,
             Columns: columnDtos,
+            TotalTaskCount: totalTaskCount,
             IsArchived: board.IsArchived,
             ExportStatus: boardExportInfo?.ExportStatus,
             ReExportStatus: boardExportInfo?.ReExportStatus

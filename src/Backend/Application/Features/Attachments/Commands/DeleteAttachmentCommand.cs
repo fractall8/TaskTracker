@@ -5,6 +5,7 @@ using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Contracts.Notifications.BoardActions;
 using Contracts.Notifications.BoardActions.Payloads;
+using Domain.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -32,18 +33,18 @@ public class DeleteAttachmentCommandHandler(
         var task = await taskRepository.GetTaskWithColumnAsync(request.TaskId, cancellationToken);
         if (task == null || task.Column?.BoardId != request.BoardId)
         {
-            throw new KeyNotFoundException("Task not found.");
+            throw new NotFoundException("Task not found.");
         }
 
         var attachment = await attachmentRepository.GetByIdAsync(request.AttachmentId, cancellationToken);
         if (attachment == null)
         {
-            throw new KeyNotFoundException("Attachment not found.");
+            throw new NotFoundException("Attachment not found.");
         }
 
         if (attachment.CreatedById != userInfo.UserId)
         {
-            throw new UnauthorizedAccessException("You can only delete your own attachments.");
+            throw new ForbiddenException("You can only delete your own attachments.");
         }
 
         attachmentRepository.Delete(attachment);

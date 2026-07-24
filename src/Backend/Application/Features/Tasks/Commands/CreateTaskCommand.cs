@@ -8,6 +8,7 @@ using Contracts.Notifications.BoardActions;
 using Contracts.Notifications.BoardActions.Payloads;
 using Domain.Constants;
 using Domain.Entities;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 
@@ -26,6 +27,7 @@ public class CreateTaskCommandHandler(
     IBoardRepository boardRepository,
     IColumnRepository columnRepository,
     ITaskRepository taskRepository,
+    IWorkspaceLimitService workspaceLimitService,
     IBoardActionNotifier boardActionNotifier,
     IDateTimeProvider dateTimeProvider,
     IUnitOfWork unitOfWork)
@@ -40,7 +42,7 @@ public class CreateTaskCommandHandler(
             var assigneeRole = await boardRepository.GetUserRoleAsync(request.BoardId, request.AssigneeId.Value, ct);
             if (!assigneeRole.HasValue)
             {
-                throw new InvalidOperationException("The selected user is not a physical member of this board.");
+                throw new BusinessRuleValidationException("The selected user is not a physical member of this board.");
             }
         }
 
@@ -48,30 +50,39 @@ public class CreateTaskCommandHandler(
 
         if (column == null)
         {
-            throw new KeyNotFoundException("Column not found.");
+            throw new NotFoundException("Column not found.");
         }
 
         if (column.BoardId != request.BoardId)
         {
-            throw new KeyNotFoundException("Column not found on this board.");
+            throw new NotFoundException("Column not found on this board.");
         }
 
-        var maxPosition = await taskRepository.GetMaxPositionAsync(request.ColumnId, ct);
+        TaskItem task = null!;
 
-        var task = new TaskItem
+        await unitOfWork.ExecuteInTransactionAsync(async token =>
         {
-            Id = Guid.NewGuid(),
-            ColumnId = request.ColumnId,
-            Title = request.Title,
-            Description = request.Description,
-            DueDate = request.DueDate,
-            AssigneeId = request.AssigneeId,
-            ReporterId = boardAccessContext.UserId,
-            Position = maxPosition + 1
-        };
+            await unitOfWork.AcquireDistributedLockAsync($"board:{request.BoardId}:tasks", token);
 
-        await taskRepository.AddAsync(task, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+            await workspaceLimitService.EnsureCanAddTaskAsync(request.BoardId, token);
+
+            var maxPosition = await taskRepository.GetMaxPositionAsync(request.ColumnId, token);
+
+            task = new TaskItem
+            {
+                Id = Guid.NewGuid(),
+                ColumnId = request.ColumnId,
+                Title = request.Title,
+                Description = request.Description,
+                DueDate = request.DueDate,
+                AssigneeId = request.AssigneeId,
+                ReporterId = boardAccessContext.UserId,
+                Position = maxPosition + 1
+            };
+
+            await taskRepository.AddAsync(task, token);
+            await unitOfWork.SaveChangesAsync(token);
+        }, ct);
 
         await taskRepository.LoadUsersForTaskAsync(task, ct);
 

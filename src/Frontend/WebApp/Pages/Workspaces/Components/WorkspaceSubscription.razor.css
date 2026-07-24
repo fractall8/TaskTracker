@@ -1,0 +1,90 @@
+﻿.plans-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    margin-top: 24px;
+}
+
+.plan-card {
+    background: var(--mud-palette-surface);
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 16px;
+    padding: 28px 24px 24px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.plan-card:hover {
+    border-color: var(--mud-palette-primary);
+}
+
+.plan-card.current {
+    border-color: var(--mud-palette-primary);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+.plan-badge {
+    position: absolute;
+    top: -12px;
+    left: 24px;
+    background: var(--mud-palette-primary);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+}
+
+.plan-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--mud-palette-text-primary);
+    margin-bottom: 8px;
+}
+
+.plan-price {
+    margin-bottom: 24px;
+}
+
+.plan-price .amount {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--mud-palette-text-primary);
+    letter-spacing: -0.02em;
+}
+
+.plan-price .interval {
+    font-size: 14px;
+    color: var(--mud-palette-text-secondary);
+}
+
+.plan-divider {
+    height: 1px;
+    background: var(--mud-palette-lines-default);
+    margin: 0 0 24px 0;
+}
+
+.plan-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 32px 0;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.plan-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13.5px;
+    color: var(--mud-palette-text-secondary);
+    line-height: 1.5;
+}
+
+.w-100 {
+    width: 100%;
+}

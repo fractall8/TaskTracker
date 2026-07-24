@@ -8,7 +8,8 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    max-height: 100%;
+    max-height: calc(100vh - 210px);
+    min-height: 0;
     cursor: grab;
     transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out, border-color 0.2s;
 }
@@ -33,6 +34,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 4px 6px 8px;
+    flex-shrink: 0;
 }
 
 .column-title {
@@ -42,6 +44,7 @@
     align-items: center;
     gap: 6px;
     color: var(--mud-palette-text-primary);
+    flex: 1 1 auto;
 }
 
 .column-title .count {
@@ -61,7 +64,9 @@
     overflow-y: auto;
     overflow-x: hidden;
     padding-right: 2px;
-    min-height: 20px;
+
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 ::deep .task-list::-webkit-scrollbar {
@@ -89,9 +94,14 @@
     transition: background 0.2s, color 0.2s;
 }
 
-.add-task-btn:hover {
+.add-task-btn:hover:not(:disabled) {
     background: var(--mud-palette-action-default-hover);
     color: var(--mud-palette-text-primary);
+}
+
+.add-task-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .column-options-trigger {

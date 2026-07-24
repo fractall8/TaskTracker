@@ -1,10 +1,14 @@
 ﻿@implements IDisposable
 @using Contracts.DTOs
 @using Refit
+@using Services.Abstractions.Boards
+@using Services.Abstractions.Subscriptions.Stores
 @using Services.Abstractions.Tasks
 @using WebApp.Shared.Dialogs
 @using WebApp.Shared.Toast
 @inject ITaskDetailsStore Store
+@inject IBoardDetailsStore BoardDetailsStore
+@inject IWorkspaceSubscriptionsStore SubscriptionsStore
 @inject CustomToastService Toast
 @inject IJSRuntime Js
 @inject IProfileStore ProfileStore
@@ -116,16 +120,27 @@
     private bool _isExpanded = true;
 
     private List<AttachmentDto>? Attachments => Store.Task?.Attachments;
+    
+    private int? MaxAttachmentSizeMb => SubscriptionsStore.Limits?.MaxAttachmentSizeMb;
+    private const int AbsoluteMaxAttachmentSizeMb = 100;
 
     protected override async Task OnInitializedAsync()
     {
         Store.StateChanged += StateHasChanged;
+        SubscriptionsStore.StateChanged += StateHasChanged;
+
         await ProfileStore.EnsureLoadedAsync();
+
+        if (BoardDetailsStore.Board != null)
+        {
+            await SubscriptionsStore.LoadBillingDataAsync(BoardDetailsStore.Board.WorkspaceId);
+        }
     }
 
     public void Dispose()
     {
         Store.StateChanged -= StateHasChanged;
+        SubscriptionsStore.StateChanged -= StateHasChanged;
     }
 
     private void ToggleAttachments() => _isExpanded = !_isExpanded;
@@ -158,11 +173,12 @@
         var file = e.File;
         if (file == null) return;
 
-        const long maxAllowedSize = 10 * 1024 * 1024;
+        var knownMaxSizeMb = MaxAttachmentSizeMb;
+        var maxAllowedSize = (knownMaxSizeMb ?? AbsoluteMaxAttachmentSizeMb) * 1024L * 1024L;
 
-        if (file.Size > maxAllowedSize)
+        if (knownMaxSizeMb is { } maxSizeMb && file.Size > maxAllowedSize)
         {
-            Toast.ShowWarning("File is too large (max 10MB).");
+            Toast.ShowWarning($"File is too large (max {maxSizeMb}MB).");
             return;
         }
 

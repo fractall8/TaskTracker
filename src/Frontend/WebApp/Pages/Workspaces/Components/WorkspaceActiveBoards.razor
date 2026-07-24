@@ -1,11 +1,14 @@
-﻿@inject IWorkspaceStore WorkspaceStore
+﻿@implements IDisposable
+@inject IWorkspaceStore WorkspaceStore
 @inject IBoardApiService BoardApiService
+@inject IWorkspaceSubscriptionsStore SubscriptionsStore
 @inject IDialogService DialogService
 @inject CustomToastService Toast
 @inject NavigationManager Navigation
 @using Contracts.DTOs
 @using Contracts.Enums
 @using Contracts.Requests.Boards
+@using Services.Abstractions.Subscriptions.Stores
 @using WebApp.Shared.Dialogs
 @using WebApp.Shared.Helpers
 @using WebApp.Shared.Toast
@@ -26,10 +29,14 @@
         </div>
         @if (CurrentUserRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
         {
-            <button class="btn btn-primary" @onclick="OpenCreateBoardDialog">
-                <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small"/>
-                Create board
-            </button>
+            <MudTooltip Text="@BoardLimitReachedMessage" Disabled="@(!IsBoardLimitReached)">
+                <span class="d-inline-block">
+                    <button class="btn btn-primary" @onclick="OpenCreateBoardDialog" disabled="@IsBoardLimitReached">
+                        <MudIcon Icon="@(IsBoardLimitReached ? Icons.Material.Filled.Lock : Icons.Material.Filled.Add)" Size="Size.Small"/>
+                        Create board
+                    </button>
+                </span>
+            </MudTooltip>
         }
     </div>
 </div>
@@ -92,10 +99,12 @@ else
 
         @if (CurrentUserRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner && _currentPage >= _pagination.TotalPages)
         {
-            <div class="card-add" @onclick="OpenCreateBoardDialog">
-                <MudIcon Icon="@Icons.Material.Filled.Add" Style="font-size: 24px;"/>
-                <span>New board</span>
-            </div>
+            <MudTooltip Text="@BoardLimitReachedMessage" Disabled="@(!IsBoardLimitReached)">
+                <div class="card-add @(IsBoardLimitReached ? "disabled" : "")" @onclick="OpenCreateBoardDialog">
+                    <MudIcon Icon="@(IsBoardLimitReached ? Icons.Material.Filled.Lock : Icons.Material.Filled.Add)" Style="font-size: 24px;"/>
+                    <span>New board</span>
+                </div>
+            </MudTooltip>
         }
     </div>
 
@@ -133,10 +142,27 @@ else
     private string? _searchTerm;
     private CancellationTokenSource? _searchCts;
     private CancellationTokenSource? _debounceCts;
+    
+    private bool IsBoardLimitReached =>
+        SubscriptionsStore.Limits?.MaxBoardsPerWorkspace is { } max &&
+        (SubscriptionsStore.Entitlements?.Usage.CurrentBoardsCount ?? 0) >= max;
+
+    private string BoardLimitReachedMessage =>
+        SubscriptionsStore.Limits?.MaxBoardsPerWorkspace is { } max
+            ? $"Your plan allows up to {max} board{(max == 1 ? "" : "s")}. Upgrade to create more."
+            : string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadBoardsAsync();
+        SubscriptionsStore.StateChanged += HandleSubscriptionsStateChanged;
+        await Task.WhenAll(LoadBoardsAsync(), SubscriptionsStore.LoadBillingDataAsync(WorkspaceId));
+    }
+
+    private void HandleSubscriptionsStateChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        SubscriptionsStore.StateChanged -= HandleSubscriptionsStateChanged;
     }
 
     private async Task LoadBoardsAsync(CancellationToken ct = default)
@@ -221,6 +247,8 @@ else
 
     private async Task OpenCreateBoardDialog()
     {
+        if (IsBoardLimitReached) return;
+
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
         var dialog = await DialogService.ShowAsync<BoardDialog>("Create Board", options);
         var result = await dialog.Result;
@@ -230,7 +258,7 @@ else
             {
                 await BoardApiService.CreateBoardAsync(WorkspaceId, request);
                 Toast.ShowSuccess("Board created.");
-                await LoadBoardsAsync();
+                await Task.WhenAll(LoadBoardsAsync(), SubscriptionsStore.LoadBillingDataAsync(WorkspaceId, forceReload: true));
             }
             catch (Exception ex)
             {
@@ -281,7 +309,7 @@ else
             {
                 await BoardApiService.DeleteBoardAsync(board.Id);
                 Toast.ShowSuccess("Board deleted.");
-                await LoadBoardsAsync();
+                await Task.WhenAll(LoadBoardsAsync(), SubscriptionsStore.LoadBillingDataAsync(WorkspaceId, forceReload: true));
             }
             catch (Exception ex)
             {

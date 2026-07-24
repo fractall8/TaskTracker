@@ -3,6 +3,7 @@ using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Application.Settings;
 using Domain.Constants;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -25,7 +26,7 @@ public class UploadAvatarCommandHandler(
         var user = await userRepository.GetUserByAzureAdIdAsync(
             currentUserAccessor.AzureAdObjectId,
             u => u,
-            ct) ?? throw new UnauthorizedAccessException("User not found.");
+            ct) ?? throw new ForbiddenException("User not found.");
 
         var oldAvatarUrl = user.AvatarUrl;
 

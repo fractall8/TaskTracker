@@ -12,6 +12,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddBlobModule(configuration);
         services.AddBoardExportJobModule(configuration);
         services.AddBoardActionsModule();
+        services.AddSubscriptionsModule();
 
         return services;
     }

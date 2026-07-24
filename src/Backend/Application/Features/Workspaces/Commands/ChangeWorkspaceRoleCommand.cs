@@ -2,6 +2,7 @@
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Domain.Enums;
+using Domain.Exceptions;
 using MediatR;
 
 namespace Application.Features.Workspaces.Commands;
@@ -23,13 +24,13 @@ public class ChangeWorkspaceMemberRoleCommandHandler(
 
         if (userInfo.UserId == request.UserIdToChange && request.NewRole != WorkspaceRole.Owner)
         {
-            throw new InvalidOperationException("The Owner cannot demote themselves. Transfer ownership first.");
+            throw new BusinessRuleValidationException("The Owner cannot demote themselves. Transfer ownership first.");
         }
 
         var targetMember =
             await workspaceMemberRepository.GetByWorkspaceAndUserIdAsync(request.WorkspaceId, request.UserIdToChange,
                 cancellationToken)
-            ?? throw new KeyNotFoundException("User is not a member of this workspace.");
+            ?? throw new BusinessRuleValidationException("User is not a member of this workspace.");
 
         var oldRole = targetMember.Role;
 

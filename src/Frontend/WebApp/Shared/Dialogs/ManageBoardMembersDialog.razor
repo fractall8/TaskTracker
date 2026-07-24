@@ -1,10 +1,12 @@
 ﻿@implements IDisposable
 @using Contracts.DTOs
 @using Contracts.Enums
+@using Services.Abstractions.Subscriptions.Stores
 @using WebApp.Shared.Helpers
 @using WebApp.Shared.Toast
 @inject IBoardMembersStore Store
 @inject IWorkspaceStore WorkspaceStore
+@inject IWorkspaceSubscriptionsStore SubscriptionsStore
 @inject IDialogService DialogService
 @inject CustomToastService Toast
 
@@ -81,11 +83,19 @@
                 }
             </select>
 
-            <button class="btn btn-primary" @onclick="AddNewMember"
-                    disabled="@(_selectedUser == null || Store.IsProcessing)"
-                    style="height: 40px; flex-shrink: 0;">
-                Add
-            </button>
+            <MudTooltip Text="@MemberLimitReachedMessage" Disabled="@(!IsMemberLimitReached)">
+                <span class="d-inline-block">
+                    <button class="btn btn-primary" @onclick="AddNewMember"
+                            disabled="@(_selectedUser == null || Store.IsProcessing || IsMemberLimitReached)"
+                            style="height: 40px; flex-shrink: 0;">
+                        @if (IsMemberLimitReached)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small"/>
+                        }
+                        Add
+                    </button>
+                </span>
+            </MudTooltip>
         </div>
 
         <MudDivider Class="mb-4" Style="border-color: var(--mud-palette-lines-default);"/>
@@ -374,15 +384,29 @@
     private WorkspaceMemberDto? _selectedUser;
     private BoardRoleDto _selectedRole = BoardRoleDto.User;
 
+    private bool IsMemberLimitReached =>
+        SubscriptionsStore.Limits?.MaxMembersPerWorkspace is { } max &&
+        (SubscriptionsStore.Entitlements?.Usage.CurrentMembersCount ?? 0) >= max;
+
+    private string MemberLimitReachedMessage =>
+        SubscriptionsStore.Limits?.MaxMembersPerWorkspace is { } max
+            ? $"Your plan allows up to {max} team member{(max == 1 ? "" : "s")}. Upgrade to invite more."
+            : string.Empty;
+
     protected override async Task OnInitializedAsync()
     {
         Store.StateChanged += StateHasChanged;
-        await Store.LoadAsync(BoardId);
+        SubscriptionsStore.StateChanged += StateHasChanged;
+
+        await Task.WhenAll(
+            Store.LoadAsync(BoardId),
+            SubscriptionsStore.LoadBillingDataAsync(WorkspaceId));
     }
 
     public void Dispose()
     {
         Store.StateChanged -= StateHasChanged;
+        SubscriptionsStore.StateChanged -= StateHasChanged;
         Store.Reset();
     }
 
@@ -439,7 +463,7 @@
 
     private async Task AddNewMember()
     {
-        if (_selectedUser == null) return;
+        if (_selectedUser == null || IsMemberLimitReached) return;
 
         try
         {

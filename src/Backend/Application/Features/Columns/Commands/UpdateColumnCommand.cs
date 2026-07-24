@@ -7,6 +7,7 @@ using Contracts.DTOs;
 using Contracts.Notifications.BoardActions;
 using Contracts.Notifications.BoardActions.Payloads;
 using Domain.Constants;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 
@@ -30,12 +31,12 @@ public class UpdateColumnCommandHandler(
 
         if (column == null)
         {
-            throw new KeyNotFoundException($"Column {request.ColumnId} does not exist");
+            throw new NotFoundException($"Column {request.ColumnId} does not exist");
         }
 
         if (column.BoardId != request.BoardId)
         {
-            throw new KeyNotFoundException("Column not found on this board.");
+            throw new NotFoundException("Column not found on this board.");
         }
 
         if (!string.Equals(column.Name, request.Name, StringComparison.OrdinalIgnoreCase))
@@ -45,7 +46,7 @@ public class UpdateColumnCommandHandler(
             if (existingNames.Any(existingName =>
                     string.Equals(existingName, request.Name, StringComparison.OrdinalIgnoreCase)))
             {
-                throw new InvalidOperationException("Column name already exists");
+                throw new ConflictException("Column name already exists");
             }
 
             column.Name = request.Name;

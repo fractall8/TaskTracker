@@ -8,6 +8,7 @@ using Contracts.Enums;
 using Contracts.Notifications.BoardActions;
 using Contracts.Notifications.BoardActions.Payloads;
 using Domain.Constants;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 
@@ -30,7 +31,7 @@ public class UpdateBoardCommandHandler(
 
         if (board == null)
         {
-            throw new KeyNotFoundException($"Board with ID {request.BoardId} not found.");
+            throw new NotFoundException($"Board with ID {request.BoardId} not found.");
         }
 
         board.Name = request.Name;

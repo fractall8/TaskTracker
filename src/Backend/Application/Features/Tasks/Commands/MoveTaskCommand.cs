@@ -6,6 +6,7 @@ using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Contracts.Notifications.BoardActions;
 using Contracts.Notifications.BoardActions.Payloads;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 
@@ -34,19 +35,19 @@ public class MoveTaskCommandHandler(
 
         if (taskToMove == null)
         {
-            throw new KeyNotFoundException("Task not found.");
+            throw new NotFoundException("Task not found.");
         }
 
         if (taskToMove.Column?.BoardId != request.BoardId)
         {
-            throw new KeyNotFoundException("Task not found on this board.");
+            throw new NotFoundException("Task not found on this board.");
         }
 
         var targetColumn = await columnRepository.GetByIdAsync(request.TargetColumnId, ct);
 
         if (targetColumn == null || targetColumn.BoardId != request.BoardId)
         {
-            throw new KeyNotFoundException("Target column not found on this board.");
+            throw new NotFoundException("Target column not found on this board.");
         }
 
         var oldColumnId = taskToMove.ColumnId;

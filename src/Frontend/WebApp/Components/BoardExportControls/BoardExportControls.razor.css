@@ -25,18 +25,17 @@
 }
 
 .btn-warning {
-    background-color: rgba(242, 201, 76, 0.15);
-    border-color: rgba(242, 201, 76, 0.6);
+    background-color: var(--warning-bg);
+    border-color: var(--warning-border);
     color: var(--mud-palette-text-primary);
 }
 
 .btn-warning ::deep svg {
-    color: var(--mud-palette-warning);
+    color: var(--warning-text);
 }
 
 .btn-warning:hover:not(:disabled) {
-    background-color: rgba(242, 201, 76, 0.25);
-    border-color: var(--mud-palette-warning);
+    border-color: var(--warning-text);
 }
 .btn-success {
     background: var(--mud-palette-success);
@@ -64,9 +63,9 @@
 }
 
 .badge-warning {
-    background: rgba(242, 201, 76, 0.15);
-    color: var(--mud-palette-warning);
-    border: 1px solid var(--mud-palette-warning);
+    background: var(--warning-bg);
+    color: var(--warning-text);
+    border: 1px solid var(--warning-border);
     border-radius: 999px;
     padding: 4px 12px;
     font-size: 12px;

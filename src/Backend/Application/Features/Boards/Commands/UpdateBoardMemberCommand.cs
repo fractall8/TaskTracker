@@ -3,6 +3,7 @@ using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Domain.Entities;
 using Domain.Enums;
+using Domain.Exceptions;
 using FluentValidation;
 using FluentValidation.Results;
 using MediatR;
@@ -31,7 +32,12 @@ public class UpdateBoardMemberRoleCommandHandler(
 
         if (board == null)
         {
-            throw new KeyNotFoundException("Board not found.");
+            throw new NotFoundException("Board not found.");
+        }
+
+        if (board.IsArchived)
+        {
+            throw new BusinessRuleValidationException("Cannot manage members on an archived board.");
         }
 
         await workspaceAccessService.EnsureCanManageBoardMembersAsync(board.WorkspaceId, ct);
@@ -44,30 +50,30 @@ public class UpdateBoardMemberRoleCommandHandler(
         var initiatorWorkspaceRole = await workspaceRepository.GetUserRoleAsync(board.WorkspaceId, initiatorId, ct);
 
         var targetWorkspaceMember = await workspaceMemberRepository.GetByIdAsync(request.WorkspaceMemberId, ct)
-                                    ?? throw new KeyNotFoundException("Workspace member not found.");
+                                    ?? throw new NotFoundException("Workspace member not found.");
 
         if (targetWorkspaceMember.UserId == initiatorId)
         {
-            throw new InvalidOperationException("You cannot change your own role on the board.");
+            throw new BusinessRuleValidationException("You cannot change your own role on the board.");
         }
 
         if (initiatorWorkspaceRole != WorkspaceRole.Owner)
         {
             if (targetWorkspaceMember.Role == WorkspaceRole.Owner || targetWorkspaceMember.Role == WorkspaceRole.Admin)
             {
-                throw new UnauthorizedAccessException("You can only change board roles for regular Workspace Members.");
+                throw new ForbiddenException("You can only change board roles for regular Workspace Members.");
             }
         }
 
         if ((targetWorkspaceMember.Role == WorkspaceRole.Owner || targetWorkspaceMember.Role == WorkspaceRole.Admin)
             && request.NewRole != BoardRole.Admin)
         {
-            throw new InvalidOperationException("Workspace Owners and Admins must always retain the Admin role on boards.");
+            throw new BusinessRuleValidationException("Workspace Owners and Admins must always retain the Admin role on boards.");
         }
 
         var boardMember = await boardMemberRepository.GetAsync(
             m => m.BoardId == request.BoardId && m.WorkspaceMemberId == request.WorkspaceMemberId,
-            ct) ?? throw new KeyNotFoundException("Board member not found.");
+            ct) ?? throw new NotFoundException("Board member not found.");
 
         if (boardMember.Role == request.NewRole)
         {

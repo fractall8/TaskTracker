@@ -46,6 +46,10 @@
       - AzureAd__TenantId=${AZURE_TENANT_ID}
       - AzureAd__ClientId=${AZURE_CLIENT_ID}
       - AzureAd__Audience=api://${AZURE_CLIENT_ID}
+      - Stripe__SecretKey=${STRIPE_SECRET_KEY}
+      - Stripe__WebhookSecret=${STRIPE_WEBHOOK_SECRET}
+      - Stripe__SuccessUrl=${STRIPE_SUCCESS_URL}
+      - Stripe__CancelUrl=${STRIPE_CANCEL_URL}
     depends_on:
       - postgres-db
       - azurite

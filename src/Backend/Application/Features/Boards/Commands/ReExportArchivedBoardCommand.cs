@@ -1,8 +1,10 @@
 ﻿using Application.Interfaces.Notifiers;
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
+using Contracts.Constants;
 using Contracts.DTOs;
 using Contracts.Notifications.BoardExport;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -17,6 +19,7 @@ public class ReExportArchivedBoardCommandHandler(
     IBoardRepository boardRepository,
     IBoardExportService boardExportService,
     IBoardExportStatusNotifier exportStatusNotifier,
+    IWorkspaceEntitlementService entitlementService,
     ILogger<ReExportArchivedBoardCommandHandler> logger)
     : IRequestHandler<ReExportArchivedBoardCommand>
 {
@@ -27,12 +30,22 @@ public class ReExportArchivedBoardCommandHandler(
         var board = await boardRepository.GetByIdAsync(request.BoardId, ct);
         if (board == null)
         {
-            throw new KeyNotFoundException($"Board with ID {request.BoardId} not found.");
+            throw new NotFoundException($"Board with ID {request.BoardId} not found.");
+        }
+
+        var allowedArchive =
+            await entitlementService.HasFeatureAsync(board.WorkspaceId, FeatureConstants.BoardReExport, ct);
+        var allowedExport =
+            await entitlementService.HasFeatureAsync(board.WorkspaceId, FeatureConstants.BoardArchiveDownload, ct);
+        var hasFeatures = allowedArchive && allowedExport;
+        if (!hasFeatures)
+        {
+            throw new SubscriptionFeatureRequiredException(FeatureConstants.BoardReExport);
         }
 
         if (!board.IsArchived)
         {
-            throw new InvalidOperationException(
+            throw new BusinessRuleValidationException(
                 $"Board with ID {request.BoardId} is not archived. Only archived boards can be re-exported.");
         }
 
@@ -42,7 +55,7 @@ public class ReExportArchivedBoardCommandHandler(
                 or BoardExportStatusDto.Pending
                 or BoardExportStatusDto.Processing)
         {
-            throw new InvalidOperationException("A re-export process is already in progress for this board.");
+            throw new ConflictException("A re-export process is already in progress for this board.");
         }
 
         try

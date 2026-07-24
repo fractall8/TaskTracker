@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
+using Domain.Exceptions;
 using MediatR;
 
 namespace Application.Features.Attachments.Queries;
@@ -22,13 +23,13 @@ public class GetAttachmentDownloadQueryHandler(
         var task = await taskRepository.GetTaskWithColumnAsync(request.TaskId, cancellationToken);
         if (task == null || task.Column?.BoardId != request.BoardId)
         {
-            throw new KeyNotFoundException("Task not found.");
+            throw new NotFoundException("Task not found.");
         }
 
         var attachment = await attachmentRepository.GetByIdAsync(request.AttachmentId, cancellationToken);
         if (attachment == null)
         {
-            throw new KeyNotFoundException("Attachment not found.");
+            throw new NotFoundException("Attachment not found.");
         }
 
         var downloadUrl = await fileService.GetDownloadUrlAsync(

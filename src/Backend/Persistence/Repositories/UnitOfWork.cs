@@ -31,4 +31,10 @@ public class UnitOfWork(TaskTrackerDbContext dbContext) : IUnitOfWork
             }
         }, cancellationToken);
     }
+
+    public async Task AcquireDistributedLockAsync(string lockKey, CancellationToken cancellationToken = default)
+    {
+        await dbContext.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock(hashtextextended({lockKey}, 0))", cancellationToken);
+    }
 }

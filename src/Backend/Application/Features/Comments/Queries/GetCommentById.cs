@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 
@@ -22,7 +23,7 @@ public class GetCommentsByTaskIdQueryHandler(
         var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, ct);
         if (task == null || task.Column?.BoardId != request.BoardId)
         {
-            throw new KeyNotFoundException("Task not found on this board.");
+            throw new NotFoundException("Task not found on this board.");
         }
 
         var comments = await commentRepository.GetByTaskIdAsync(request.TaskId, ct);

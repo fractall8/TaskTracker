@@ -43,7 +43,7 @@
                        disabled="@(!IsCurrentBoardLoaded)"/>
             </div>
 
-            @if (IsCurrentBoardLoaded && _workspaceRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
+            @if (IsCurrentBoardLoaded && BoardDetailsStore.Board is { IsArchived: false } && _workspaceRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
             {
                 <button class="btn" @onclick="OpenManageMembersDialog">
                     <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small"/>
@@ -186,7 +186,11 @@
 
             await ResolveRolesAsync();
             await ExportHubService.ConnectAsync(BoardId);
-            await ActionsHubService.ConnectAsync(BoardId);
+
+            if (BoardDetailsStore.Board is { IsArchived: false })
+            {
+                await ActionsHubService.ConnectAsync(BoardId);
+            }
         }
     }
 
@@ -363,6 +367,8 @@
 
     private async Task OpenManageMembersDialog()
     {
+        if (BoardDetailsStore.Board is not { IsArchived: false }) return;
+
         var currentUserEmail = ProfileStore.Profile?.Email ?? string.Empty;
 
         var parameters = new DialogParameters

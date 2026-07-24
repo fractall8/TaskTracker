@@ -15,6 +15,9 @@ public class TaskTrackerDbContext(DbContextOptions options) : DbContext(options)
     public DbSet<User> Users { get; set; }
     public DbSet<Attachment> Attachments { get; set; }
     public DbSet<Comment> Comments { get; set; }
+    public DbSet<Subscription> Subscriptions { get; set; }
+
+    public DbSet<StripeWebhookEvent> StripeWebhookEvents { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -33,7 +36,7 @@ public class TaskTrackerDbContext(DbContextOptions options) : DbContext(options)
             {
                 case EntityState.Added:
                     entry.Entity.CreatedAt = DateTimeOffset.UtcNow;
-                    // maybe add user id here in future 
+                    // maybe add user id here in future
                     break;
 
                 case EntityState.Modified:

@@ -38,6 +38,11 @@ public class TaskRepository(TaskTrackerDbContext dbContext) : Repository<TaskIte
             .ToListAsync(ct);
     }
 
+    public async Task<int> CountByBoardIdAsync(Guid boardId, CancellationToken ct = default)
+    {
+        return await DbContext.Tasks.CountAsync(t => t.Column!.BoardId == boardId, ct);
+    }
+
     public async Task<List<TaskItem>> GetTasksByColumnIdAsync(Guid columnId, CancellationToken ct = default)
     {
         return await DbContext.Tasks.Where(t => t.ColumnId == columnId).ToListAsync(ct);

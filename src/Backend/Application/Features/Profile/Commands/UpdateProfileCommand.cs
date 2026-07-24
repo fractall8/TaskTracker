@@ -2,6 +2,7 @@
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Domain.Constants;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 
@@ -25,7 +26,7 @@ public class UpdateProfileCommandHandler(
 
         if (user == null)
         {
-            throw new UnauthorizedAccessException("User not found.");
+            throw new ForbiddenException("User not found.");
         }
 
         user.DisplayName = request.DisplayName;

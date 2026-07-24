@@ -3,8 +3,10 @@ using Application.Interfaces.Notifiers;
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
+using Contracts.Constants;
 using Contracts.DTOs;
 using Contracts.Notifications.BoardExport;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -19,6 +21,7 @@ public class ArchiveAndExportBoardCommandHandler(
     IBoardRepository boardRepository,
     IBoardExportService boardExportService,
     IBoardExportStatusNotifier exportStatusNotifier,
+    IWorkspaceEntitlementService entitlementService,
     IUnitOfWork unitOfWork,
     IDateTimeProvider dateTimeProvider,
     ILogger<ArchiveAndExportBoardCommandHandler> logger)
@@ -31,7 +34,17 @@ public class ArchiveAndExportBoardCommandHandler(
         var board = await boardRepository.GetByIdAsync(request.BoardId, ct);
         if (board == null)
         {
-            throw new KeyNotFoundException($"Board with ID {request.BoardId} not found.");
+            throw new NotFoundException($"Board with ID {request.BoardId} not found.");
+        }
+
+        var allowedArchive =
+            await entitlementService.HasFeatureAsync(board.WorkspaceId, FeatureConstants.BoardExport, ct);
+        var allowedExport =
+            await entitlementService.HasFeatureAsync(board.WorkspaceId, FeatureConstants.BoardArchiveDownload, ct);
+        var hasFeatures = allowedArchive && allowedExport;
+        if (!hasFeatures)
+        {
+            throw new SubscriptionFeatureRequiredException(FeatureConstants.BoardExport);
         }
 
         var archivedAt = dateTimeProvider.UtcNow;

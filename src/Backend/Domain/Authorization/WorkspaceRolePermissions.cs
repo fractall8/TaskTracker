@@ -21,4 +21,7 @@ public static class WorkspaceRolePermissions
 
     public static bool CanManageBoardRoles(WorkspaceRole role) =>
         role is WorkspaceRole.Owner or WorkspaceRole.Admin;
+
+    public static bool CanManageSubscriptions(WorkspaceRole role) =>
+        role is WorkspaceRole.Owner;
 }

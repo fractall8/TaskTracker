@@ -14,7 +14,7 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
         CancellationToken ct = default)
     {
         var query = DbSet.Where(b =>
-            b.WorkspaceId == workspaceId && b.Members.Any(m => m.WorkspaceMember!.UserId == userId));
+            b.WorkspaceId == workspaceId && !b.IsArchived && b.Members.Any(m => m.WorkspaceMember!.UserId == userId));
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
             query = query.Where(b => EF.Functions.ILike(b.Name, $"%{searchTerm}%"));
@@ -27,8 +27,7 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
         CancellationToken ct = default)
     {
         var query = DbSet.Where(b =>
-            b.WorkspaceId == workspaceId && b.Members.Any(m => m.WorkspaceMember!.UserId == userId) && b.IsArchived &&
-            !b.IsDeleted).IgnoreQueryFilters();
+            b.WorkspaceId == workspaceId && b.Members.Any(m => m.WorkspaceMember!.UserId == userId) && b.IsArchived);
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
@@ -42,7 +41,7 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
         int pageSize, string? searchTerm = null, CancellationToken ct = default)
     {
         var query = DbSet.Where(b =>
-            b.WorkspaceId == workspaceId && b.Members.Any(m => m.WorkspaceMember!.UserId == userId));
+            b.WorkspaceId == workspaceId && !b.IsArchived && b.Members.Any(m => m.WorkspaceMember!.UserId == userId));
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
             query = query.Where(b => EF.Functions.ILike(b.Name, $"%{searchTerm}%"));
@@ -62,8 +61,7 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
         CancellationToken ct = default)
     {
         var query = DbContext.Boards
-            .IgnoreQueryFilters()
-            .Where(b => b.WorkspaceId == workspaceId && b.IsArchived && !b.IsDeleted);
+            .Where(b => b.WorkspaceId == workspaceId && b.IsArchived);
 
         query = query.Where(b => b.Members.Any(m => m.WorkspaceMember!.UserId == userId));
 
@@ -84,7 +82,7 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
     public async Task<Board?> GetBoardWithHierarchyAsync(Guid boardId, string? searchTerm = null,
         CancellationToken cancellationToken = default)
     {
-        var query = DbContext.Boards.IgnoreQueryFilters().Where(b => !b.IsDeleted).AsQueryable();
+        var query = DbContext.Boards.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
@@ -190,8 +188,7 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
         CancellationToken ct = default)
     {
         var board = await DbContext.Boards
-            .IgnoreQueryFilters()
-            .Where(b => b.Id == boardId && b.IsArchived && !b.IsDeleted)
+            .Where(b => b.Id == boardId && b.IsArchived)
             .Select(b => new BoardExportBoardDto(
                 b.Id,
                 b.Name,
@@ -336,7 +333,6 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
     public async Task<bool> IsBoardArchivedAsync(Guid boardId, CancellationToken ct = default)
     {
         return await DbContext.Boards
-            .IgnoreQueryFilters()
             .Where(b => b.Id == boardId)
             .Select(b => b.IsArchived)
             .FirstOrDefaultAsync(ct);

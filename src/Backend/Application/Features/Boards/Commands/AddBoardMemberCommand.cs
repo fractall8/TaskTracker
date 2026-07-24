@@ -3,6 +3,7 @@ using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Domain.Entities;
 using Domain.Enums;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 
@@ -27,7 +28,12 @@ public class AddBoardMemberCommandHandler(
 
         if (board == null)
         {
-            throw new KeyNotFoundException("Board not found.");
+            throw new NotFoundException("Board not found.");
+        }
+
+        if (board.IsArchived)
+        {
+            throw new BusinessRuleValidationException("Cannot manage members on an archived board.");
         }
 
         await workspaceAccessService.EnsureCanManageBoardMembersAsync(board.WorkspaceId, ct);
@@ -36,7 +42,7 @@ public class AddBoardMemberCommandHandler(
 
         if (targetMember == null || targetMember.WorkspaceId != board.WorkspaceId)
         {
-            throw new InvalidOperationException("The user is not a member of this workspace.");
+            throw new BusinessRuleValidationException("The user is not a member of this workspace.");
         }
 
         var isAlreadyMember = await boardMemberRepository.AnyAsync(
@@ -45,7 +51,7 @@ public class AddBoardMemberCommandHandler(
 
         if (isAlreadyMember)
         {
-            throw new InvalidOperationException("This user is already a member of this board.");
+            throw new ConflictException("This user is already a member of this board.");
         }
 
         var boardMember = new BoardMember

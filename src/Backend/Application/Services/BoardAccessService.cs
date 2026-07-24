@@ -4,6 +4,7 @@ using Application.Interfaces.Services;
 using Contracts.Enums;
 using Domain.Authorization;
 using Domain.Enums;
+using Domain.Exceptions;
 
 namespace Application.Services;
 
@@ -21,7 +22,7 @@ public class BoardAccessService(
 
         if (userInfo?.Id == null || string.IsNullOrEmpty(userInfo.Email))
         {
-            throw new UnauthorizedAccessException("User is not authenticated.");
+            throw new ForbiddenException("User is not authenticated.");
         }
 
         return (userInfo.Id.Value, userInfo.Email);
@@ -76,14 +77,14 @@ public class BoardAccessService(
 
         if (effectiveRoleDto == null)
         {
-            throw new UnauthorizedAccessException("You are not a member of this board or it does not exist.");
+            throw new ForbiddenException("You are not a member of this board or it does not exist.");
         }
 
         var effectiveBoardRole = (BoardRole)effectiveRoleDto;
 
         if (!permissionCheck(effectiveBoardRole))
         {
-            throw new UnauthorizedAccessException(errorMessage);
+            throw new ForbiddenException(errorMessage);
         }
 
         if (requiresActiveBoard)
@@ -92,7 +93,7 @@ public class BoardAccessService(
 
             if (isArchived)
             {
-                throw new InvalidOperationException("This action cannot be performed because the board is archived.");
+                throw new BusinessRuleValidationException("This action cannot be performed because the board is archived.");
             }
         }
 

@@ -1,3 +1,4 @@
+using Domain.Exceptions;
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -18,6 +19,13 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
             ValidationException =>
                 (StatusCodes.Status400BadRequest, "Validation Error", "One or more validation errors occurred."),
 
+            // Business/domain exceptions raised deliberately by the Application layer.
+            // Each subtype carries its own HTTP status code and title.
+            AppException appException =>
+                (appException.StatusCode, appException.Title, appException.Message),
+
+            // Legacy fallbacks: standard .NET exceptions still thrown by code that hasn't been
+            // migrated to AppException subtypes yet (e.g. Infrastructure/Persistence).
             KeyNotFoundException =>
                 (StatusCodes.Status404NotFound, "Not Found", exception.Message),
 
@@ -30,7 +38,7 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
                         ? "The requested operation could not be completed."
                         : exception.Message),
 
-            // Fallback for all other
+            // Fallback for all other - never leak internal exception details to the client.
             _ =>
                 (StatusCodes.Status500InternalServerError, "Server Error", "An unexpected error occurred.")
         };

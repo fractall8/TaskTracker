@@ -1,5 +1,6 @@
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
+using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -20,7 +21,7 @@ public class DeleteBoardCommandHandler(
         await boardAccessService.EnsureCanDeleteBoardAsync(request.BoardId, cancellationToken);
 
         var board = await boardRepository.GetByIdAsync(request.BoardId, cancellationToken)
-                    ?? throw new KeyNotFoundException($"Board with ID {request.BoardId} not found.");
+                    ?? throw new NotFoundException($"Board with ID {request.BoardId} not found.");
 
         var fileUrlsToDelete = await attachmentRepository.GetUrlsByBoardIdAsync(request.BoardId, cancellationToken);
 

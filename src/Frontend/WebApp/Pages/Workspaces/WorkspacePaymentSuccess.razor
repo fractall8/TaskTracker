@@ -1,0 +1,156 @@
+﻿@page "/workspaces/{WorkspaceId:guid}/subscriptions/success"
+@attribute [Authorize]
+@using Contracts.Enums
+@using Services.Abstractions.Subscriptions.Stores
+@inject IWorkspaceSubscriptionsStore SubscriptionsStore
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<PageTitle>Payment Success - TaskTracker</PageTitle>
+
+<div class="success-container">
+    <div class="success-card">
+        @if (string.IsNullOrEmpty(PlanId))
+        {
+            <div class="icon-wrapper error-icon">
+                <MudIcon Icon="@Icons.Material.Outlined.ErrorOutline" Style="font-size: 32px;"/>
+            </div>
+            <h2 class="success-title">Something went wrong</h2>
+            <p class="success-desc">We couldn't verify the purchased plan. Please return to your workspace.</p>
+        }
+        else if (SubscriptionsStore.PaymentStatus is PaymentConfirmationStatusDto.Confirming or PaymentConfirmationStatusDto.Idle)
+        {
+            <div class="d-flex justify-center mb-5 mt-2">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large"/>
+            </div>
+            <h2 class="success-title">Confirming payment...</h2>
+            <p class="success-desc">Please wait while we activate your subscription.</p>
+        }
+        else if (SubscriptionsStore.PaymentStatus == PaymentConfirmationStatusDto.Confirmed)
+        {
+            <div class="icon-wrapper success-icon">
+                <MudIcon Icon="@Icons.Material.Outlined.CheckCircle" Style="font-size: 32px;"/>
+            </div>
+            <h2 class="success-title">Thank you!</h2>
+            <p class="success-desc">Your payment was successful and your subscription is now active.</p>
+        }
+        else if (SubscriptionsStore.PaymentStatus == PaymentConfirmationStatusDto.AwaitingActivation)
+        {
+            <div class="icon-wrapper warning-icon">
+                <MudIcon Icon="@Icons.Material.Outlined.AccessTime" Style="font-size: 32px;"/>
+            </div>
+            <h2 class="success-title">Payment received</h2>
+            <p class="success-desc">Your subscription will be active shortly. You can safely leave this page.</p>
+        }
+
+        <button
+            class="btn @(SubscriptionsStore.PaymentStatus == PaymentConfirmationStatusDto.Confirmed ? "btn-primary" : "")"
+            style="width: 100%; height: 44px; margin-top: 12px; justify-content: center;"
+            @onclick="@(() => Navigation.NavigateTo($"/workspaces/{WorkspaceId}"))">
+            Return to Workspace
+        </button>
+    </div>
+</div>
+
+<style>
+    .success-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - 120px);
+        padding: 24px;
+    }
+
+    .success-card {
+        background-color: var(--mud-palette-surface);
+        border: 1px solid var(--mud-palette-lines-default);
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+        padding: 40px 32px;
+        max-width: 420px;
+        width: 100%;
+        text-align: center;
+        animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .icon-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        margin: 0 auto 20px auto;
+    }
+
+    .success-icon {
+        background-color: rgba(39, 174, 96, 0.12);
+        color: var(--mud-palette-success);
+    }
+
+    .error-icon {
+        background-color: rgba(235, 87, 87, 0.12);
+        color: var(--mud-palette-error);
+    }
+
+    .warning-icon {
+        background-color: rgba(242, 201, 76, 0.12);
+        color: var(--mud-palette-warning);
+    }
+
+    .success-title {
+        font-size: 22px;
+        font-weight: 700;
+        margin: 0 0 8px 0;
+        color: var(--mud-palette-text-primary);
+    }
+
+    .success-desc {
+        font-size: 14.5px;
+        color: var(--mud-palette-text-secondary);
+        line-height: 1.5;
+        margin: 0 0 24px 0;
+    }
+
+    @@keyframes scaleIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95) translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+</style>
+
+@code {
+    [Parameter] public Guid WorkspaceId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "planId")]
+    public string? PlanId { get; set; }
+
+    private CancellationTokenSource? _flowCts;
+
+    protected override void OnInitialized()
+    {
+        SubscriptionsStore.StateChanged += StateHasChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !string.IsNullOrWhiteSpace(PlanId))
+        {
+            _flowCts = new CancellationTokenSource();
+            await SubscriptionsStore.ConfirmPurchasedPlanAsync(WorkspaceId, PlanId, _flowCts.Token);
+        }
+    }
+
+    public void Dispose()
+    {
+        SubscriptionsStore.StateChanged -= StateHasChanged;
+        _flowCts?.Cancel();
+        _flowCts?.Dispose();
+    }
+
+}
