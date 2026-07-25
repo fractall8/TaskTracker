@@ -1,5 +1,5 @@
 ---
-baseline_commit: 5d9fc365a7919d2d9cc8846a9fbdc5ac662ef2a7
+baseline_commit: ef13ebc9f9710561a83421bfbc0ae7f35bbbb0e5
 ---
 
 # Story 1.1: Real-Time Board Calls — Azure Communication Services Video & Screen Share
@@ -54,28 +54,13 @@ so that my team can run synchronous collaboration (e.g. Daily Scrum) without lea
   - [x] `CallStartedPayload` / `CallParticipantsChangedPayload` / `CallEndedPayload`
   - [x] **NEW** — `Contracts/DTOs/BoardCalls/AcsCallCredentialsDto.cs`: `public record AcsCallCredentialsDto(string Token, DateTimeOffset ExpiresOn, string AcsUserId, string RoomId);` — this is our own wrapper; **never expose an `Azure.Communication.*` SDK type through `Shared/Contracts`** (AD-3). `StartBoardCallCommand`/`JoinBoardCallCommand` return this alongside `BoardCallDto`.
 
-- [ ] **Task 3 — Backend: ACS infrastructure service** (AC: 1, 2, 3, 6)
-  - [ ] Add NuGet packages to `Application.csproj`/`Infrastructure.csproj` per existing split (interface in Application, implementation in Infrastructure, matching every other cross-cutting service in this codebase): `Azure.Communication.Identity` 1.3.1, `Azure.Communication.Rooms` 1.2.0 (verify these are still current at implementation time — Azure SDKs ship frequently)
-  - [ ] `Application/Common/Enums/CallParticipantRole.cs` — `public enum CallParticipantRole { Attendee, Presenter }`. This exists so `Application` never references the Azure SDK's own `Azure.Communication.Rooms.ParticipantRole` type directly (AD-1 — Application depends only on Domain + Shared/Contracts, never on an Infrastructure-layer package)
-  - [ ] `Application/Interfaces/Services/IAcsCallService.cs`:
-    ```csharp
-    public interface IAcsCallService
-    {
-        Task<string> EnsureUserIdentityAsync(Guid userId, CancellationToken ct = default); // returns/provisions User.AcsCommunicationUserId
-        Task<string> CreateRoomAsync(CancellationToken ct = default); // returns AcsRoomId
-        Task AddOrUpdateParticipantAsync(string roomId, string acsUserId, CallParticipantRole role, CancellationToken ct = default);
-        Task RemoveParticipantAsync(string roomId, string acsUserId, CancellationToken ct = default);
-        Task DeleteRoomAsync(string roomId, CancellationToken ct = default);
-        Task<AcsCallCredentialsDto> IssueTokenAsync(string acsUserId, CancellationToken ct = default);
-    }
-    ```
-  - [ ] `Infrastructure/BoardCalls/AcsCallService.cs` implementing the above with `CommunicationIdentityClient` (from `Azure.Communication.Identity`) and `RoomsClient` (from `Azure.Communication.Rooms`):
-    - `EnsureUserIdentityAsync`: load the `User`; if `AcsCommunicationUserId` is null, call `CommunicationIdentityClient.CreateUserAsync`, persist the returned raw ID via `IUserRepository`/`SaveChangesAsync`, return it; otherwise return the existing value. **This is the only place a new ACS identity is ever created** — one per `User`, forever, per the persisted-identity decision.
-    - `IssueTokenAsync`: `CommunicationIdentityClient.GetTokenAsync(new CommunicationUserIdentifier(acsUserId), scopes: [CommunicationTokenScope.VoIP])` — single token, no refresh (explicitly deferred, see Dev Notes §9).
-    - `AddOrUpdateParticipantAsync`: translate `CallParticipantRole` → the SDK's `ParticipantRole.Presenter`/`.Attendee`, call `RoomsClient.AddOrUpdateParticipantsAsync`.
-    - `DeleteRoomAsync`: `RoomsClient.DeleteRoomAsync` — called by the explicit "end for everyone" path (AC 6).
-  - [ ] New `Infrastructure/DI/Modules/AcsModule.cs` registering `CommunicationIdentityClient`/`RoomsClient` (constructed from a connection string, mirror how `Azure.Storage.Blobs`' `BlobServiceClient` is registered in `BlobModule.cs`) and `IAcsCallService`; wire into `InfrastructureServiceCollectionExtensions.AddInfrastructure(...)`
-  - [ ] Add `AzureCommunicationServices` connection string to `appsettings.json` under `ConnectionStrings` (mirror the existing `AzureBlobStorage`/`ServiceBus`/`CosmosDB` entries) and to `docker-compose.yml`'s `api` service environment block
+- [x] **Task 3 — Backend: ACS infrastructure service** (AC: 1, 2, 3, 6)
+  - [x] Added `Azure.Communication.Identity` 1.3.1 and `Azure.Communication.Rooms` 1.2.0 to `Infrastructure.csproj` only (both re-verified as current stable via the NuGet flat-container API at implementation time — no beta versions used). `Application.csproj` does not reference either package, per AD-1.
+  - [x] `Application/Common/Enums/CallParticipantRole.cs` — `{ Attendee, Presenter }`, exactly as scoped.
+  - [x] `Application/Interfaces/Services/IAcsCallService.cs` — implemented as scoped, with **one signature refinement**: `IssueTokenAsync` gained a `string roomId` parameter (`IssueTokenAsync(string acsUserId, string roomId, ...)`) so it can return a fully-formed `AcsCallCredentialsDto` (the original signature had no way to populate `AcsCallCredentialsDto.RoomId`).
+  - [x] `Infrastructure/BoardCalls/AcsCallService.cs` — implemented against the real SDK surface (verified via Microsoft Learn API docs, not assumed): `CommunicationIdentityClient.CreateUserAsync()` / `.GetTokenAsync(CommunicationUserIdentifier, IEnumerable<CommunicationTokenScope>, ct)`; `RoomsClient.CreateRoomAsync(validFrom, validUntil, participants, ct)` / `.AddOrUpdateParticipantsAsync(roomId, participants, ct)` / `.RemoveParticipantsAsync(roomId, identifiers, ct)` / `.DeleteRoomAsync(roomId, ct)`. `RoomParticipant` takes a `CommunicationIdentifier` in its constructor and an settable `Role` (`ParticipantRole.Presenter`/`.Attendee` — both are static properties on an extensible `readonly struct`, not a plain enum). `EnsureUserIdentityAsync` is the only place a new ACS identity is ever created, persisted via `IUserRepository.Update` + `IUnitOfWork.SaveChangesAsync`.
+  - [x] `Infrastructure/DI/Modules/AcsModule.cs` — registers `CommunicationIdentityClient`/`RoomsClient` as singletons (both constructed from the `AzureCommunicationServices` connection string via their `(string connectionString)` constructor overload, mirroring `BlobModule.cs`'s `BlobServiceClient` registration) and `IAcsCallService` as scoped; wired into `InfrastructureServiceCollectionExtensions.AddInfrastructure(...)`.
+  - [x] Added `AzureCommunicationServices` connection string to `appsettings.json` (`ConnectionStrings`), `docker-compose.yml`'s `api` service environment block (`ConnectionStrings__AzureCommunicationServices=${AZURE_COMMUNICATION_SERVICES_CONNECTION}`), and `.env.example` (placeholder ACS connection-string format).
 
 - [ ] **Task 4 — Backend: CQRS lifecycle commands** (AC: 1, 2, 3, 6, 7)
   - [ ] Extend `IBoardAccessService` with `EnsureCanStartCallAsync` (ScrumMaster/Admin) exactly as previously scoped — unaffected by the pivot
@@ -166,6 +151,33 @@ _Code review of Task 1 & Task 2 implementation, 2026-07-25. Blind Hunter + Edge 
 - SQL comment density in `0020` (Acceptance Auditor, informational only) — auditor itself concluded this is not a spec violation.
 - Domain entity setters don't self-enforce `EndedAt >= StartedAt` invariants in code — inconsistent with this codebase's established anemic-entity convention (no sibling entity does this); the new DB `CHECK` constraint (patch above) is the actual authority per AD-5.
 - Null-guard on `CallParticipantsChangedPayload.ParticipantUserIds` — inconsistent with the guard-free convention used by all 15+ sibling payload records.
+
+### Review Findings — Task 3
+
+_Code review of Task 3 (ACS infrastructure service) implementation, 2026-07-25. Blind Hunter + Edge Case Hunter + Acceptance Auditor (vs. this spec + `project-context.md` + `ARCHITECTURE-SPINE.md`)._
+
+- [ ] [Review][Patch] `EnsureUserIdentityAsync` commits the Unit of Work itself — every other `SaveChangesAsync` call in this codebase is owned by the top-level command handler, never by a reusable Infrastructure service that's meant to be one step inside a larger flow. Once Task 4 calls this from within `JoinBoardCallCommand`, that handler would end up with two separate commits instead of one atomic one. [`src/Backend/Infrastructure/BoardCalls/AcsCallService.cs`]
+- [ ] [Review][Patch] `CallParticipantRole` placed in a brand-new `Application/Common/Enums/` folder instead of the established sibling convention — `BoardRole`/`WorkspaceRole` (the same kind of role enum) both live in `Domain/Enums/`. The story explicitly said to check for this before creating a new folder; that check was missed. [`src/Backend/Application/Common/Enums/CallParticipantRole.cs`]
+- [ ] [Review][Patch] New top-level `Infrastructure/BoardCalls/` folder duplicates rather than extends the existing convention — board-related infrastructure already groups under `Infrastructure/Boards/{Export,Jobs,Notifiers}`; this should be `Infrastructure/Boards/Calls/`. [`src/Backend/Infrastructure/BoardCalls/AcsCallService.cs`]
+- [ ] [Review][Patch] No `RequestFailedException` translation anywhere in `AcsCallService` — every Azure SDK call (`CreateUserAsync`, `CreateRoomAsync`, `AddOrUpdateParticipantsAsync`, `RemoveParticipantsAsync`, `DeleteRoomAsync`, `GetTokenAsync`) can throw `Azure.RequestFailedException`, none of it is mapped to this project's `AppException` subtypes, so it falls through `GlobalExceptionHandler` to a generic 500, losing real status semantics. `RemoveParticipantAsync`/`DeleteRoomAsync` should additionally treat a 404 as an idempotent no-op, matching the "leave"/"end call" semantics Task 4 will build on top of. [`src/Backend/Infrastructure/BoardCalls/AcsCallService.cs`]
+- [ ] [Review][Patch] No input validation on any public method — `roomId`/`acsUserId` string parameters have zero guard clauses, unlike `StripeSubscriptionsService`'s established `ArgumentException.ThrowIfNullOrWhiteSpace(...)` convention. [`src/Backend/Infrastructure/BoardCalls/AcsCallService.cs`]
+- [ ] [Review][Patch] `AcsModule`'s connection-string check (`?? throw`) doesn't catch an empty/whitespace value — `docker-compose` substitutes `""` when `AZURE_COMMUNICATION_SERVICES_CONNECTION` is unset, which would surface as an opaque SDK parsing error instead of the intended clear startup error. [`src/Backend/Infrastructure/DI/Modules/AcsModule.cs`]
+- [ ] [Review][Patch] No logging anywhere in `AcsCallService` — every method makes an external network call to Azure; a production failure (auth expiry, throttling, transient fault) leaves no trace beyond an unhandled exception at the global handler. [`src/Backend/Infrastructure/BoardCalls/AcsCallService.cs`]
+- [ ] [Review][Patch] `.env.example` still has no trailing newline after this diff added a second line — violates `.editorconfig`'s top-level `insert_final_newline = true`, and this diff touched the file anyway. [`.env.example`]
+
+- [x] [Review][Defer] Race condition in `EnsureUserIdentityAsync`'s check-then-act (two concurrent requests for the same user both see no `AcsCommunicationUserId` and both call `CreateUserAsync`) — real but narrow (double-click/multi-tab); the DB unique index (`IX_Users_AcsCommunicationUserId`) at least prevents silent duplicate persistence. Proper handling (catch-and-retry on unique violation) needs Task 4's actual command handler to exist.
+- [x] [Review][Defer] Broadened the existing `deferred-work.md` item on ACS/DB partial-failure cleanup to explicitly also cover `EnsureUserIdentityAsync` (an ACS identity created but the surrounding save fails) — same class of problem as the already-deferred Room-creation case, not just Room-specific.
+- [x] [Review][Defer] `CreateRoomAsync` always passes `validFrom: null, validUntil: null`, deferring to ACS's default room TTL with no reconciliation against `BoardCall.EndedAt`'s lifecycle — Task 4's call once an actual call-duration business rule exists.
+- [x] [Review][Defer] No ACS emulator exists (unlike Azurite for Blob Storage) — local dev requires a real (or shared dev) ACS resource to boot the API at all once the connection-string check is strict. Genuine DX gap, folded into the existing dev-tunnel note in Dev Notes.
+
+### Findings dismissed as noise, already-decided, or a misread of the ACS security model
+- `IssueTokenAsync` not verifying room membership before issuing a token — misreads the ACS model: the token is a general VoIP-scope credential, not room-scoped; Room membership is enforced by ACS itself at join time, not by token issuance.
+- "`AcsModule` should use an `Options` class instead of inline `?? throw`" — `DatabaseModule.cs` already establishes an equally valid inline-connection-string-check precedent for exactly this kind of single-value config; `Options` classes are for multi-field structured config (`BoardExportSchedulerOptions`), not warranted here.
+- "`AcsModule`'s `InvalidOperationException` should be an `AppException`" — wrong exception category; this fires at DI-composition/startup time, before any HTTP request exists to render a `ProblemDetails` response for, and matches `DatabaseModule.cs`'s identical pattern.
+- `IAcsCallService` has zero consumers in this diff — working as designed; Task 4 is where it gets called.
+- Package version pinning "has no stated rationale" — both versions were verified directly against the live NuGet API before being pinned (see Task 3's Completion Notes); just not visible from the diff alone.
+- `ToAcsRole`'s `ArgumentOutOfRangeException` default arm called "dead code" — standard idiomatic exhaustive-switch defensive pattern, not a real gap.
+- Pre-existing `Application.csproj` → `Azure.Storage.Blobs` AD-1 tension — explicitly not introduced by this diff, out of scope.
 
 ## Dev Notes
 
@@ -263,6 +275,7 @@ No test project exists in this solution (`project-context.md`) — do not add te
 - **2026-07-25 — Architectural pivot (specification):** Replaced the custom P2P WebRTC mesh design (dedicated `BoardCallHub`, hand-rolled SDP/ICE signaling over SignalR, STUN/TURN via Open Relay) with **Azure Communication Services** (Identity + Rooms + `@azure/communication-calling`). Participant presence is now driven by Azure Event Grid webhooks instead of a custom Hangfire grace-period job. Tasks 3–8 rewritten; Tasks 1–2 retained with two required schema additions (`BoardCall.AcsRoomId`, `User.AcsCommunicationUserId`). Introduces a new frontend build-tooling dependency (esbuild + `package.json`) that did not exist in this repo before.
 - **2026-07-25 — Task 1–2 ACS additions implemented:** `BoardCall.AcsRoomId` added and `0020_CreateBoardCallTables.sql` amended in place (never applied to any database). `User.AcsCommunicationUserId` added via new `0021_AddAcsCommunicationUserIdToUsers.sql`. `AcsCallCredentialsDto` added to `Shared/Contracts`. `dotnet build` verified 0 errors. Tasks 3–8 remain unimplemented.
 - **2026-07-25 — Code review of Task 1/2, findings resolved:** 2 decisions made (`BoardCall`/`BoardCallParticipant` FKs now `Cascade` on Board/BoardCall delete, matching `Column`/`Task`'s sibling convention; `CallStartedPayload`/`CallParticipantsChangedPayload` now embed full DTOs instead of bare IDs, matching `TaskCreatedPayload`/`CommentAddedPayload`), 4 patches applied (`BoardCallConstants` extracted, index naming `UX_`→`IX_`, 4 new `CHECK` constraints added, `BoardRepository.SoftDeleteCascadeAsync` extended to cascade to `BoardCalls`/`BoardCallParticipants`). 4 items deferred to `deferred-work.md` (cross-board active-call constraint, ACS/DB partial-failure cleanup, frontend `BoardActionSyncKey` mapping, ACS identity lifecycle metadata) — all out of Task 1/2's scope. `dotnet build` verified 0 errors after all changes.
+- **2026-07-25 — Task 3 implemented:** ACS infrastructure service (`IAcsCallService`/`AcsCallService`) built against the real `Azure.Communication.Identity` 1.3.1 / `Azure.Communication.Rooms` 1.2.0 SDK surface (verified via Microsoft Learn API docs before writing the code, not assumed). One signature refinement from the original spec: `IssueTokenAsync` gained a `roomId` parameter so it can return a complete `AcsCallCredentialsDto`. `dotnet build` verified 0 errors, no new warnings.
 
 ## Dev Agent Record
 
@@ -274,7 +287,8 @@ Claude Sonnet 5 (claude-sonnet-5)
 
 - `dotnet build TaskTracker.sln` — succeeded, 0 errors, 17 pre-existing warnings (initial Task 1–2 implementation, pre-pivot).
 - `dotnet build TaskTracker.sln` — succeeded, 0 errors, same 17 pre-existing warnings, none new (ACS pivot additions to Task 1–2).
-- `dotnet build TaskTracker.sln` — succeeded, 0 errors, same 17 pre-existing warnings, none new (this session — post code-review fixes).
+- `dotnet build TaskTracker.sln` — succeeded, 0 errors, same 17 pre-existing warnings, none new (post code-review fixes).
+- `dotnet build TaskTracker.sln` — succeeded, 0 errors, same 17 pre-existing warnings, none new (this session — Task 3, ACS infrastructure service).
 
 ### Completion Notes List
 
@@ -285,8 +299,23 @@ Claude Sonnet 5 (claude-sonnet-5)
   - `Contracts/DTOs/BoardCalls/AcsCallCredentialsDto.cs` added — a plain wrapper record, no `Azure.Communication.*` SDK types referenced (AD-3 compliance; the SDK isn't even a dependency yet, since Task 3 hasn't started).
 - Verification: `dotnet build TaskTracker.sln` (0 errors) — no test project exists in this solution (`project-context.md`), so build success remains the gate, consistent with the original Task 1–2 pass.
 - Code review (Blind Hunter + Edge Case Hunter + Acceptance Auditor) ran against the full Task 1/2 diff. 2 `decision-needed` findings resolved by the user (FK cascade behavior, payload richness — see Review Findings above), 4 `patch` findings applied, 4 deferred (logged in `deferred-work.md`, all genuinely out of Task 1/2 scope), 7 dismissed (already-decided, working-as-designed, or inconsistent with established codebase conventions). Status kept at `in-progress` rather than `done` — the review was explicitly scoped to Task 1/2 only; Tasks 3–8 remain unimplemented, so the story as a whole is not complete.
+- Task 3 implemented: `IAcsCallService`/`AcsCallService` (Infrastructure) + `CallParticipantRole` enum (Application) + `AcsModule` DI wiring + connection-string plumbing. Every Azure SDK call was checked against the actual Microsoft Learn API reference before writing it (constructor overloads, method signatures, the fact that `ParticipantRole`/`CommunicationTokenScope` are extensible `readonly struct`s with static properties, not plain enums) — this avoided several plausible-but-wrong guesses (e.g. `RoomParticipant` takes a `CommunicationIdentifier` in its constructor with `Role` set via object initializer, not a constructor overload with a role parameter). `IssueTokenAsync` gained a `roomId` parameter beyond the original story spec — a necessary correction since the original signature couldn't have populated `AcsCallCredentialsDto.RoomId`. No entitlement/plan-gating check was added (still an explicit non-goal per Dev Notes §5/§7). `dotnet build` — 0 errors, no new warnings.
 
 ### File List
+
+**Added (Task 3, this session):**
+- `src/Backend/Application/Common/Enums/CallParticipantRole.cs`
+- `src/Backend/Application/Interfaces/Services/IAcsCallService.cs`
+- `src/Backend/Infrastructure/BoardCalls/AcsCallService.cs`
+- `src/Backend/Infrastructure/DI/Modules/AcsModule.cs`
+
+**Modified (Task 3, this session):**
+- `src/Backend/Infrastructure/Infrastructure.csproj` (added `Azure.Communication.Identity` 1.3.1, `Azure.Communication.Rooms` 1.2.0)
+- `src/Backend/Domain/Constants/ConnectionStrings.cs` (added `AzureCommunicationServices`)
+- `src/Backend/Infrastructure/DI/InfrastructureServiceCollectionExtensions.cs` (wired `AddAcsModule`)
+- `src/Backend/Presentation/appsettings.json` (added `AzureCommunicationServices` connection string)
+- `docker-compose.yml` (added `ConnectionStrings__AzureCommunicationServices` to the `api` service)
+- `.env.example` (added `AZURE_COMMUNICATION_SERVICES_CONNECTION` placeholder)
 
 **Added (code review fixes, this session):**
 - `src/Backend/Domain/Constants/BoardCallConstants.cs`

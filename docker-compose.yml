@@ -43,6 +43,7 @@
       - ConnectionStrings__AzureBlobStorage=${AZURE_STORAGE_CONNECTION_STRING}
       - ConnectionStrings__CosmosDB=${COSMOS_DB_CONNECTION}
       - ConnectionStrings__ServiceBus=${SERVICE_BUS_CONNECTION}
+      - ConnectionStrings__AzureCommunicationServices=${AZURE_COMMUNICATION_SERVICES_CONNECTION}
       - AzureAd__TenantId=${AZURE_TENANT_ID}
       - AzureAd__ClientId=${AZURE_CLIENT_ID}
       - AzureAd__Audience=api://${AZURE_CLIENT_ID}
