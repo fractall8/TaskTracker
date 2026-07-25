@@ -179,6 +179,14 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
             .Where(bm => bm.BoardId == boardId && !bm.IsDeleted)
             .ExecuteUpdateAsync(s => s.SetProperty(bm => bm.IsDeleted, true).SetProperty(bm => bm.DeletedAt, now), ct);
 
+        await DbContext.BoardCallParticipants
+            .Where(p => p.BoardCall!.BoardId == boardId && !p.IsDeleted)
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.IsDeleted, true).SetProperty(p => p.DeletedAt, now), ct);
+
+        await DbContext.BoardCalls
+            .Where(c => c.BoardId == boardId && !c.IsDeleted)
+            .ExecuteUpdateAsync(s => s.SetProperty(c => c.IsDeleted, true).SetProperty(c => c.DeletedAt, now), ct);
+
         await DbContext.Boards
             .Where(b => b.Id == boardId && !b.IsDeleted)
             .ExecuteUpdateAsync(s => s.SetProperty(b => b.IsDeleted, true).SetProperty(b => b.DeletedAt, now), ct);

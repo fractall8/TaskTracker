@@ -7,6 +7,10 @@
 *.txt
 CLAUDE.md
 
+# Ignore bmad and claude
+_bmad/
+.claude/
+
 # User-specific files
 *.rsuser
 *.suo

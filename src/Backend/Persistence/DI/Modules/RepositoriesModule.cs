@@ -22,6 +22,7 @@ internal static class RepositoriesModule
         services.AddScoped<IAttachmentRepository, AttachmentRepository>();
         services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
         services.AddScoped<IStripeWebhookEventRepository, StripeWebhookEventRepository>();
+        services.AddScoped<IBoardCallRepository, BoardCallRepository>();
         services.AddScoped(typeof(IRepository<,>), typeof(Repository<,>));
 
         return services;

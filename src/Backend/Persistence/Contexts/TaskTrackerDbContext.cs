@@ -19,6 +19,10 @@ public class TaskTrackerDbContext(DbContextOptions options) : DbContext(options)
 
     public DbSet<StripeWebhookEvent> StripeWebhookEvents { get; set; }
 
+    public DbSet<BoardCall> BoardCalls { get; set; }
+
+    public DbSet<BoardCallParticipant> BoardCallParticipants { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
