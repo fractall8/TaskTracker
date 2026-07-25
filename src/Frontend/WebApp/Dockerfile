@@ -10,11 +10,13 @@ COPY ["src/Shared/Contracts/Contracts.csproj", "src/Shared/Contracts/"]
 
 RUN dotnet restore "src/Frontend/WebApp/WebApp.csproj"
 
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs
+RUN cd src/Frontend/WebApp && npm ci
+
 COPY . .
 WORKDIR "/src/src/Frontend/WebApp"
 
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs
-RUN npm ci && npm run build
+RUN npm run build
 
 RUN dotnet publish "WebApp.csproj" -c Release -o /app/publish
 

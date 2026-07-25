@@ -39,12 +39,20 @@ async function notifyParticipantsChanged() {
     await dotNetRef.invokeMethodAsync("OnRemoteParticipantsChanged", participants);
 }
 
+function subscribeToVideoStream(stream) {
+    stream.on("isAvailableChanged", () => notifyParticipantsChanged());
+}
+
 function subscribeToRemoteParticipant(remoteParticipant) {
     remoteParticipant.on("stateChanged", () => notifyParticipantsChanged());
-    remoteParticipant.on("videoStreamsUpdated", () => notifyParticipantsChanged());
 
-    remoteParticipant.videoStreams.forEach(stream => {
-        stream.on("isAvailableChanged", () => notifyParticipantsChanged());
+    remoteParticipant.videoStreams.forEach(subscribeToVideoStream);
+
+    // A stream added mid-call (e.g. screen sharing starting) needs its own isAvailableChanged
+    // listener too — not just the ones present when this participant was first subscribed.
+    remoteParticipant.on("videoStreamsUpdated", e => {
+        e.added.forEach(subscribeToVideoStream);
+        notifyParticipantsChanged();
     });
 }
 
@@ -63,6 +71,26 @@ function disposeAllRenderers() {
 }
 
 export async function initCallAgent(userToken, displayName) {
+    // Defensive cleanup — the C# side guards against calling this while already in a call, but a
+    // stale call/agent left over from an unclean previous session should never linger into a new one.
+    if (call) {
+        try {
+            await call.hangUp();
+        } catch {
+            // best effort
+        }
+
+        call = null;
+    }
+
+    if (callAgent) {
+        try {
+            await callAgent.dispose();
+        } catch {
+            // best effort — CallAgent.dispose() is known to occasionally throw, safe to ignore here
+        }
+    }
+
     callClient = new CallClient();
     const tokenCredential = new AzureCommunicationTokenCredential(userToken);
     callAgent = await callClient.createCallAgent(tokenCredential, { displayName });
@@ -72,7 +100,14 @@ export async function initCallAgent(userToken, displayName) {
 export async function joinRoom(roomId, dotNetObjectRef) {
     dotNetRef = dotNetObjectRef;
 
-    const access = await deviceManager.askDevicePermission({ audio: true, video: true });
+    let access;
+    try {
+        access = await deviceManager.askDevicePermission({ audio: true, video: true });
+    } catch {
+        // Some environments (unsupported/insecure context, unusual browser configurations) can
+        // throw instead of resolving false — degrade to audio/video-less rather than fail the join.
+        access = { audio: false, video: false };
+    }
 
     let videoOptions;
     if (access.video) {
@@ -94,7 +129,7 @@ export async function joinRoom(roomId, dotNetObjectRef) {
 
     await notifyParticipantsChanged();
 
-    return { audioAvailable: access.audio, videoAvailable: access.video };
+    return { audioAvailable: access.audio, videoAvailable: access.video && !!videoOptions };
 }
 
 export async function toggleMic(enabled) {
@@ -158,6 +193,7 @@ export async function attachRenderer(streamId, videoElementId) {
     }
 
     disposeRenderer(streamId);
+    container.replaceChildren();
 
     const renderer = new VideoStreamRenderer(stream);
     const view = await renderer.createView();

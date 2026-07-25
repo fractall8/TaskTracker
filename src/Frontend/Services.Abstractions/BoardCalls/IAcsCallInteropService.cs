@@ -18,13 +18,13 @@ public interface IAcsCallInteropService : IAsyncDisposable
 
     Task EndCallAsync(CancellationToken ct = default);
 
-    Task ToggleMicAsync(bool enabled);
+    Task ToggleMicAsync(bool enabled, CancellationToken ct = default);
 
-    Task ToggleCameraAsync(bool enabled);
+    Task ToggleCameraAsync(bool enabled, CancellationToken ct = default);
 
-    Task StartScreenShareAsync();
+    Task StartScreenShareAsync(CancellationToken ct = default);
 
-    Task StopScreenShareAsync();
+    Task StopScreenShareAsync(CancellationToken ct = default);
 
-    Task<bool> AttachRendererAsync(string streamId, string videoElementId);
+    Task<bool> AttachRendererAsync(string streamId, string videoElementId, CancellationToken ct = default);
 }

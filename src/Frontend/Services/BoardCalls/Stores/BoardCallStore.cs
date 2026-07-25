@@ -40,6 +40,7 @@ public class BoardCallStore(
         try
         {
             BoardId = boardId;
+            ActiveCall = null;
             ActiveCall = await boardCallApi.GetActiveCallAsync(boardId, ct);
         }
         catch (Exception ex)

@@ -2,7 +2,7 @@
   "name": "tasktracker-webapp",
   "private": true,
   "scripts": {
-    "build": "esbuild js-src/acsCallInterop.js --bundle --format=esm --outfile=wwwroot/js/acsCallInterop.bundle.js"
+    "build": "esbuild js-src/acsCallInterop.js --bundle --minify --format=esm --outfile=wwwroot/js/acsCallInterop.bundle.js"
   },
   "dependencies": {
     "@azure/communication-calling": "^1.43.1",
