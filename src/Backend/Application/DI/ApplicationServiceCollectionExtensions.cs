@@ -32,6 +32,7 @@ public static class ApplicationServiceCollectionExtensions
 
         services.AddScoped<IBoardAccessService, BoardAccessService>();
         services.AddScoped<IWorkspaceAccessService, WorkspaceAccessService>();
+        services.AddScoped<IBoardCallLifecycleService, BoardCallLifecycleService>();
 
         return services;
     }

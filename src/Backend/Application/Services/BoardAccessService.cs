@@ -52,6 +52,11 @@ public class BoardAccessService(
     public Task<BoardAccessContext> EnsureCanExportBoardAsync(Guid boardId, CancellationToken ct = default) =>
         EnsureAccessAsync(boardId, _ => true, "You don't have permission to export this board.", requiresActiveBoard: false, ct);
 
+    public Task<BoardAccessContext> EnsureCanStartCallAsync(Guid boardId, CancellationToken ct = default) =>
+        EnsureAccessAsync(boardId, BoardRolePermissions.CanManageCall, "You don't have permission to start a call on this board.", requiresActiveBoard: true, ct);
+
+    public Task<BoardAccessContext> EnsureCanEndCallAsync(Guid boardId, CancellationToken ct = default) =>
+        EnsureAccessAsync(boardId, BoardRolePermissions.CanManageCall, "You don't have permission to end this call.", requiresActiveBoard: true, ct);
 
     public async Task<BoardRoleDto?> GetEffectiveBoardRoleAsync(Guid boardId, CancellationToken ct = default)
     {

@@ -33,6 +33,9 @@ public class UserRepository(TaskTrackerDbContext context) : Repository<User, Gui
     public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default) =>
         await DbSet.FirstOrDefaultAsync(u => u.Email == email, ct);
 
+    public async Task<User?> GetByAcsCommunicationUserIdAsync(string acsCommunicationUserId, CancellationToken ct = default) =>
+        await DbSet.FirstOrDefaultAsync(u => u.AcsCommunicationUserId == acsCommunicationUserId, ct);
+
     public async Task<List<UserDto>> SearchWorkspaceUsersAsync(Guid workspaceId, string? searchTerm, CancellationToken ct = default)
     {
         var query = DbContext.Set<WorkspaceMember>()

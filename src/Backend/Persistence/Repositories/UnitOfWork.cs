@@ -1,6 +1,8 @@
 using Application.Interfaces.UOW;
+using Domain.Exceptions;
 using Persistence.Contexts;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace Persistence.Repositories;
 
@@ -8,7 +10,14 @@ public class UnitOfWork(TaskTrackerDbContext dbContext) : IUnitOfWork
 {
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        return await dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            return await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            throw new ConflictException("A conflicting record already exists.");
+        }
     }
 
     public async Task ExecuteInTransactionAsync(Func<CancellationToken, Task> action, CancellationToken cancellationToken = default)

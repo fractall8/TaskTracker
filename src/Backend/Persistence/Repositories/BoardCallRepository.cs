@@ -13,6 +13,12 @@ public class BoardCallRepository(TaskTrackerDbContext dbContext) : Repository<Bo
             .FirstOrDefaultAsync(c => c.BoardId == boardId && c.EndedAt == null, ct);
     }
 
+    public async Task<BoardCall?> GetActiveCallByAcsRoomIdAsync(string acsRoomId, CancellationToken ct = default)
+    {
+        return await DbSet
+            .FirstOrDefaultAsync(c => c.AcsRoomId == acsRoomId && c.EndedAt == null, ct);
+    }
+
     public async Task<BoardCall?> GetActiveCallWithParticipantsAsync(Guid boardCallId, CancellationToken ct = default)
     {
         return await DbSet
@@ -31,5 +37,20 @@ public class BoardCallRepository(TaskTrackerDbContext dbContext) : Repository<Bo
     {
         return await DbContext.BoardCallParticipants
             .CountAsync(p => p.BoardCallId == boardCallId && p.LeftAt == null, ct);
+    }
+
+    public async Task AddParticipantAsync(BoardCallParticipant participant, CancellationToken ct = default)
+    {
+        await DbContext.BoardCallParticipants.AddAsync(participant, ct);
+    }
+
+    public void UpdateParticipant(BoardCallParticipant participant)
+    {
+        DbContext.BoardCallParticipants.Update(participant);
+    }
+
+    public void DeleteParticipant(BoardCallParticipant participant)
+    {
+        DbContext.BoardCallParticipants.Remove(participant);
     }
 }

@@ -33,4 +33,7 @@ public static class BoardRolePermissions
 
     public static bool CanViewBoard(BoardRole role) =>
         role is BoardRole.Admin or BoardRole.ScrumMaster or BoardRole.User;
+
+    public static bool CanManageCall(BoardRole role) =>
+        role is BoardRole.Admin or BoardRole.ScrumMaster;
 }

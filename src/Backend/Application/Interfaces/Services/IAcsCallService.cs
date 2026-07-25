@@ -1,5 +1,5 @@
-using Application.Common.Enums;
 using Contracts.DTOs;
+using Domain.Enums;
 
 namespace Application.Interfaces.Services;
 
