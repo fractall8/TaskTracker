@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Services.Abstractions.Auth;
+using Services.Abstractions.BoardCalls;
 using Services.Abstractions.Boards;
 using Services.Abstractions.Hubs;
 using Services.Abstractions.Tasks;
@@ -19,6 +20,7 @@ public class BoardActionsHubService(
     IOptions<ApiClientOptions> options,
     IBoardDetailsStore boardDetailsStore,
     ITaskDetailsStore taskDetailsStore,
+    IBoardCallStore boardCallStore,
     IProfileStore profileStore,
     ILogger<BoardActionsHubService> logger)
     : IBoardActionsHubService, IAsyncDisposable
@@ -64,6 +66,7 @@ public class BoardActionsHubService(
             var currentUserId = profileStore.Profile?.Id ?? Guid.Empty;
             boardDetailsStore.ApplyAction(notification, currentUserId);
             taskDetailsStore.ApplyAction(notification, currentUserId);
+            boardCallStore.ApplyAction(notification, currentUserId);
         });
 
         const int maxRetries = 5;

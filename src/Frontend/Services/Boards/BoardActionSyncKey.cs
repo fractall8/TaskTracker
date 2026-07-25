@@ -39,6 +39,15 @@ internal static class BoardActionSyncKey
             BoardActionNotificationType.TaskAttachmentsCountChanged =>
                 $"task:{((TaskAttachmentsCountChangedPayload)notification.Payload).BoardTaskId}:attachments-count",
 
+            BoardActionNotificationType.CallStarted =>
+                $"call:{((CallStartedPayload)notification.Payload).Call.Id}",
+
+            BoardActionNotificationType.CallParticipantsChanged =>
+                $"call:{((CallParticipantsChangedPayload)notification.Payload).BoardCallId}",
+
+            BoardActionNotificationType.CallEnded =>
+                $"call:{((CallEndedPayload)notification.Payload).BoardCallId}",
+
             _ => $"type:{(byte)notification.Type}",
         };
 }
