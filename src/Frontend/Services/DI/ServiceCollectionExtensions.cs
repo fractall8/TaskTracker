@@ -123,6 +123,7 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IBoardCallApiService, BoardCallApiService>();
         services.AddScoped<IBoardCallStore, BoardCallStore>();
+        services.AddScoped<IAcsCallInteropService, AcsCallInteropService>();
 
         return services;
     }

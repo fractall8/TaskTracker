@@ -2,6 +2,7 @@
 WORKDIR /src
 
 COPY ["src/Frontend/WebApp/WebApp.csproj", "src/Frontend/WebApp/"]
+COPY ["src/Frontend/WebApp/package.json", "src/Frontend/WebApp/package-lock.json", "src/Frontend/WebApp/"]
 COPY ["src/Frontend/Services/Services.csproj", "src/Frontend/Services/"]
 COPY ["src/Frontend/Services.Abstractions/Services.Abstractions.csproj", "src/Frontend/Services.Abstractions/"]
 COPY ["src/Frontend/Domain/Domain.csproj", "src/Frontend/Domain/"]
@@ -11,6 +12,10 @@ RUN dotnet restore "src/Frontend/WebApp/WebApp.csproj"
 
 COPY . .
 WORKDIR "/src/src/Frontend/WebApp"
+
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs
+RUN npm ci && npm run build
+
 RUN dotnet publish "WebApp.csproj" -c Release -o /app/publish
 
 FROM nginx:alpine AS final
