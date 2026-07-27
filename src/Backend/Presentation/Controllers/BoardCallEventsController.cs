@@ -54,15 +54,9 @@ public class BoardCallEventsController(ISender sender, ILogger<BoardCallEventsCo
             {
                 case _callParticipantAddedEventType:
                 {
-                    var data = evt.Data.ToObjectFromJson<BoardCallParticipantEventData>(_eventDataJsonOptions);
-
-                    if (data?.Room?.Id is { } roomId && data.User?.CommunicationIdentifier?.RawId is { } rawId)
+                    if (TryParseParticipantEvent(evt, out var roomId, out var rawId))
                     {
                         await sender.Send(new RecordCallParticipantJoinedCommand(roomId, rawId, evt.EventTime), ct);
-                    }
-                    else
-                    {
-                        logger.LogWarning("Malformed {EventType} event, missing room or user id", evt.EventType);
                     }
 
                     break;
@@ -70,15 +64,9 @@ public class BoardCallEventsController(ISender sender, ILogger<BoardCallEventsCo
 
                 case _callParticipantRemovedEventType:
                 {
-                    var data = evt.Data.ToObjectFromJson<BoardCallParticipantEventData>(_eventDataJsonOptions);
-
-                    if (data?.Room?.Id is { } roomId && data.User?.CommunicationIdentifier?.RawId is { } rawId)
+                    if (TryParseParticipantEvent(evt, out var roomId, out var rawId))
                     {
                         await sender.Send(new RecordCallParticipantLeftCommand(roomId, rawId, evt.EventTime), ct);
-                    }
-                    else
-                    {
-                        logger.LogWarning("Malformed {EventType} event, missing room or user id", evt.EventType);
                     }
 
                     break;
@@ -91,6 +79,36 @@ public class BoardCallEventsController(ISender sender, ILogger<BoardCallEventsCo
         }
 
         return Ok();
+    }
+
+    // Isolated per-event so one malformed event's payload can't throw and abort the whole batch —
+    // otherwise Event Grid would retry the entire delivery, including events already processed above.
+    private bool TryParseParticipantEvent(EventGridEvent evt, out string roomId, out string rawId)
+    {
+        roomId = string.Empty;
+        rawId = string.Empty;
+
+        BoardCallParticipantEventData? data;
+
+        try
+        {
+            data = evt.Data.ToObjectFromJson<BoardCallParticipantEventData>(_eventDataJsonOptions);
+        }
+        catch (JsonException ex)
+        {
+            logger.LogWarning(ex, "Malformed {EventType} event payload, skipping", evt.EventType);
+            return false;
+        }
+
+        if (data?.Room?.Id is { } parsedRoomId && data.User?.CommunicationIdentifier?.RawId is { } parsedRawId)
+        {
+            roomId = parsedRoomId;
+            rawId = parsedRawId;
+            return true;
+        }
+
+        logger.LogWarning("Malformed {EventType} event, missing room or user id", evt.EventType);
+        return false;
     }
 }
 

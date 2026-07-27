@@ -1,0 +1,329 @@
+@using Contracts.Enums
+@using Services.Abstractions.Auth
+@using Services.Abstractions.BoardCalls
+@using WebApp.Shared.Helpers
+@using WebApp.Shared.Toast
+@implements IAsyncDisposable
+
+@inject IBoardDetailsStore BoardDetailsStore
+@inject IBoardCallStore BoardCallStore
+@inject IAcsCallInteropService CallInterop
+@inject IProfileStore ProfileStore
+@inject CustomToastService Toast
+
+@if (CallInterop.IsInCall)
+{
+    <div class="call-panel mb-4">
+        <div class="call-panel-head">
+            <span class="call-panel-title">
+                <MudIcon Icon="@Icons.Material.Filled.Videocam" Size="Size.Small"/>
+                In call
+            </span>
+        </div>
+
+        <div class="call-tiles">
+            @if (CallInterop.IsScreenSharing)
+            {
+                <div class="call-tile call-tile-screen">
+                    <div class="call-tile-video" id="@LocalScreenShareElementId"></div>
+                    <span class="call-tile-label">Your screen</span>
+                </div>
+            }
+
+            @foreach (var participant in _remoteParticipants.Where(p => p.IsScreenSharing))
+            {
+                <div class="call-tile call-tile-screen">
+                    <div class="call-tile-video" id="@GetScreenShareElementId(participant.Id)"></div>
+                    <span class="call-tile-label">@(participant.DisplayName ?? "Participant")'s screen</span>
+                </div>
+            }
+
+            <div class="call-tile">
+                <div class="call-tile-video" id="@LocalVideoElementId"></div>
+                @if (!CallInterop.IsCameraOn)
+                {
+                    <div class="call-tile-placeholder">
+                        <div class="avatar-circle @AvatarColorHelper.GetColorClass(ProfileStore.Profile?.DisplayName ?? ProfileStore.Profile?.Email)">
+                            @if (!string.IsNullOrWhiteSpace(ProfileStore.Profile?.AvatarUrl))
+                            {
+                                <img src="@ProfileStore.Profile.AvatarUrl" alt="Avatar" class="avatar-circle-img"/>
+                            }
+                            else
+                            {
+                                <span>@GetInitial(ProfileStore.Profile?.DisplayName)</span>
+                            }
+                        </div>
+                    </div>
+                }
+                <span class="call-tile-label">@LocalDisplayLabel</span>
+            </div>
+
+            @foreach (var participant in _remoteParticipants)
+            {
+                <div class="call-tile">
+                    <div class="call-tile-video" id="@GetVideoElementId(participant.Id)"></div>
+                    @if (!participant.HasVideo)
+                    {
+                        <div class="call-tile-placeholder">
+                            <div class="avatar-circle @AvatarColorHelper.GetColorClass(participant.DisplayName)">
+                                @{
+                                    var avatarUrl = GetRemoteAvatarUrl(participant.Id);
+                                }
+                                @if (!string.IsNullOrWhiteSpace(avatarUrl))
+                                {
+                                    <img src="@avatarUrl" alt="Avatar" class="avatar-circle-img"/>
+                                }
+                                else
+                                {
+                                    <span>@GetInitial(participant.DisplayName)</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                    <span class="call-tile-label">@(participant.DisplayName ?? "Participant")</span>
+                </div>
+            }
+        </div>
+
+        <div class="call-controls">
+            <button class="icon-btn" type="button"
+                    title="@(CallInterop.IsMicOn ? "Mute microphone" : "Unmute microphone")"
+                    disabled="@(!CallInterop.IsAudioAvailable)"
+                    @onclick="ToggleMicAsync">
+                <MudIcon Icon="@(CallInterop.IsMicOn ? Icons.Material.Filled.Mic : Icons.Material.Filled.MicOff)" Size="Size.Small"/>
+            </button>
+
+            <button class="icon-btn" type="button"
+                    title="@(CallInterop.IsCameraOn ? "Turn camera off" : "Turn camera on")"
+                    disabled="@(!CallInterop.IsVideoAvailable)"
+                    @onclick="ToggleCameraAsync">
+                <MudIcon Icon="@(CallInterop.IsCameraOn ? Icons.Material.Filled.Videocam : Icons.Material.Filled.VideocamOff)" Size="Size.Small"/>
+            </button>
+
+            <button class="icon-btn" type="button"
+                    title="@(CallInterop.IsScreenSharing ? "Stop sharing" : "Share screen")"
+                    @onclick="ToggleScreenShareAsync">
+                <MudIcon Icon="@Icons.Material.Filled.ScreenShare" Size="Size.Small"/>
+            </button>
+
+            @if (CanEndForEveryone)
+            {
+                <button class="btn btn-danger" type="button" @onclick="EndForEveryoneAsync">
+                    End call for everyone
+                </button>
+            }
+
+            <button class="btn" type="button" @onclick="LeaveAsync">
+                <MudIcon Icon="@Icons.Material.Filled.CallEnd" Size="Size.Small"/>
+                Leave
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private const string LocalStreamId = "local";
+    private const string LocalScreenStreamId = "local-screen";
+    private const string LocalVideoElementId = "board-call-local-video";
+    private const string LocalScreenShareElementId = "board-call-local-screen";
+    private const string ScreenShareSuffix = "-screen";
+
+    [Parameter, EditorRequired] public Guid BoardId { get; set; }
+
+    private IReadOnlyList<RemoteParticipantInfo> _remoteParticipants = [];
+    private readonly HashSet<string> _attachedStreamIds = [];
+
+    private bool CanEndForEveryone => BoardDetailsStore.Board?.BoardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
+
+    private string LocalDisplayLabel => ProfileStore.Profile?.DisplayName is { } name && !string.IsNullOrWhiteSpace(name)
+        ? $"{name} (You)"
+        : "You";
+
+    protected override void OnInitialized()
+    {
+        CallInterop.StateChanged += OnStateChanged;
+        CallInterop.RemoteParticipantsChanged += OnRemoteParticipantsChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!CallInterop.IsInCall)
+        {
+            _attachedStreamIds.Clear();
+            return;
+        }
+
+        await SyncRendererAsync(LocalStreamId, CallInterop.IsCameraOn, LocalVideoElementId);
+        await SyncRendererAsync(LocalScreenStreamId, CallInterop.IsScreenSharing, LocalScreenShareElementId);
+
+        var currentStreamIds = new HashSet<string> { LocalStreamId };
+
+        if (CallInterop.IsScreenSharing)
+        {
+            currentStreamIds.Add(LocalScreenStreamId);
+        }
+
+        foreach (var participant in _remoteParticipants)
+        {
+            await SyncRendererAsync(participant.Id, participant.HasVideo, GetVideoElementId(participant.Id));
+            currentStreamIds.Add(participant.Id);
+
+            if (participant.IsScreenSharing)
+            {
+                var screenStreamId = GetScreenShareStreamId(participant.Id);
+                await SyncRendererAsync(screenStreamId, true, GetScreenShareElementId(participant.Id));
+                currentStreamIds.Add(screenStreamId);
+            }
+        }
+
+        // Drop bookkeeping for streams that are no longer relevant — their renderer was already disposed
+        // either by acsCallInterop.js's own remoteParticipantsUpdated handler (participant left) or by
+        // SyncRendererAsync's own detach path above (camera/share turned off).
+        _attachedStreamIds.RemoveWhere(id => !currentStreamIds.Contains(id));
+    }
+
+    private async Task SyncRendererAsync(string streamId, bool shouldHaveVideo, string videoElementId)
+    {
+        var isAttached = _attachedStreamIds.Contains(streamId);
+
+        if (shouldHaveVideo && !isAttached)
+        {
+            try
+            {
+                if (await CallInterop.AttachRendererAsync(streamId, videoElementId))
+                {
+                    _attachedStreamIds.Add(streamId);
+                }
+            }
+            catch
+            {
+                // Attaching a renderer is inherently racy against the remote side turning their
+                // camera/share off mid-attach — acsCallInterop.js already treats that as a soft failure
+                // (returns false), but any other unexpected interop error must not escape here either:
+                // OnAfterRenderAsync has no error boundary, so an uncaught exception crashes the entire
+                // WASM renderer, not just this component. Leaving the tile on its placeholder is the
+                // safe degrade.
+            }
+        }
+        else if (!shouldHaveVideo && isAttached)
+        {
+            try
+            {
+                await CallInterop.DetachRendererAsync(streamId);
+            }
+            catch
+            {
+                // Best-effort — nothing left to react to if detaching fails.
+            }
+
+            _attachedStreamIds.Remove(streamId);
+        }
+    }
+
+    private void OnStateChanged()
+    {
+        if (!CallInterop.IsInCall)
+        {
+            _remoteParticipants = [];
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnRemoteParticipantsChanged(IReadOnlyList<RemoteParticipantInfo> participants)
+    {
+        _remoteParticipants = participants;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private static string GetVideoElementId(string participantId) => $"board-call-remote-{participantId}";
+
+    private static string GetScreenShareStreamId(string participantId) => $"{participantId}{ScreenShareSuffix}";
+
+    private static string GetScreenShareElementId(string participantId) => $"board-call-remote-screen-{participantId}";
+
+    private static string GetInitial(string? displayName) =>
+        string.IsNullOrWhiteSpace(displayName) ? "?" : displayName.Trim()[0].ToString().ToUpperInvariant();
+
+    // RemoteParticipantInfo.Id is the participant's ACS communicationUserId — the only field the
+    // Calling SDK gives us — while BoardCallStore's roster carries our own AvatarUrl keyed by that same
+    // ACS id (BoardCallParticipantDto.AcsCommunicationUserId), so this is the one reliable join key
+    // between "who's on the call" (JS/ACS) and "who they are in our app" (backend roster).
+    private string? GetRemoteAvatarUrl(string acsParticipantId) =>
+        BoardCallStore.ActiveCall?.Participants
+            .FirstOrDefault(p => p.AcsCommunicationUserId == acsParticipantId)?.AvatarUrl;
+
+    private async Task ToggleMicAsync()
+    {
+        try
+        {
+            await CallInterop.ToggleMicAsync(!CallInterop.IsMicOn);
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError(ex.Message);
+        }
+    }
+
+    private async Task ToggleCameraAsync()
+    {
+        try
+        {
+            await CallInterop.ToggleCameraAsync(!CallInterop.IsCameraOn);
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError(ex.Message);
+        }
+    }
+
+    private async Task ToggleScreenShareAsync()
+    {
+        try
+        {
+            if (CallInterop.IsScreenSharing)
+            {
+                await CallInterop.StopScreenShareAsync();
+            }
+            else
+            {
+                await CallInterop.StartScreenShareAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError(ex.Message);
+        }
+    }
+
+    private async Task LeaveAsync()
+    {
+        try
+        {
+            await CallInterop.LeaveCallAsync(BoardId);
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError(ex.Message);
+        }
+    }
+
+    private async Task EndForEveryoneAsync()
+    {
+        try
+        {
+            await CallInterop.EndCallAsync(BoardId);
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError(ex.Message);
+        }
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        CallInterop.StateChanged -= OnStateChanged;
+        CallInterop.RemoteParticipantsChanged -= OnRemoteParticipantsChanged;
+        return ValueTask.CompletedTask;
+    }
+}

@@ -12,6 +12,7 @@ using Domain.Enums;
 using Domain.Exceptions;
 using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Features.BoardCalls.Commands;
 
@@ -20,10 +21,12 @@ public record StartBoardCallCommand(Guid BoardId) : IRequest<StartOrJoinBoardCal
 public class StartBoardCallCommandHandler(
     IBoardAccessService boardAccessService,
     IBoardCallRepository boardCallRepository,
+    IBoardMemberRepository boardMemberRepository,
     IAcsCallService acsCallService,
     IBoardActionNotifier boardActionNotifier,
     IDateTimeProvider dateTimeProvider,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    ILogger<StartBoardCallCommandHandler> logger)
     : IRequestHandler<StartBoardCallCommand, StartOrJoinBoardCallResponse>
 {
     public async Task<StartOrJoinBoardCallResponse> Handle(StartBoardCallCommand request, CancellationToken ct)
@@ -59,24 +62,31 @@ public class StartBoardCallCommandHandler(
             JoinedAt = call.StartedAt
         };
 
-        string acsUserId;
+        string acsUserId = null!;
 
         try
         {
-            // Resolve the starter's ACS identity before the single SaveChangesAsync below, so the identity
-            // provisioning (if any), the new BoardCall row, and its participant reservation all commit
-            // together in one transaction.
-            acsUserId = await acsCallService.EnsureUserIdentityAsync(boardAccessContext.UserId, ct);
+            await unitOfWork.ExecuteInTransactionAsync(async token =>
+            {
+                // Serializes against a concurrent identity provisioning for the same user (e.g. starting
+                // a call on one board while joining another's) — without this, two concurrent callers
+                // could both see no AcsCommunicationUserId and both create a new ACS identity, silently
+                // orphaning one of them via a last-writer-wins update.
+                await unitOfWork.AcquireDistributedLockAsync($"user:{boardAccessContext.UserId}:acs-identity", token);
+                acsUserId = await acsCallService.EnsureUserIdentityAsync(boardAccessContext.UserId, token);
 
-            await boardCallRepository.AddAsync(call, ct);
-            await boardCallRepository.AddParticipantAsync(participant, ct);
-            await unitOfWork.SaveChangesAsync(ct);
+                await boardCallRepository.AddAsync(call, token);
+                await boardCallRepository.AddParticipantAsync(participant, token);
+                await unitOfWork.SaveChangesAsync(token);
+            }, ct);
         }
         catch
         {
-            // Nothing was persisted (a genuine double-start race is translated to ConflictException by
-            // UnitOfWork itself) — the ACS room is the only thing left dangling.
-            await acsCallService.DeleteRoomAsync(roomId, ct);
+            // Nothing was persisted (the transaction rolled back; a genuine double-start race is
+            // translated to ConflictException by UnitOfWork itself) — the ACS room is the only thing
+            // left dangling. Deletion failure is only logged, never rethrown, so it can't mask the
+            // original exception the caller actually needs to see.
+            await TryDeleteRoomAsync(roomId, ct);
             throw;
         }
 
@@ -86,7 +96,8 @@ public class StartBoardCallCommandHandler(
             var credentials = await acsCallService.IssueTokenAsync(acsUserId, roomId, ct);
 
             var callWithParticipants = await boardCallRepository.GetActiveCallWithParticipantsAsync(call.Id, ct) ?? call;
-            var callDto = BoardCallMappings.ToDto(callWithParticipants);
+            var maxParticipants = await boardMemberRepository.CountByBoardIdAsync(request.BoardId, ct);
+            var callDto = BoardCallMappings.ToDto(callWithParticipants, maxParticipants);
 
             await boardActionNotifier.NotifyAsync(new BoardActionNotification(
                 request.BoardId,
@@ -100,11 +111,33 @@ public class StartBoardCallCommandHandler(
         catch
         {
             // The call never became usable — undo the DB rows and the room so a retry starts clean.
-            boardCallRepository.DeleteParticipant(participant);
-            boardCallRepository.Delete(call);
-            await unitOfWork.SaveChangesAsync(ct);
-            await acsCallService.DeleteRoomAsync(roomId, ct);
+            // Each cleanup step is attempted independently so one failing doesn't skip or mask the
+            // other, and the original exception is always what the caller ultimately sees.
+            try
+            {
+                boardCallRepository.DeleteParticipant(participant);
+                boardCallRepository.Delete(call);
+                await unitOfWork.SaveChangesAsync(ct);
+            }
+            catch (Exception cleanupEx)
+            {
+                logger.LogError(cleanupEx, "Failed to roll back BoardCall {BoardCallId} after a failed start", call.Id);
+            }
+
+            await TryDeleteRoomAsync(roomId, ct);
             throw;
+        }
+    }
+
+    private async Task TryDeleteRoomAsync(string roomId, CancellationToken ct)
+    {
+        try
+        {
+            await acsCallService.DeleteRoomAsync(roomId, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to delete orphaned ACS room {RoomId} during start-call rollback", roomId);
         }
     }
 }

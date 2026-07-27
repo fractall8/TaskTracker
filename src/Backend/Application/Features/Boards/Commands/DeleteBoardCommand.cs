@@ -12,16 +12,28 @@ public record DeleteBoardCommand(Guid BoardId) : IRequest;
 public class DeleteBoardCommandHandler(
     IBoardAccessService boardAccessService,
     IBoardRepository boardRepository,
+    IBoardCallRepository boardCallRepository,
+    IBoardCallLifecycleService boardCallLifecycleService,
     IAttachmentRepository attachmentRepository,
     IFileService fileService,
     ILogger<DeleteBoardCommandHandler> logger) : IRequestHandler<DeleteBoardCommand>
 {
     public async Task Handle(DeleteBoardCommand request, CancellationToken cancellationToken)
     {
-        await boardAccessService.EnsureCanDeleteBoardAsync(request.BoardId, cancellationToken);
+        var boardAccessContext = await boardAccessService.EnsureCanDeleteBoardAsync(request.BoardId, cancellationToken);
 
         var board = await boardRepository.GetByIdAsync(request.BoardId, cancellationToken)
                     ?? throw new NotFoundException($"Board with ID {request.BoardId} not found.");
+
+        // The ACS room (and any still-connected participants) must be released before the board
+        // disappears from under them — otherwise it's never cleaned up, since nothing else would ever
+        // call EndCallAsync for a call whose board no longer exists.
+        var activeCall = await boardCallRepository.GetActiveCallForBoardAsync(request.BoardId, cancellationToken);
+
+        if (activeCall is not null)
+        {
+            await boardCallLifecycleService.EndCallAsync(activeCall.Id, boardAccessContext.UserId, cancellationToken);
+        }
 
         var fileUrlsToDelete = await attachmentRepository.GetUrlsByBoardIdAsync(request.BoardId, cancellationToken);
 

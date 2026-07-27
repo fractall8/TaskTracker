@@ -1,3 +1,4 @@
+using Application.Common.Interfaces;
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Azure;
@@ -16,6 +17,7 @@ public class AcsCallService(
     CommunicationIdentityClient identityClient,
     RoomsClient roomsClient,
     IUserRepository userRepository,
+    IDateTimeProvider dateTimeProvider,
     ILogger<AcsCallService> logger) : IAcsCallService
 {
     public async Task<string> EnsureUserIdentityAsync(Guid userId, CancellationToken ct = default)
@@ -42,13 +44,21 @@ public class AcsCallService(
         return user.AcsCommunicationUserId;
     }
 
+    // No stated business rule caps how long a board call may run, so this is a safety-net upper bound
+    // only — every normal call is torn down explicitly via DeleteRoomAsync when it ends (LeaveBoardCallCommand/
+    // BoardCallLifecycleService). This just guarantees an abandoned room (e.g. if that cleanup itself
+    // failed, or the process crashed before it ran) doesn't outlive its BoardCall row indefinitely.
+    private static readonly TimeSpan _maxRoomLifetime = TimeSpan.FromHours(24);
+
     public async Task<string> CreateRoomAsync(CancellationToken ct = default)
     {
         try
         {
+            var now = dateTimeProvider.UtcNow;
+
             var room = await roomsClient.CreateRoomAsync(
-                validFrom: null,
-                validUntil: null,
+                validFrom: now,
+                validUntil: now.Add(_maxRoomLifetime),
                 participants: [],
                 cancellationToken: ct);
 

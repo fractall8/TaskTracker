@@ -13,6 +13,13 @@ public class BoardCallRepository(TaskTrackerDbContext dbContext) : Repository<Bo
             .FirstOrDefaultAsync(c => c.BoardId == boardId && c.EndedAt == null, ct);
     }
 
+    public async Task<List<BoardCall>> GetActiveCallsForWorkspaceAsync(Guid workspaceId, CancellationToken ct = default)
+    {
+        return await DbSet
+            .Where(c => c.EndedAt == null && c.Board!.WorkspaceId == workspaceId)
+            .ToListAsync(ct);
+    }
+
     public async Task<BoardCall?> GetActiveCallByAcsRoomIdAsync(string acsRoomId, CancellationToken ct = default)
     {
         return await DbSet
@@ -31,6 +38,14 @@ public class BoardCallRepository(TaskTrackerDbContext dbContext) : Repository<Bo
     {
         return await DbContext.BoardCallParticipants
             .FirstOrDefaultAsync(p => p.BoardCallId == boardCallId && p.UserId == userId && p.LeftAt == null, ct);
+    }
+
+    public async Task<BoardCallParticipant?> GetLatestParticipantAsync(Guid boardCallId, Guid userId, CancellationToken ct = default)
+    {
+        return await DbContext.BoardCallParticipants
+            .Where(p => p.BoardCallId == boardCallId && p.UserId == userId)
+            .OrderByDescending(p => p.JoinedAt)
+            .FirstOrDefaultAsync(ct);
     }
 
     public async Task<int> CountActiveParticipantsAsync(Guid boardCallId, CancellationToken ct = default)

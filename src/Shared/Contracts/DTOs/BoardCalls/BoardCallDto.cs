@@ -5,4 +5,5 @@ public record BoardCallDto(
     Guid BoardId,
     Guid StartedByUserId,
     DateTimeOffset StartedAt,
+    int MaxParticipants,
     IReadOnlyList<BoardCallParticipantDto> Participants);

@@ -5,15 +5,26 @@ using Services.Abstractions.BoardCalls;
 
 namespace Services.BoardCalls;
 
-public class AcsCallInteropService(
-    IJSRuntime jsRuntime,
-    IBoardCallStore boardCallStore,
-    IProfileStore profileStore) : IAcsCallInteropService
+public class AcsCallInteropService : IAcsCallInteropService
 {
     private const string _modulePath = "./js/acsCallInterop.bundle.js";
 
+    private readonly IJSRuntime _jsRuntime;
+    private readonly IBoardCallStore _boardCallStore;
+    private readonly IProfileStore _profileStore;
+
     private IJSObjectReference? _module;
+    private Task<IJSObjectReference>? _moduleTask;
     private DotNetObjectReference<AcsCallInteropService>? _selfReference;
+
+    public AcsCallInteropService(IJSRuntime jsRuntime, IBoardCallStore boardCallStore, IProfileStore profileStore)
+    {
+        _jsRuntime = jsRuntime;
+        _boardCallStore = boardCallStore;
+        _profileStore = profileStore;
+
+        _boardCallStore.CallEndedRemotely += OnCallEndedRemotely;
+    }
 
     public bool IsInCall { get; private set; }
 
@@ -21,76 +32,121 @@ public class AcsCallInteropService(
 
     public bool IsVideoAvailable { get; private set; }
 
+    public bool IsMicOn { get; private set; }
+
+    public bool IsCameraOn { get; private set; }
+
+    public bool IsScreenSharing { get; private set; }
+
+    private bool _previewStarted;
+
     public event Action<IReadOnlyList<RemoteParticipantInfo>>? RemoteParticipantsChanged;
 
-    public async Task StartCallAsync(CancellationToken ct = default)
+    public event Action? StateChanged;
+
+    public async Task<PreviewDeviceAccess> StartPreviewAsync(string videoElementId, CancellationToken ct = default)
+    {
+        var module = await GetModuleAsync(ct);
+        var access = await InvokeSafeAsync<PreviewDeviceAccess>(module, "initPreview", ct, videoElementId);
+        _previewStarted = true;
+        return access;
+    }
+
+    public async Task<bool> SetPreviewCameraAsync(bool enabled, string videoElementId, CancellationToken ct = default)
+    {
+        var module = await GetModuleAsync(ct);
+        return await InvokeSafeAsync<bool>(module, "setPreviewCamera", ct, enabled, videoElementId);
+    }
+
+    public async Task StopPreviewAsync(CancellationToken ct = default)
+    {
+        if (!_previewStarted || IsInCall || _module is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _module.InvokeVoidAsync("disposePreview", ct);
+        }
+        catch
+        {
+            // Best-effort cleanup only — nothing left to react to if this fails while navigating away.
+        }
+
+        _previewStarted = false;
+    }
+
+    public async Task StartCallAsync(Guid boardId, bool micEnabled, bool cameraEnabled, CancellationToken ct = default)
     {
         if (IsInCall)
         {
             throw new InvalidOperationException("Already in a call.");
         }
 
-        var response = await boardCallStore.StartCallAsync(ct);
+        var response = await _boardCallStore.StartCallAsync(boardId, ct);
 
         try
         {
-            await JoinAcsRoomAsync(response.Credentials, ct);
+            await JoinAcsRoomAsync(response.Credentials, micEnabled, cameraEnabled, ct);
         }
         catch
         {
-            // The ACS session never actually connected — release the reservation the Start call
-            // above already committed server-side, so the board doesn't stay stuck "in a call".
-            await boardCallStore.EndCallAsync(ct);
+            await _boardCallStore.EndCallAsync(boardId, ct);
             throw;
         }
     }
 
-    public async Task JoinCallAsync(CancellationToken ct = default)
+    public async Task JoinCallAsync(Guid boardId, bool micEnabled, bool cameraEnabled, CancellationToken ct = default)
     {
         if (IsInCall)
         {
             throw new InvalidOperationException("Already in a call.");
         }
 
-        var response = await boardCallStore.JoinCallAsync(ct);
+        var response = await _boardCallStore.JoinCallAsync(boardId, ct);
 
         try
         {
-            await JoinAcsRoomAsync(response.Credentials, ct);
+            await JoinAcsRoomAsync(response.Credentials, micEnabled, cameraEnabled, ct);
         }
         catch
         {
-            // Same reasoning as StartCallAsync — release the seat the Join call already reserved.
-            await boardCallStore.LeaveCallAsync(ct);
+            await _boardCallStore.LeaveCallAsync(boardId, ct);
             throw;
         }
     }
 
-    private async Task JoinAcsRoomAsync(AcsCallCredentialsDto credentials, CancellationToken ct)
+    private async Task JoinAcsRoomAsync(AcsCallCredentialsDto credentials, bool micEnabled, bool cameraEnabled, CancellationToken ct)
     {
         var module = await GetModuleAsync(ct);
 
-        await module.InvokeVoidAsync("initCallAgent", ct, credentials.Token, profileStore.Profile?.DisplayName ?? string.Empty);
+        await InvokeVoidSafeAsync(module, "initCallAgent", ct, credentials.Token, _profileStore.Profile?.DisplayName ?? string.Empty);
 
         _selfReference = DotNetObjectReference.Create(this);
 
-        var access = await module.InvokeAsync<DeviceAccessResult>("joinRoom", ct, credentials.RoomId, _selfReference);
+        var access = await InvokeSafeAsync<DeviceAccessResult>(module, "joinRoom", ct, credentials.RoomId, _selfReference, micEnabled, cameraEnabled);
 
         IsAudioAvailable = access.AudioAvailable;
         IsVideoAvailable = access.VideoAvailable;
+        IsMicOn = access.AudioOn;
+        IsCameraOn = access.VideoOn;
         IsInCall = true;
+        _previewStarted = false;
+
+        StateChanged?.Invoke();
     }
 
-    public async Task LeaveCallAsync(CancellationToken ct = default)
+    public async Task LeaveCallAsync(Guid boardId, CancellationToken ct = default)
     {
+        await _boardCallStore.LeaveCallAsync(boardId, ct);
         await EndLocalSessionAsync(ct);
-        await boardCallStore.LeaveCallAsync(ct);
     }
 
-    public async Task EndCallAsync(CancellationToken ct = default)
+    public async Task EndCallAsync(Guid boardId, CancellationToken ct = default)
     {
+        await _boardCallStore.EndCallAsync(boardId, ct);
         await EndLocalSessionAsync(ct);
-        await boardCallStore.EndCallAsync(ct);
     }
 
     private async Task EndLocalSessionAsync(CancellationToken ct)
@@ -111,39 +167,52 @@ public class AcsCallInteropService(
         IsInCall = false;
         IsAudioAvailable = false;
         IsVideoAvailable = false;
+        IsMicOn = false;
+        IsCameraOn = false;
+        IsScreenSharing = false;
 
         _selfReference?.Dispose();
         _selfReference = null;
+
+        StateChanged?.Invoke();
     }
 
     public async Task ToggleMicAsync(bool enabled, CancellationToken ct = default)
     {
         var module = await GetModuleAsync(ct);
-        await module.InvokeVoidAsync("toggleMic", ct, enabled);
+        await InvokeVoidSafeAsync(module, "toggleMic", ct, enabled);
+        IsMicOn = enabled;
     }
 
     public async Task ToggleCameraAsync(bool enabled, CancellationToken ct = default)
     {
         var module = await GetModuleAsync(ct);
-        await module.InvokeVoidAsync("toggleCamera", ct, enabled);
+        await InvokeVoidSafeAsync(module, "toggleCamera", ct, enabled);
+        IsCameraOn = enabled;
     }
 
     public async Task StartScreenShareAsync(CancellationToken ct = default)
     {
         var module = await GetModuleAsync(ct);
-        await module.InvokeVoidAsync("startScreenShare", ct);
+        await InvokeVoidSafeAsync(module, "startScreenShare", ct);
     }
 
     public async Task StopScreenShareAsync(CancellationToken ct = default)
     {
         var module = await GetModuleAsync(ct);
-        await module.InvokeVoidAsync("stopScreenShare", ct);
+        await InvokeVoidSafeAsync(module, "stopScreenShare", ct);
     }
 
     public async Task<bool> AttachRendererAsync(string streamId, string videoElementId, CancellationToken ct = default)
     {
         var module = await GetModuleAsync(ct);
-        return await module.InvokeAsync<bool>("attachRenderer", ct, streamId, videoElementId);
+        return await InvokeSafeAsync<bool>(module, "attachRenderer", ct, streamId, videoElementId);
+    }
+
+    public async Task DetachRendererAsync(string streamId, CancellationToken ct = default)
+    {
+        var module = await GetModuleAsync(ct);
+        await InvokeVoidSafeAsync(module, "detachRenderer", ct, streamId);
     }
 
     [JSInvokable]
@@ -152,14 +221,84 @@ public class AcsCallInteropService(
         RemoteParticipantsChanged?.Invoke(participants);
     }
 
-    private async Task<IJSObjectReference> GetModuleAsync(CancellationToken ct)
+    [JSInvokable]
+    public void OnCallDisconnected()
     {
-        // Stateful (holds the live CallAgent/Call) — imported once and cached, never re-imported per call.
-        return _module ??= await jsRuntime.InvokeAsync<IJSObjectReference>("import", ct, _modulePath);
+        IsInCall = false;
+        IsAudioAvailable = false;
+        IsVideoAvailable = false;
+        IsMicOn = false;
+        IsCameraOn = false;
+        IsScreenSharing = false;
+
+        _selfReference?.Dispose();
+        _selfReference = null;
+
+        StateChanged?.Invoke();
+    }
+
+    [JSInvokable]
+    public void OnScreenSharingChanged(bool isScreenSharing)
+    {
+        IsScreenSharing = isScreenSharing;
+        StateChanged?.Invoke();
+    }
+
+    private void OnCallEndedRemotely(Guid boardCallId)
+    {
+        if (!IsInCall)
+        {
+            return;
+        }
+
+        _ = EndLocalSessionAsync(CancellationToken.None);
+    }
+
+    private static async Task InvokeVoidSafeAsync(IJSObjectReference module, string identifier, CancellationToken ct, params object?[] args)
+    {
+        try
+        {
+            await module.InvokeVoidAsync(identifier, ct, args);
+        }
+        catch (JSException ex)
+        {
+            throw new InvalidOperationException(CleanErrorMessage(ex.Message), ex);
+        }
+    }
+
+    private static async Task<T> InvokeSafeAsync<T>(IJSObjectReference module, string identifier, CancellationToken ct, params object?[] args)
+    {
+        try
+        {
+            return await module.InvokeAsync<T>(identifier, ct, args);
+        }
+        catch (JSException ex)
+        {
+            throw new InvalidOperationException(CleanErrorMessage(ex.Message), ex);
+        }
+    }
+
+    private static string CleanErrorMessage(string message)
+    {
+        var firstLine = message.Split('\n')[0].Trim();
+        return string.IsNullOrWhiteSpace(firstLine) ? "Something went wrong with the call. Please try again." : firstLine;
+    }
+
+    private Task<IJSObjectReference> GetModuleAsync(CancellationToken ct)
+    {
+        return _moduleTask ??= ImportModuleAsync(ct);
+    }
+
+    private async Task<IJSObjectReference> ImportModuleAsync(CancellationToken ct)
+    {
+        _module = await _jsRuntime.InvokeAsync<IJSObjectReference>("import", ct, _modulePath);
+        return _module;
     }
 
     public async ValueTask DisposeAsync()
     {
+        _boardCallStore.CallEndedRemotely -= OnCallEndedRemotely;
+
         if (IsInCall && _module is not null)
         {
             try
@@ -180,5 +319,5 @@ public class AcsCallInteropService(
         }
     }
 
-    private sealed record DeviceAccessResult(bool AudioAvailable, bool VideoAvailable);
+    private sealed record DeviceAccessResult(bool AudioAvailable, bool VideoAvailable, bool AudioOn, bool VideoOn);
 }

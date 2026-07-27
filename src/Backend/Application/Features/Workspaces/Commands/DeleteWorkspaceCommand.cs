@@ -11,6 +11,8 @@ public record DeleteWorkspaceCommand(Guid WorkspaceId) : IRequest;
 public class DeleteWorkspaceCommandHandler(
     IWorkspaceRepository workspaceRepository,
     IWorkspaceAccessService workspaceAccessService,
+    IBoardCallRepository boardCallRepository,
+    IBoardCallLifecycleService boardCallLifecycleService,
     IAttachmentRepository attachmentRepository,
     IFileService fileService,
     ILogger<DeleteWorkspaceCommandHandler> logger)
@@ -22,6 +24,16 @@ public class DeleteWorkspaceCommandHandler(
 
         var workspace = await workspaceRepository.GetByIdAsync(request.WorkspaceId, cancellationToken)
                         ?? throw new NotFoundException("Workspace not found.");
+
+        // Every board's ACS room (and any still-connected participants) must be released before the
+        // workspace disappears from under them — otherwise they're never cleaned up, since nothing else
+        // would ever call EndCallAsync for a call whose board/workspace no longer exists.
+        var activeCalls = await boardCallRepository.GetActiveCallsForWorkspaceAsync(request.WorkspaceId, cancellationToken);
+
+        foreach (var activeCall in activeCalls)
+        {
+            await boardCallLifecycleService.EndCallAsync(activeCall.Id, ct: cancellationToken);
+        }
 
         var fileUrlsToDelete = await attachmentRepository.GetUrlsByWorkspaceIdAsync(request.WorkspaceId, cancellationToken);
 

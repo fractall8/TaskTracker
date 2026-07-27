@@ -35,9 +35,13 @@ public class RecordCallParticipantJoinedCommandHandler(
             return;
         }
 
-        var existingParticipant = await boardCallRepository.GetActiveParticipantAsync(call.Id, user.Id, ct);
+        // Event Grid is at-least-once and can redeliver or reorder events, so compare against the most
+        // recent participant row for this user+call (active or not) rather than only the active one —
+        // otherwise a stale join arriving after a newer leave (or a duplicate of the current active
+        // join) would incorrectly reopen/duplicate the participant as active.
+        var latestParticipant = await boardCallRepository.GetLatestParticipantAsync(call.Id, user.Id, ct);
 
-        if (existingParticipant is not null)
+        if (latestParticipant is not null && (latestParticipant.LeftAt is null || latestParticipant.LeftAt >= request.OccurredAt))
         {
             return;
         }
@@ -52,8 +56,16 @@ public class RecordCallParticipantJoinedCommandHandler(
 
         await unitOfWork.SaveChangesAsync(ct);
 
-        var callWithParticipants = await boardCallRepository.GetActiveCallWithParticipantsAsync(call.Id, ct) ?? call;
-        var participants = BoardCallMappings.ToDto(callWithParticipants).Participants;
+        var callWithParticipants = await boardCallRepository.GetActiveCallWithParticipantsAsync(call.Id, ct);
+
+        if (callWithParticipants is null)
+        {
+            // The call ended concurrently with this webhook's processing — nothing meaningful left to
+            // notify participants about for a call that's already over.
+            return;
+        }
+
+        var participants = BoardCallMappings.ToParticipantDtos(callWithParticipants);
 
         await boardActionNotifier.NotifyAsync(new BoardActionNotification(
             call.BoardId,

@@ -11,7 +11,8 @@ public record GetActiveBoardCallQuery(Guid BoardId) : IRequest<BoardCallDto?>;
 
 public class GetActiveBoardCallQueryHandler(
     IBoardAccessService boardAccessService,
-    IBoardCallRepository boardCallRepository)
+    IBoardCallRepository boardCallRepository,
+    IBoardMemberRepository boardMemberRepository)
     : IRequestHandler<GetActiveBoardCallQuery, BoardCallDto?>
 {
     public async Task<BoardCallDto?> Handle(GetActiveBoardCallQuery request, CancellationToken ct)
@@ -27,8 +28,9 @@ public class GetActiveBoardCallQueryHandler(
 
         var callWithParticipants = await boardCallRepository.GetActiveCallWithParticipantsAsync(activeCall.Id, ct)
                                     ?? activeCall;
+        var maxParticipants = await boardMemberRepository.CountByBoardIdAsync(request.BoardId, ct);
 
-        return BoardCallMappings.ToDto(callWithParticipants);
+        return BoardCallMappings.ToDto(callWithParticipants, maxParticipants);
     }
 }
 

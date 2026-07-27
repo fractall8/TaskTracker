@@ -1,0 +1,68 @@
+@using Contracts.Enums
+@using Services.Abstractions.BoardCalls
+@implements IDisposable
+
+@inject IBoardCallStore BoardCallStore
+@inject IBoardDetailsStore BoardDetailsStore
+@inject IAcsCallInteropService CallInterop
+@inject NavigationManager Navigation
+
+@if (BoardDetailsStore.Board is { IsArchived: false } && !CallInterop.IsInCall)
+{
+    @if (BoardCallStore.ActiveCall is { } activeCall)
+    {
+        <div class="d-flex align-center gap-2">
+            <span class="badge-call">
+                <MudIcon Icon="@Icons.Material.Filled.Videocam" Size="Size.Small"/>
+                Call in progress · @activeCall.Participants.Count/@activeCall.MaxParticipants joined
+            </span>
+
+            <MudTooltip Text="This call is full" Disabled="@(!IsFull)">
+                <span class="d-inline-block">
+                    <button class="btn btn-primary" type="button" @onclick="GoToCall" disabled="@IsFull">
+                        <MudIcon Icon="@Icons.Material.Filled.Call" Size="Size.Small"/>
+                        Join call
+                    </button>
+                </span>
+            </MudTooltip>
+        </div>
+    }
+    else if (CanStartCall)
+    {
+        <button class="btn" type="button" @onclick="GoToCall">
+            <MudIcon Icon="@Icons.Material.Filled.Videocam" Size="Size.Small"/>
+            Start call
+        </button>
+    }
+}
+
+@code {
+    private bool CanStartCall => BoardDetailsStore.Board?.BoardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
+
+    private bool IsFull => BoardCallStore.ActiveCall is { } call && call.Participants.Count >= call.MaxParticipants;
+
+    protected override void OnInitialized()
+    {
+        BoardCallStore.StateChanged += OnStateChanged;
+        CallInterop.StateChanged += OnStateChanged;
+    }
+
+    public void Dispose()
+    {
+        BoardCallStore.StateChanged -= OnStateChanged;
+        CallInterop.StateChanged -= OnStateChanged;
+    }
+
+    private void OnStateChanged() => InvokeAsync(StateHasChanged);
+
+    // Starting/joining establishes the live ACS session immediately, so it belongs to the dedicated
+    // call page's own lifecycle (BoardCall.razor), not this indicator — navigating there is what
+    // actually triggers IAcsCallInteropService.StartCallAsync/JoinCallAsync.
+    private void GoToCall()
+    {
+        if (BoardDetailsStore.Board is { } board)
+        {
+            Navigation.NavigateTo($"/boards/{board.Id}/call");
+        }
+    }
+}

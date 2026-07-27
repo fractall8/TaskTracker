@@ -8,15 +8,29 @@ public interface IAcsCallInteropService : IAsyncDisposable
 
     bool IsVideoAvailable { get; }
 
+    bool IsMicOn { get; }
+
+    bool IsCameraOn { get; }
+
+    bool IsScreenSharing { get; }
+
     event Action<IReadOnlyList<RemoteParticipantInfo>>? RemoteParticipantsChanged;
 
-    Task StartCallAsync(CancellationToken ct = default);
+    event Action? StateChanged;
 
-    Task JoinCallAsync(CancellationToken ct = default);
+    Task<PreviewDeviceAccess> StartPreviewAsync(string videoElementId, CancellationToken ct = default);
 
-    Task LeaveCallAsync(CancellationToken ct = default);
+    Task<bool> SetPreviewCameraAsync(bool enabled, string videoElementId, CancellationToken ct = default);
 
-    Task EndCallAsync(CancellationToken ct = default);
+    Task StopPreviewAsync(CancellationToken ct = default);
+
+    Task StartCallAsync(Guid boardId, bool micEnabled, bool cameraEnabled, CancellationToken ct = default);
+
+    Task JoinCallAsync(Guid boardId, bool micEnabled, bool cameraEnabled, CancellationToken ct = default);
+
+    Task LeaveCallAsync(Guid boardId, CancellationToken ct = default);
+
+    Task EndCallAsync(Guid boardId, CancellationToken ct = default);
 
     Task ToggleMicAsync(bool enabled, CancellationToken ct = default);
 
@@ -27,4 +41,6 @@ public interface IAcsCallInteropService : IAsyncDisposable
     Task StopScreenShareAsync(CancellationToken ct = default);
 
     Task<bool> AttachRendererAsync(string streamId, string videoElementId, CancellationToken ct = default);
+
+    Task DetachRendererAsync(string streamId, CancellationToken ct = default);
 }

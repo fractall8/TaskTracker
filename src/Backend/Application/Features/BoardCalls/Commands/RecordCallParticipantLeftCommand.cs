@@ -47,19 +47,34 @@ public class RecordCallParticipantLeftCommandHandler(
             return;
         }
 
+        if (participant.JoinedAt > request.OccurredAt)
+        {
+            // Stale delivery describing a session that already ended before this participant's current
+            // (later) rejoin — applying it would either corrupt the current session's LeftAt or violate
+            // the LeftAt >= JoinedAt check constraint. Event Grid can redeliver/reorder, so treat this
+            // as a safe no-op instead of acting on out-of-order data.
+            return;
+        }
+
         participant.LeftAt = request.OccurredAt;
         boardCallRepository.UpdateParticipant(participant);
         await unitOfWork.SaveChangesAsync(ct);
 
-        var callWithParticipants = await boardCallRepository.GetActiveCallWithParticipantsAsync(call.Id, ct) ?? call;
-        var participants = BoardCallMappings.ToDto(callWithParticipants).Participants;
+        var callWithParticipants = await boardCallRepository.GetActiveCallWithParticipantsAsync(call.Id, ct);
 
-        await boardActionNotifier.NotifyAsync(new BoardActionNotification(
-            call.BoardId,
-            BoardActionNotificationType.CallParticipantsChanged,
-            user.Id,
-            request.OccurredAt,
-            new CallParticipantsChangedPayload(call.Id, participants)), ct);
+        if (callWithParticipants is not null)
+        {
+            // Null means the call ended concurrently with this webhook's processing — nothing meaningful
+            // left to notify participants about for a call that's already over.
+            var participants = BoardCallMappings.ToParticipantDtos(callWithParticipants);
+
+            await boardActionNotifier.NotifyAsync(new BoardActionNotification(
+                call.BoardId,
+                BoardActionNotificationType.CallParticipantsChanged,
+                user.Id,
+                request.OccurredAt,
+                new CallParticipantsChangedPayload(call.Id, participants)), ct);
+        }
 
         await boardCallLifecycleService.EndCallIfEmptyAsync(call.Id, ct);
     }

@@ -1,0 +1,49 @@
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 15px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--mud-palette-lines-default);
+    background: transparent;
+    color: var(--mud-palette-text-primary);
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.btn:hover:not(:disabled):not(.btn-primary) {
+    background: var(--mud-palette-action-default-hover);
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: transparent;
+}
+
+.btn-primary {
+    background: var(--mud-palette-primary);
+    color: #fff;
+    border-color: var(--mud-palette-primary);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--mud-palette-primary);
+    filter: brightness(0.92);
+}
+
+.badge-call {
+    background: var(--mud-palette-success-hover);
+    color: var(--mud-palette-success-darken);
+    border: 1px solid var(--mud-palette-success);
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}

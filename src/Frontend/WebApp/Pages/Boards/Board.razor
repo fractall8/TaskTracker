@@ -2,7 +2,9 @@
 @implements IDisposable
 @using Contracts.DTOs
 @using Contracts.Enums
+@using Services.Abstractions.BoardCalls
 @using Services.Abstractions.Hubs
+@using WebApp.Components.BoardCallIndicator
 @using WebApp.Components.BoardColumn
 @using WebApp.Components.BoardExportControls
 @using WebApp.Components.TaskCard
@@ -10,6 +12,7 @@
 @using WebApp.Shared.Helpers
 @using WebApp.Shared.Toast
 @inject IBoardDetailsStore BoardDetailsStore
+@inject IBoardCallStore BoardCallStore
 @inject IWorkspaceStore WorkspaceStore
 @inject IProfileStore ProfileStore
 @inject NavigationManager Navigation
@@ -50,6 +53,8 @@
                     Members
                 </button>
             }
+
+            <BoardCallIndicator/>
 
             <BoardExportControls/>
         </div>
@@ -169,7 +174,8 @@
         if (_loadedBoardId != BoardId)
         {
             BoardDetailsStore.Reset();
-            
+            BoardCallStore.Reset();
+
             _loadedBoardId = BoardId;
             _searchQuery = string.Empty;
 
@@ -190,6 +196,7 @@
             if (BoardDetailsStore.Board is { IsArchived: false })
             {
                 await ActionsHubService.ConnectAsync(BoardId);
+                await BoardCallStore.LoadActiveCallAsync(BoardId);
             }
         }
     }

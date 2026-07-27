@@ -1,0 +1,154 @@
+@page "/boards/{BoardId:guid}/call"
+@implements IAsyncDisposable
+@using Services.Abstractions.BoardCalls
+@using WebApp.Components.BoardCallPanel
+@using WebApp.Components.BoardCallPreview
+@using WebApp.Shared.Toast
+
+@inject IBoardDetailsStore BoardDetailsStore
+@inject IBoardCallStore BoardCallStore
+@inject IAcsCallInteropService CallInterop
+@inject NavigationManager Navigation
+@inject CustomToastService Toast
+
+<PageTitle>Call - TaskTracker</PageTitle>
+
+<main class="board-call-main">
+    <button class="crumb crumb-btn" @onclick="NavigateBackToBoard">
+        <MudIcon Icon="@Icons.Material.Filled.ChevronLeft" Size="Size.Small"/>
+        Back to Board
+    </button>
+
+    @if (_isLoading || _isConnecting)
+    {
+        <div class="d-flex justify-center align-center flex-grow-1">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large"/>
+        </div>
+    }
+    else if (_errorMessage is not null)
+    {
+        <div class="custom-alert error mb-4 flex-shrink-0">
+            <MudIcon Icon="@Icons.Material.Outlined.ErrorOutline" Size="Size.Small" Class="custom-alert-icon"/>
+            <div class="custom-alert-content">
+                <p>@_errorMessage</p>
+            </div>
+        </div>
+    }
+    else if (CallInterop.IsInCall)
+    {
+        <BoardCallPanel BoardId="BoardId"/>
+    }
+    else
+    {
+        <BoardCallPreview ButtonLabel="@(BoardCallStore.ActiveCall is not null ? "Join call" : "Start call")" OnJoin="HandleJoinAsync"/>
+    }
+</main>
+
+@code {
+    [Parameter] public Guid BoardId { get; set; }
+
+    private Guid _loadedBoardId;
+    private bool _isLoading;
+    private bool _isConnecting;
+    private bool _wasInCall;
+    private string? _errorMessage;
+
+    protected override void OnInitialized()
+    {
+        // Reflects whatever session state already exists when this page mounts (e.g. IsInCall is
+        // already true if the user navigated back to this route without ever leaving the call) so the
+        // very next transition to "not in call" is correctly recognized as a real Leave/End, not missed.
+        _wasInCall = CallInterop.IsInCall;
+        CallInterop.StateChanged += OnCallStateChanged;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loadedBoardId == BoardId)
+        {
+            return;
+        }
+
+        _loadedBoardId = BoardId;
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            if (BoardDetailsStore.Board?.Id != BoardId)
+            {
+                await BoardDetailsStore.LoadAsync(BoardId);
+            }
+
+            if (BoardCallStore.BoardId != BoardId)
+            {
+                await BoardCallStore.LoadActiveCallAsync(BoardId);
+            }
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleJoinAsync((bool MicEnabled, bool CameraEnabled) choice)
+    {
+        _isConnecting = true;
+        StateHasChanged();
+
+        try
+        {
+            if (BoardCallStore.ActiveCall is not null)
+            {
+                await CallInterop.JoinCallAsync(BoardId, choice.MicEnabled, choice.CameraEnabled);
+            }
+            else
+            {
+                await CallInterop.StartCallAsync(BoardId, choice.MicEnabled, choice.CameraEnabled);
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Could not connect to the call: {ex.Message}";
+            Toast.ShowError(_errorMessage);
+        }
+        finally
+        {
+            _isConnecting = false;
+        }
+    }
+
+    private void OnCallStateChanged()
+    {
+        var isInCall = CallInterop.IsInCall;
+
+        if (isInCall)
+        {
+            _wasInCall = true;
+        }
+        else if (_wasInCall)
+        {
+            // The call just ended from under us — whether we clicked Leave/End ourselves or a
+            // ScrumMaster/Admin ended it for everyone remotely. Either way, there's nothing left for
+            // this page to show, so send the user back to the board rather than leaving them on a
+            // dead call screen.
+            _wasInCall = false;
+            InvokeAsync(() => Navigation.NavigateTo($"/boards/{BoardId}"));
+            return;
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void NavigateBackToBoard() => Navigation.NavigateTo($"/boards/{BoardId}");
+
+    public async ValueTask DisposeAsync()
+    {
+        CallInterop.StateChanged -= OnCallStateChanged;
+
+        if (CallInterop.IsInCall)
+        {
+            await CallInterop.LeaveCallAsync(BoardId);
+        }
+    }
+}
