@@ -73,6 +73,13 @@
     background: transparent;
 }
 
+.btn-primary:disabled {
+    background: var(--mud-palette-action-disabled-background);
+    color: var(--mud-palette-text-disabled);
+    border-color: var(--mud-palette-action-disabled-background);
+    opacity: 1;
+}
+
 .btn-primary {
     background: var(--mud-palette-primary);
     color: #fff;
