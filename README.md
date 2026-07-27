@@ -71,6 +71,8 @@ dotnet run
 ```
 *(You can run the frontend locally in a similar way from `./src/Frontend/WebApp`)*
 
+*Note: the frontend's ACS video/screen-share JS interop (`wwwroot/js/acsCallInterop.bundle.js`) is a build artifact, not checked-in source — run `npm install && npm run build` from `./src/Frontend/WebApp` at least once, and again after any change under `js-src/`, before `dotnet run`.*
+
 ---
 3. Verify the Deployment<br>
    If you are running up with docker compose, the application services will be available at:

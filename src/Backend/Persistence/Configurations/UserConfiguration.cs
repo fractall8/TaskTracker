@@ -1,3 +1,4 @@
+using Domain.Constants;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -26,6 +27,15 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .IsRequired()
             .HasMaxLength(256);
 
+        builder.Property(e => e.AcsCommunicationUserId)
+            .HasMaxLength(BoardCallConstants.MaxAcsCommunicationUserIdLength);
+
+        builder.HasIndex(e => e.AcsCommunicationUserId)
+            .IsUnique()
+            .HasFilter("\"AcsCommunicationUserId\" IS NOT NULL");
+
         builder.HasQueryFilter(e => !e.IsDeleted);
+
+        builder.ToTable(t => t.HasCheckConstraint("CK_Users_AcsCommunicationUserId_NotEmpty", "\"AcsCommunicationUserId\" IS NULL OR btrim(\"AcsCommunicationUserId\") <> ''"));
     }
 }

@@ -9,4 +9,6 @@ public class User : BaseEntity<Guid>
     public string? DisplayName { get; set; }
 
     public string? AvatarUrl { get; set; }
+
+    public string? AcsCommunicationUserId { get; set; }
 }

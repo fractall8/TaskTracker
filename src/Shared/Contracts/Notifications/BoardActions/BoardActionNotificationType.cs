@@ -20,4 +20,7 @@ public enum BoardActionNotificationType : byte
     AttachmentDeleted = 16,
     TaskDetailsUpdated = 17,
     TaskDueDateUpdated = 18,
+    CallStarted = 19,
+    CallParticipantsChanged = 20,
+    CallEnded = 21,
 }

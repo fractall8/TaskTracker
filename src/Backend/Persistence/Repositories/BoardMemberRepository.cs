@@ -23,6 +23,11 @@ public class BoardMemberRepository(TaskTrackerDbContext dbContext)
     }
 
 
+    public async Task<int> CountByBoardIdAsync(Guid boardId, CancellationToken ct = default)
+    {
+        return await DbSet.CountAsync(bm => bm.BoardId == boardId, ct);
+    }
+
     public async Task<bool> RemoveUserFromBoardAsync(Guid boardId, Guid userId, CancellationToken ct = default)
     {
         var softDeletedRows = await DbSet

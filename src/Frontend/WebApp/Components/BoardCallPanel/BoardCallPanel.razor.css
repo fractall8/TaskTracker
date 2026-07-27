@@ -1,0 +1,311 @@
+.call-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 16px;
+    background: var(--mud-palette-surface);
+    overflow: hidden;
+}
+
+.call-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--mud-palette-lines-default);
+    flex-shrink: 0;
+}
+
+.call-title {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--mud-palette-text-primary);
+}
+
+.live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--mud-palette-primary);
+    display: inline-block;
+    margin-right: 8px;
+    animation: call-pulse-dot 1.8s ease-in-out infinite;
+}
+
+.call-meta {
+    display: flex;
+    gap: 8px;
+}
+
+.meta-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(var(--mud-palette-primary-rgb), 0.12);
+    color: var(--mud-palette-primary);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.stage {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 14px;
+    background: var(--mud-palette-background-gray);
+}
+
+.stage-grid {
+    display: grid;
+    gap: 10px;
+    width: 100%;
+    height: 100%;
+    /* Rows size to each tile's own aspect-ratio-derived height (see CallTile.razor.css) instead of
+       stretching to fill 1fr of the stage — that stretching is what made a lone tile (or two) look
+       oddly tall/distorted when there aren't enough tiles to naturally fill the stage's height.
+       Centered both ways so a short block of rows (few tiles) sits in the middle of the stage rather
+       than pinned to a corner; overflow-y handles the opposite case (many tiles) as a safety net. */
+    grid-auto-rows: min-content;
+    align-content: center;
+    justify-items: center;
+    overflow-y: auto;
+}
+
+.stage-grid.g1 {
+    grid-template-columns: 1fr;
+}
+
+.stage-grid.g2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.stage-grid.g4 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.stage-grid.g6 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.stage-grid.g9 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.stage-grid.g12 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+/* Presentation (screen share) layout */
+.present-layout {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    height: 100%;
+}
+
+.present-main {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.present-item {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+}
+
+.present-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--mud-palette-primary);
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.present-side {
+    width: 200px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+
+.screen-tile {
+    flex: 1;
+    min-height: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.screen-tile .call-tile-video {
+    position: absolute;
+    inset: 0;
+}
+
+.screen-tile .call-tile-video video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* Controls */
+.control-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px;
+    border-top: 1px solid var(--mud-palette-lines-default);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.ctrl {
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+    border: 1px solid var(--mud-palette-lines-default);
+    background: var(--mud-palette-background);
+    color: var(--mud-palette-text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.ctrl:hover:not(:disabled) {
+    border-color: var(--mud-palette-primary);
+    color: var(--mud-palette-primary);
+}
+
+.ctrl:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.ctrl-danger {
+    background: rgba(var(--mud-palette-error-rgb), 0.12);
+    color: var(--mud-palette-error);
+    border-color: transparent;
+}
+
+.ctrl-dim {
+    color: var(--mud-palette-text-secondary);
+}
+
+.ctrl-active {
+    background: var(--mud-palette-primary);
+    color: #fff;
+    border-color: transparent;
+}
+
+.ctrl-divider {
+    width: 1px;
+    height: 28px;
+    background: var(--mud-palette-lines-default);
+    margin: 0 4px;
+}
+
+.ctrl-wide {
+    height: 48px;
+    padding: 0 18px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+}
+
+.ctrl-leave {
+    background: transparent;
+    border: 1px solid var(--mud-palette-lines-default);
+    color: var(--mud-palette-text-primary);
+}
+
+.ctrl-leave:hover {
+    border-color: var(--mud-palette-primary);
+    color: var(--mud-palette-primary);
+}
+
+.ctrl-end {
+    background: var(--mud-palette-error);
+    color: #fff;
+}
+
+.ctrl-end:hover {
+    filter: brightness(0.93);
+}
+
+@keyframes call-pulse-dot {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.35;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .live-dot {
+        animation: none !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .present-layout {
+        flex-direction: column;
+    }
+
+    .present-side {
+        width: 100%;
+        flex-direction: row;
+        overflow-x: auto;
+        overflow-y: visible;
+    }
+
+    /* CallTile's own `.tile-sm` sizing (flex: 0 0 auto; width: 100%) assumes a column flex parent,
+       where 100% width resolves against the strip's own (definite) cross-axis width. Flipped to a row
+       here, 100% would instead mean "as wide as the whole scrollable strip", so it needs an explicit
+       pixel width in this context — reached via ::deep since .tile lives in CallTile's own CSS scope. */
+    .present-side ::deep .tile {
+        width: 96px;
+        max-width: 96px;
+        flex: 0 0 auto;
+    }
+
+    .control-bar {
+        gap: 8px;
+    }
+
+    .ctrl-wide span {
+        display: none;
+    }
+}

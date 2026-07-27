@@ -39,6 +39,20 @@ internal static class BoardActionSyncKey
             BoardActionNotificationType.TaskAttachmentsCountChanged =>
                 $"task:{((TaskAttachmentsCountChangedPayload)notification.Payload).BoardTaskId}:attachments-count",
 
+            // Each call notification type gets its own sub-key (unlike Task's shared "task:{id}" for
+            // Created/Updated/Deleted) because CallParticipantsChanged is driven by an async,
+            // potentially-delayed, at-least-once Event Grid webhook — sharing one key would let a
+            // delayed participants-changed notification advance the guard past a legitimate,
+            // not-yet-applied CallEnded (or vice versa) for the same call.
+            BoardActionNotificationType.CallStarted =>
+                $"call:{((CallStartedPayload)notification.Payload).Call.Id}:started",
+
+            BoardActionNotificationType.CallParticipantsChanged =>
+                $"call:{((CallParticipantsChangedPayload)notification.Payload).BoardCallId}:participants",
+
+            BoardActionNotificationType.CallEnded =>
+                $"call:{((CallEndedPayload)notification.Payload).BoardCallId}:ended",
+
             _ => $"type:{(byte)notification.Type}",
         };
 }

@@ -6,4 +6,5 @@ public static class ConnectionStrings
     public const string AzureBlobStorageConnection = "AzureBlobStorage";
     public const string ServiceBus = "ServiceBus";
     public const string CosmosDb = "CosmosDB";
+    public const string AzureCommunicationServices = "AzureCommunicationServices";
 }

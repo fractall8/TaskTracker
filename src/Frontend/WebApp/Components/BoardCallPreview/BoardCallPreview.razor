@@ -1,0 +1,106 @@
+@using Services.Abstractions.BoardCalls
+@using WebApp.Shared.Toast
+@implements IAsyncDisposable
+
+@inject IAcsCallInteropService CallInterop
+@inject CustomToastService Toast
+
+<div class="call-preview">
+    <div class="call-preview-video-wrap">
+        <div class="call-preview-video" id="@VideoElementId"></div>
+        @if (!_cameraOn)
+        {
+            <div class="call-preview-placeholder">
+                <MudIcon Icon="@Icons.Material.Filled.VideocamOff" Size="Size.Large"/>
+            </div>
+        }
+    </div>
+
+    <div class="d-flex gap-2 justify-center">
+        <button class="icon-btn" type="button"
+                title="@(_micOn ? "Mute microphone" : "Unmute microphone")"
+                disabled="@(!_audioAvailable)"
+                @onclick="ToggleMic">
+            <MudIcon Icon="@(_micOn ? Icons.Material.Filled.Mic : Icons.Material.Filled.MicOff)" Size="Size.Small"/>
+        </button>
+
+        <button class="icon-btn" type="button"
+                title="@(_cameraOn ? "Turn camera off" : "Turn camera on")"
+                disabled="@(!_videoAvailable)"
+                @onclick="ToggleCameraAsync">
+            <MudIcon Icon="@(_cameraOn ? Icons.Material.Filled.Videocam : Icons.Material.Filled.VideocamOff)" Size="Size.Small"/>
+        </button>
+    </div>
+
+    <button class="btn btn-primary call-preview-join" type="button" disabled="@_isPreparing" @onclick="HandleJoinClick">
+        <MudIcon Icon="@Icons.Material.Filled.Call" Size="Size.Small"/>
+        @ButtonLabel
+    </button>
+</div>
+
+@code {
+    private const string VideoElementId = "board-call-preview-video";
+
+    [Parameter, EditorRequired] public string ButtonLabel { get; set; } = "Join call";
+
+    [Parameter, EditorRequired] public EventCallback<(bool MicEnabled, bool CameraEnabled)> OnJoin { get; set; }
+
+    private bool _audioAvailable;
+    private bool _videoAvailable;
+    private bool _micOn;
+    private bool _cameraOn;
+    private bool _isPreparing = true;
+    private bool _started;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var access = await CallInterop.StartPreviewAsync(VideoElementId);
+            _started = true;
+            _audioAvailable = access.AudioAvailable;
+            _videoAvailable = access.VideoAvailable;
+            _micOn = access.AudioAvailable;
+            _cameraOn = access.VideoAvailable;
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError(ex.Message);
+        }
+        finally
+        {
+            _isPreparing = false;
+        }
+    }
+
+    // No live call exists yet at this point, so there's nothing in JS to actually mute — this only
+    // records the user's choice, applied for real once StartCallAsync/JoinCallAsync connects.
+    private void ToggleMic() => _micOn = !_micOn;
+
+    private async Task ToggleCameraAsync()
+    {
+        var next = !_cameraOn;
+
+        try
+        {
+            if (await CallInterop.SetPreviewCameraAsync(next, VideoElementId))
+            {
+                _cameraOn = next;
+            }
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError(ex.Message);
+        }
+    }
+
+    private Task HandleJoinClick() => OnJoin.InvokeAsync((_micOn, _cameraOn));
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_started)
+        {
+            await CallInterop.StopPreviewAsync();
+        }
+    }
+}

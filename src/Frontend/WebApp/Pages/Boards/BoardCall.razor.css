@@ -1,0 +1,30 @@
+.board-call-main {
+    box-sizing: border-box;
+    padding: 24px 32px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-family: "Inter", sans-serif;
+    background-color: var(--mud-palette-background);
+}
+
+.crumb {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--mud-palette-text-secondary);
+    font-size: 13px;
+    margin-bottom: 18px;
+    border: none;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    font-weight: 500;
+    flex-shrink: 0;
+    align-self: flex-start;
+}
+
+.crumb:hover {
+    color: var(--mud-palette-text-primary);
+}

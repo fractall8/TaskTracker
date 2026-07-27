@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Refit;
 using Services.Abstractions.Auth;
+using Services.Abstractions.BoardCalls;
 using Services.Abstractions.Boards;
 using Services.Abstractions.Columns;
 using Services.Abstractions.Hubs;
@@ -14,6 +15,8 @@ using Services.Abstractions.Workspaces;
 using Services.Api;
 using Services.Auth;
 using Services.Auth.Stores;
+using Services.BoardCalls;
+using Services.BoardCalls.Stores;
 using Services.Boards;
 using Services.Boards.Stores;
 using Services.Columns;
@@ -66,6 +69,10 @@ public static class ServiceCollectionExtensions
             .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
             .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
 
+        services.AddRefitClient<IBoardCallsApi>()
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
+            .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
+
         var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
 
         var refitSettings = new RefitSettings
@@ -113,6 +120,10 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IBoardActionSyncGuard, BoardActionSyncGuard>();
         services.AddScoped<IBoardActionsHubService, BoardActionsHubService>();
+
+        services.AddScoped<IBoardCallApiService, BoardCallApiService>();
+        services.AddScoped<IBoardCallStore, BoardCallStore>();
+        services.AddScoped<IAcsCallInteropService, AcsCallInteropService>();
 
         return services;
     }

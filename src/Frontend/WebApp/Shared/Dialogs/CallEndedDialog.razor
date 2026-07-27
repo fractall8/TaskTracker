@@ -1,0 +1,23 @@
+<MudDialog Style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+    <TitleContent>
+        <span style="font-size: 16px; font-weight: 600; color: var(--mud-palette-text-primary);">
+            Call ended
+        </span>
+    </TitleContent>
+    <DialogContent>
+        <p style="margin: 0; font-size: 13.5px; color: var(--mud-palette-text-secondary); line-height: 1.55;">
+            This call has ended for everyone.
+        </p>
+    </DialogContent>
+    <DialogActions>
+        <div style="display: flex; gap: 8px; width: 100%; justify-content: flex-end; padding: 0 8px 8px 8px;">
+            <button type="button" class="btn btn-primary" @onclick="Ok">OK</button>
+        </div>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] public IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private void Ok() => MudDialog.Close(DialogResult.Ok(true));
+}

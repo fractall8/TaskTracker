@@ -1,0 +1,115 @@
+.call-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin: auto;
+    padding: 24px;
+    width: 100%;
+    max-width: 420px;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 16px;
+    background: var(--mud-palette-surface);
+}
+
+.call-preview-video-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 12px;
+    background: var(--mud-palette-background-gray);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.call-preview-video {
+    position: absolute;
+    inset: 0;
+}
+
+.call-preview-video video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.call-preview-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--mud-palette-text-secondary);
+}
+
+.call-preview-join {
+    width: 100%;
+    justify-content: center;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 15px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--mud-palette-lines-default);
+    background: transparent;
+    color: var(--mud-palette-text-primary);
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.btn:hover:not(:disabled):not(.btn-primary) {
+    background: var(--mud-palette-action-default-hover);
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: transparent;
+}
+
+.btn-primary:disabled {
+    background: var(--mud-palette-action-disabled-background);
+    color: var(--mud-palette-text-disabled);
+    border-color: var(--mud-palette-action-disabled-background);
+    opacity: 1;
+}
+
+.btn-primary {
+    background: var(--mud-palette-primary);
+    color: #fff;
+    border-color: var(--mud-palette-primary);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--mud-palette-primary);
+    filter: brightness(0.92);
+}
+
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--mud-palette-lines-default);
+    background: transparent;
+    color: var(--mud-palette-text-primary);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.icon-btn:hover:not(:disabled) {
+    background: var(--mud-palette-action-default-hover);
+}
+
+.icon-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

@@ -1,0 +1,42 @@
+@using WebApp.Shared.Helpers
+
+<div class="tile @(Small ? "tile-sm" : "")">
+    <div class="tile-media">
+        <div class="call-tile-video" id="@VideoElementId"></div>
+
+        @if (ShowPlaceholder)
+        {
+            <div class="tile-avatar-wrap">
+                <div class="tile-avatar @AvatarColorHelper.GetColorClass(DisplayName)">
+                    @if (!string.IsNullOrWhiteSpace(AvatarUrl))
+                    {
+                        <img src="@AvatarUrl" alt="Avatar" class="tile-avatar-img"/>
+                    }
+                    else
+                    {
+                        <span>@GetInitial(DisplayName)</span>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="tile-label">
+        <span>@(DisplayName ?? "Participant")</span>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string VideoElementId { get; set; } = "";
+
+    [Parameter] public bool ShowPlaceholder { get; set; }
+
+    [Parameter] public string? DisplayName { get; set; }
+
+    [Parameter] public string? AvatarUrl { get; set; }
+
+    [Parameter] public bool Small { get; set; }
+
+    private static string GetInitial(string? displayName) =>
+        string.IsNullOrWhiteSpace(displayName) ? "?" : displayName.Trim()[0].ToString().ToUpperInvariant();
+}

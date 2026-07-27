@@ -13,4 +13,6 @@ public interface IUserRepository : IRepository<User, Guid>
     Task<List<User>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken ct = default);
 
     Task<User?> GetByEmailAsync(string email, CancellationToken ct = default);
+
+    Task<User?> GetByAcsCommunicationUserIdAsync(string acsCommunicationUserId, CancellationToken ct = default);
 }

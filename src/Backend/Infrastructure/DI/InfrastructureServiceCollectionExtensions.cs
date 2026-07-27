@@ -13,6 +13,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddBoardExportJobModule(configuration);
         services.AddBoardActionsModule();
         services.AddSubscriptionsModule();
+        services.AddAcsModule(configuration);
 
         return services;
     }
