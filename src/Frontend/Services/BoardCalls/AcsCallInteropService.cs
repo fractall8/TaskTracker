@@ -44,6 +44,8 @@ public class AcsCallInteropService : IAcsCallInteropService
 
     public event Action? StateChanged;
 
+    public event Action? CallEndedByOthers;
+
     public async Task<PreviewDeviceAccess> StartPreviewAsync(string videoElementId, CancellationToken ct = default)
     {
         var module = await GetModuleAsync(ct);
@@ -234,6 +236,7 @@ public class AcsCallInteropService : IAcsCallInteropService
         _selfReference?.Dispose();
         _selfReference = null;
 
+        CallEndedByOthers?.Invoke();
         StateChanged?.Invoke();
     }
 
@@ -251,6 +254,7 @@ public class AcsCallInteropService : IAcsCallInteropService
             return;
         }
 
+        CallEndedByOthers?.Invoke();
         _ = EndLocalSessionAsync(CancellationToken.None);
     }
 

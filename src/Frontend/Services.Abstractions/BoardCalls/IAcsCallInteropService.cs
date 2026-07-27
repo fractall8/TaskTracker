@@ -18,6 +18,8 @@ public interface IAcsCallInteropService : IAsyncDisposable
 
     event Action? StateChanged;
 
+    event Action? CallEndedByOthers;
+
     Task<PreviewDeviceAccess> StartPreviewAsync(string videoElementId, CancellationToken ct = default);
 
     Task<bool> SetPreviewCameraAsync(bool enabled, string videoElementId, CancellationToken ct = default);

@@ -159,6 +159,7 @@ public class AcsCallService(
     private static ParticipantRole ToAcsRole(CallParticipantRole role) => role switch
     {
         CallParticipantRole.Presenter => ParticipantRole.Presenter,
+        CallParticipantRole.Collaborator => ParticipantRole.Collaborator,
         CallParticipantRole.Attendee => ParticipantRole.Attendee,
         _ => throw new ArgumentOutOfRangeException(nameof(role), role, "Unknown call participant role.")
     };

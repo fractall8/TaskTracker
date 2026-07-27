@@ -118,10 +118,15 @@ public class JoinBoardCallCommandHandler(
         }
     }
 
+    // Attendee (ACS Rooms' most restricted non-viewer role) has no screen-share capability at all —
+    // only Presenter and Collaborator do — so mapping every non-Admin/ScrumMaster board member to
+    // Attendee silently blocked their screen share from ever reaching other participants. Collaborator
+    // grants audio/video/screen-share without Presenter's participant-management capabilities, which
+    // this app already gates separately at the application level (see CanEndForEveryone).
     private static CallParticipantRole ToCallParticipantRole(BoardRole role) => role switch
     {
         BoardRole.Admin or BoardRole.ScrumMaster => CallParticipantRole.Presenter,
-        _ => CallParticipantRole.Attendee
+        _ => CallParticipantRole.Collaborator
     };
 }
 
