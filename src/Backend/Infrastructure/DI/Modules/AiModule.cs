@@ -1,5 +1,6 @@
 using Azure;
 using Azure.Search.Documents;
+using Infrastructure.Ai;
 using Infrastructure.Ai.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -59,6 +60,8 @@ internal static class AiModule
                     apiKey: options.ApiKey)
                 .Build();
         });
+
+        services.AddScoped<IFaqKnowledgeSearch, FaqKnowledgeSearch>();
 
         return services;
     }
