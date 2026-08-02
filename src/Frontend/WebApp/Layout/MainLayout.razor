@@ -3,6 +3,7 @@
 @using WebApp.Theme
 @inherits LayoutComponentBase
 @inject IWorkspaceStore WorkspaceStore
+@inject IFaqChatStore FaqChatStore
 @inject ICurrentUserService CurrentUserService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IJSRuntime JsRuntime
@@ -62,5 +63,9 @@
     }
 
     private void BeginSignIn() => NavigationManager.NavigateTo("authentication/login");
-    private void BeginSignOut() => NavigationManager.NavigateToLogout("authentication/logout", "./");
+    private void BeginSignOut()
+    {
+        FaqChatStore.Reset();
+        NavigationManager.NavigateToLogout("authentication/logout", "./");
+    }
 }
