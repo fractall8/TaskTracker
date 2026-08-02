@@ -1,3 +1,4 @@
+using Application.Interfaces.Services;
 using Azure;
 using Azure.Search.Documents;
 using Infrastructure.Ai;
@@ -62,6 +63,7 @@ internal static class AiModule
         });
 
         services.AddScoped<IFaqKnowledgeSearch, FaqKnowledgeSearch>();
+        services.AddScoped<IFaqAssistantService, FaqAssistantService>();
 
         return services;
     }
