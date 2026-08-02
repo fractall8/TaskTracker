@@ -7,6 +7,8 @@
 *.txt
 CLAUDE.md
 
+resources/
+
 # Ignore bmad and claude
 _bmad/
 .claude/
