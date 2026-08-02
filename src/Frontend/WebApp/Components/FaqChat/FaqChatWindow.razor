@@ -1,0 +1,172 @@
+@using WebApp.Shared.Toast
+@implements IDisposable
+
+@inject IFaqChatStore Store
+@inject CustomToastService Toast
+@inject IJSRuntime JsRuntime
+
+<div class="faq-root">
+    @if (Store.IsOpen)
+    {
+        <div class="faq-panel" role="dialog" aria-modal="false" aria-label="Help assistant" @onkeydown="OnPanelKeyDown">
+            <div class="faq-header">
+                <div class="faq-title">
+                    <MudIcon Icon="@Icons.Material.Outlined.SupportAgent" Size="Size.Small"/>
+                    <span>Help assistant</span>
+                </div>
+                <button class="faq-icon-btn" type="button" title="Close" aria-label="Close help assistant" @onclick="Store.Close">
+                    <MudIcon Icon="@Icons.Material.Filled.Close" Size="Size.Small"/>
+                </button>
+            </div>
+
+            <div class="faq-messages" aria-live="polite" @ref="_messagesElement">
+                @if (Store.Messages.Count == 0)
+                {
+                    <div class="faq-empty">
+                        <MudIcon Icon="@Icons.Material.Outlined.AutoAwesome" Size="Size.Medium"/>
+                        <p class="faq-empty-title">Ask about TaskTracker</p>
+                        <p class="faq-empty-hint">
+                            Answers come from the product documentation. Try one of these:
+                        </p>
+                        <div class="faq-suggestions">
+                            @foreach (var suggestion in _suggestions)
+                            {
+                                <button class="faq-suggestion" type="button" @onclick="() => SendAsync(suggestion)">
+                                    @suggestion
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @foreach (var message in Store.Messages)
+                {
+                    <FaqChatBubble Message="@message"/>
+                }
+
+                @if (Store.IsSending)
+                {
+                    <div class="faq-typing" role="status" aria-label="Assistant is typing">
+                        <span></span><span></span><span></span>
+                    </div>
+                }
+            </div>
+
+            <div class="faq-composer">
+                <input class="faq-input"
+                       type="text"
+                       placeholder="Ask a question..."
+                       maxlength="@_maxQuestionLength"
+                       disabled="@Store.IsSending"
+                       @ref="_inputElement"
+                       @bind="_draft"
+                       @bind:event="oninput"
+                       @onkeydown="OnInputKeyDown"/>
+
+                <button class="faq-send"
+                        type="button"
+                        title="Send"
+                        aria-label="Send question"
+                        disabled="@(!CanSend)"
+                        @onclick="() => SendAsync(_draft)">
+                    <MudIcon Icon="@Icons.Material.Filled.Send" Size="Size.Small"/>
+                </button>
+            </div>
+        </div>
+    }
+
+    <button class="faq-launcher @(Store.IsOpen ? "faq-launcher-open" : "")"
+            type="button"
+            title="@(Store.IsOpen ? "Close help assistant" : "Open help assistant")"
+            aria-label="@(Store.IsOpen ? "Close help assistant" : "Open help assistant")"
+            aria-expanded="@(Store.IsOpen ? "true" : "false")"
+            @onclick="Store.Toggle">
+        <MudIcon Icon="@(Store.IsOpen ? Icons.Material.Filled.KeyboardArrowDown : Icons.Material.Outlined.SupportAgent)"/>
+    </button>
+</div>
+
+@code {
+    // Mirrors FaqChat:MaxQuestionLength; the server validator remains authoritative.
+    private const int _maxQuestionLength = 1000;
+
+    private static readonly string[] _suggestions =
+    [
+        "How do I export and archive a board?",
+        "Who can invite people to a workspace?",
+        "What are the limits on the Free plan?"
+    ];
+
+    private string _draft = string.Empty;
+    private bool _wasOpen;
+    private bool _wasSending;
+    private int _renderedMessageCount;
+    private ElementReference _inputElement;
+    private ElementReference _messagesElement;
+
+    private bool CanSend => !Store.IsSending && !string.IsNullOrWhiteSpace(_draft);
+
+    protected override void OnInitialized() => Store.StateChanged += OnStateChanged;
+
+    public void Dispose() => Store.StateChanged -= OnStateChanged;
+
+    private void OnStateChanged() => InvokeAsync(StateHasChanged);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Store.IsOpen)
+        {
+            // Focus must wait for the render that re-enables the input, not for AskAsync to return.
+            if (!_wasOpen || (_wasSending && !Store.IsSending))
+            {
+                await _inputElement.FocusAsync();
+            }
+
+            if (Store.Messages.Count != _renderedMessageCount)
+            {
+                await JsRuntime.InvokeVoidAsync("faqChat.scrollToBottom", _messagesElement);
+            }
+        }
+
+        _wasOpen = Store.IsOpen;
+        _wasSending = Store.IsSending;
+        _renderedMessageCount = Store.Messages.Count;
+    }
+
+    private async Task OnInputKeyDown(KeyboardEventArgs args)
+    {
+        switch (args.Key)
+        {
+            case "Enter" when CanSend:
+                await SendAsync(_draft);
+                break;
+            case "Escape":
+                Store.Close();
+                break;
+        }
+    }
+
+    private void OnPanelKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape")
+        {
+            Store.Close();
+        }
+    }
+
+    private async Task SendAsync(string question)
+    {
+        if (Store.IsSending || string.IsNullOrWhiteSpace(question))
+        {
+            return;
+        }
+
+        _draft = string.Empty;
+
+        await Store.AskAsync(question);
+
+        if (Store.ErrorMessage is { } error)
+        {
+            Toast.ShowError(error);
+        }
+    }
+}
