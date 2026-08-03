@@ -6,13 +6,16 @@ namespace Presentation.Logging;
 
 public class SensitiveDataDestructuringPolicy : IDestructuringPolicy
 {
-    private readonly string[] _sensitiveProperties =
+    // Matched as substrings, not exact names: an exact list silently missed ApiKey, and would miss the
+    // next key-bearing property too. Over-redaction here is harmless; under-redaction leaks credentials.
+    private static readonly string[] _sensitiveFragments =
     [
-        "Password",
-        "Token",
-        "RefreshToken",
-        "ClientSecret",
-        "AccessToken"
+        "password",
+        "secret",
+        "token",
+        "apikey",
+        "connectionstring",
+        "credential"
     ];
 
     public bool TryDestructure(object value, ILogEventPropertyValueFactory propertyValueFactory,
@@ -33,7 +36,7 @@ public class SensitiveDataDestructuringPolicy : IDestructuringPolicy
         {
             var propName = property.Name;
 
-            if (_sensitiveProperties.Contains(propName, StringComparer.OrdinalIgnoreCase))
+            if (IsSensitive(propName))
             {
                 logEventProperties.Add(new LogEventProperty(propName, new ScalarValue("***")));
             }
@@ -56,4 +59,8 @@ public class SensitiveDataDestructuringPolicy : IDestructuringPolicy
         result = new StructureValue(logEventProperties, type.Name);
         return true;
     }
+
+    private static bool IsSensitive(string propertyName) =>
+        _sensitiveFragments.Any(fragment =>
+            propertyName.Contains(fragment, StringComparison.OrdinalIgnoreCase));
 }

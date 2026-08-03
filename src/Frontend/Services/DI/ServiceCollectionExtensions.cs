@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Refit;
 using Services.Abstractions.Auth;
 using Services.Abstractions.BoardCalls;
+using Services.Abstractions.FaqChat;
 using Services.Abstractions.Boards;
 using Services.Abstractions.Columns;
 using Services.Abstractions.Hubs;
@@ -17,6 +18,8 @@ using Services.Auth;
 using Services.Auth.Stores;
 using Services.BoardCalls;
 using Services.BoardCalls.Stores;
+using Services.FaqChat;
+using Services.FaqChat.Stores;
 using Services.Boards;
 using Services.Boards.Stores;
 using Services.Columns;
@@ -73,6 +76,10 @@ public static class ServiceCollectionExtensions
             .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
             .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
 
+        services.AddRefitClient<IFaqChatApi>()
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
+            .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
+
         var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
 
         var refitSettings = new RefitSettings
@@ -115,6 +122,9 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IWorkspaceStore, WorkspaceStore>();
         services.AddScoped<IWorkspaceApiService, WorkspaceApiService>();
+
+        services.AddScoped<IFaqChatApiService, FaqChatApiService>();
+        services.AddScoped<IFaqChatStore, FaqChatStore>();
 
         services.AddScoped<IBoardExportStatusHubService, BoardExportStatusHubService>();
 

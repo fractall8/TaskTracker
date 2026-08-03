@@ -1,0 +1,39 @@
+@using Contracts.DTOs
+@using Contracts.Enums
+
+<div class="msg @(IsUser ? "msg-user" : "msg-assistant")">
+    <div class="bubble @(IsRefusal ? "bubble-refusal" : "")">
+        @if (IsRefusal)
+        {
+            <div class="refusal-tag">
+                <MudIcon Icon="@Icons.Material.Outlined.HelpOutline" Size="Size.Small"/>
+                Not found in the documentation
+            </div>
+        }
+        <div class="bubble-text">@Message.Content</div>
+    </div>
+
+    @if (Citations.Count > 0)
+    {
+        <div class="citations">
+            <div class="citations-title">Sources</div>
+            @foreach (var citation in Citations)
+            {
+                <details class="citation">
+                    <summary>@citation.Title</summary>
+                    <div class="citation-excerpt">@citation.Excerpt</div>
+                </details>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] [EditorRequired] public FaqChatMessage Message { get; set; } = null!;
+
+    private bool IsUser => Message.Role == FaqChatRoleDto.User;
+
+    private bool IsRefusal => !IsUser && Message.Kind == FaqAnswerKindDto.Unsupported;
+
+    private IReadOnlyList<FaqCitationDto> Citations => Message.Citations ?? [];
+}

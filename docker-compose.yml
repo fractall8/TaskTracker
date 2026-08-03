@@ -51,6 +51,10 @@
       - Stripe__WebhookSecret=${STRIPE_WEBHOOK_SECRET}
       - Stripe__SuccessUrl=${STRIPE_SUCCESS_URL}
       - Stripe__CancelUrl=${STRIPE_CANCEL_URL}
+      - AzureOpenAi__Endpoint=${AZURE_OPENAI_ENDPOINT}
+      - AzureOpenAi__ApiKey=${AZURE_OPENAI_API_KEY}
+      - AzureAiSearch__Endpoint=${AZURE_AI_SEARCH_ENDPOINT}
+      - AzureAiSearch__ApiKey=${AZURE_AI_SEARCH_API_KEY}
     depends_on:
       - postgres-db
       - azurite

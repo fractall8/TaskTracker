@@ -14,6 +14,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddBoardActionsModule();
         services.AddSubscriptionsModule();
         services.AddAcsModule(configuration);
+        services.AddAiModule();
 
         return services;
     }

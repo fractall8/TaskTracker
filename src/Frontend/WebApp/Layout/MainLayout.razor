@@ -1,8 +1,10 @@
 ﻿@using WebApp.Components.AppSidebar
+@using WebApp.Components.FaqChat
 @using WebApp.Shared.Components
 @using WebApp.Theme
 @inherits LayoutComponentBase
 @inject IWorkspaceStore WorkspaceStore
+@inject IFaqChatStore FaqChatStore
 @inject ICurrentUserService CurrentUserService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IJSRuntime JsRuntime
@@ -26,6 +28,12 @@
         </CascadingValue>
     </MudMainContent>
 </MudLayout>
+
+<AuthorizeView>
+    <Authorized>
+        <FaqChatWindow/>
+    </Authorized>
+</AuthorizeView>
 
 @code {
     private bool _isDarkMode;
@@ -62,5 +70,9 @@
     }
 
     private void BeginSignIn() => NavigationManager.NavigateTo("authentication/login");
-    private void BeginSignOut() => NavigationManager.NavigateToLogout("authentication/logout", "./");
+    private void BeginSignOut()
+    {
+        FaqChatStore.Reset();
+        NavigationManager.NavigateToLogout("authentication/logout", "./");
+    }
 }

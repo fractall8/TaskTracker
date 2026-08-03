@@ -33,6 +33,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddPresentationCors(builder.Configuration);
 builder.Services.AddGlobalErrorHandling();
+builder.Services.AddPresentationRateLimiting(builder.Configuration);
 
 builder.Host.UseSerilog((context, services, configuration) => configuration
     .Destructure.With<SensitiveDataDestructuringPolicy>()
@@ -67,6 +68,9 @@ app.UseCors(CorsPolicies.DefaultCorsPolicy);
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// After authentication so the limiter can partition on the caller's identity rather than their IP.
+app.UseRateLimiter();
 
 app.UseMiddleware<InternalApiKeyMiddleware>();
 

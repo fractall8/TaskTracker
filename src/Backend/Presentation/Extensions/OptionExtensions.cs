@@ -14,6 +14,9 @@ public static class OptionExtensions
         services.Configure<FrontendOptions>(
             configuration.GetSection(FrontendOptions.SectionName));
 
+        services.Configure<FaqChatOptions>(
+            configuration.GetSection(FaqChatOptions.SectionName));
+
         return services;
     }
 }
