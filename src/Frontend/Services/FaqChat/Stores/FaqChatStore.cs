@@ -5,7 +5,9 @@ namespace Services.FaqChat.Stores;
 
 public class FaqChatStore(IFaqChatApiService faqChatApiService) : IFaqChatStore
 {
-    private const int _maxHistoryTurns = 6;
+    // Individual messages, not exchanges — 12 is six question-and-answer pairs. Must not exceed the
+    // server's FaqChat:MaxHistoryTurns, which rejects anything longer.
+    private const int _maxHistoryTurns = 12;
 
     private readonly List<FaqChatMessage> _messages = [];
     private readonly SemaphoreSlim _sendLock = new(1, 1);
@@ -82,7 +84,7 @@ public class FaqChatStore(IFaqChatApiService faqChatApiService) : IFaqChatStore
             _messages.Add(new FaqChatMessage(
                 FaqChatRoleDto.Assistant,
                 answer.Answer,
-                answer.IsGrounded,
+                answer.Kind,
                 answer.Citations));
         }
         catch (OperationCanceledException)

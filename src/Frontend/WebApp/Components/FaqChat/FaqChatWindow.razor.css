@@ -35,8 +35,10 @@
 }
 
 .faq-panel {
-    width: 380px;
-    height: 540px;
+    /* Scales with the viewport instead of stepping through breakpoints: tablets and small laptops sit at
+       the floor, large monitors at the ceiling. The mobile override below replaces this entirely. */
+    width: clamp(440px, 36vw, 520px);
+    height: clamp(600px, 74vh, 820px);
     max-height: calc(100vh - 120px);
     display: flex;
     flex-direction: column;
@@ -262,6 +264,7 @@
 
     .faq-panel {
         width: calc(100vw - 24px);
+        height: 540px;
     }
 }
 

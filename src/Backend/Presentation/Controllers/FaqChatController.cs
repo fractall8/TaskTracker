@@ -4,12 +4,15 @@ using Contracts.Requests.FaqChat;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Presentation.Extensions;
 
 namespace Presentation.Controllers;
 
 [ApiController]
 [Route("faq-chat")]
 [Authorize]
+[EnableRateLimiting(RateLimitingExtensions.FaqChatPolicy)]
 public class FaqChatController(ISender sender) : ControllerBase
 {
     [HttpPost("ask")]

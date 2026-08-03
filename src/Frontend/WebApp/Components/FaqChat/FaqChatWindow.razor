@@ -115,15 +115,19 @@
     {
         if (Store.IsOpen)
         {
+            var justOpened = !_wasOpen;
+
             // Focus must wait for the render that re-enables the input, not for AskAsync to return.
-            if (!_wasOpen || (_wasSending && !Store.IsSending))
+            if (justOpened || (_wasSending && !Store.IsSending))
             {
                 await _inputElement.FocusAsync();
             }
 
-            if (Store.Messages.Count != _renderedMessageCount)
+            // Reopening rebuilds the panel at scrollTop 0, so the count alone can't tell us to scroll.
+            // Jump instantly there; only new messages animate.
+            if (justOpened || Store.Messages.Count != _renderedMessageCount)
             {
-                await JsRuntime.InvokeVoidAsync("faqChat.scrollToBottom", _messagesElement);
+                await JsRuntime.InvokeVoidAsync("faqChat.scrollToBottom", _messagesElement, justOpened);
             }
         }
 

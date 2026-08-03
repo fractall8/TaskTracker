@@ -1,7 +1,9 @@
+using Contracts.Enums;
+
 namespace Contracts.DTOs;
 
 /// <summary>
-/// <paramref name="IsGrounded"/> is false when the knowledge base had nothing relevant, so the UI can
-/// render a refusal differently from a real answer.
+/// <paramref name="Kind"/> drives how the UI presents the reply: a grounded answer, a friendly social
+/// reply, or a refusal that must not be styled as authoritative.
 /// </summary>
-public record FaqAnswerDto(string Answer, bool IsGrounded, IReadOnlyList<FaqCitationDto> Citations);
+public record FaqAnswerDto(string Answer, FaqAnswerKindDto Kind, IReadOnlyList<FaqCitationDto> Citations);

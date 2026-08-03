@@ -33,7 +33,7 @@
 
     private bool IsUser => Message.Role == FaqChatRoleDto.User;
 
-    private bool IsRefusal => !IsUser && !Message.IsGrounded;
+    private bool IsRefusal => !IsUser && Message.Kind == FaqAnswerKindDto.Unsupported;
 
     private IReadOnlyList<FaqCitationDto> Citations => Message.Citations ?? [];
 }

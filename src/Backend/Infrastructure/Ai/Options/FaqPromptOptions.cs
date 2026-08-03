@@ -23,6 +23,12 @@ public class FaqPromptOptions
     /// </summary>
     public string ConditionalAnswerInstruction { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Used only for messages answerable from the conversation itself. Runs with no retrieved documentation
+    /// at all, so it must forbid product claims outright rather than relying on grounding to constrain them.
+    /// </summary>
+    public string ConversationalPrompt { get; set; } = string.Empty;
+
     public void Validate()
     {
         if (string.IsNullOrWhiteSpace(SystemPrompt))
@@ -38,6 +44,11 @@ public class FaqPromptOptions
         if (string.IsNullOrWhiteSpace(ConditionalAnswerInstruction))
         {
             throw new InvalidOperationException($"{SectionName}:{nameof(ConditionalAnswerInstruction)} is not configured.");
+        }
+
+        if (string.IsNullOrWhiteSpace(ConversationalPrompt))
+        {
+            throw new InvalidOperationException($"{SectionName}:{nameof(ConversationalPrompt)} is not configured.");
         }
     }
 }

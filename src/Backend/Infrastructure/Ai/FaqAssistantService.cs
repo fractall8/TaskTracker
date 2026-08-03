@@ -29,16 +29,42 @@ internal class FaqAssistantService(
         IReadOnlyList<FaqChatTurnDto> history,
         CancellationToken ct = default)
     {
+        // Checked first only because it is cheap; the patterns are whole-message anchored, so a question
+        // with a greeting attached still reaches retrieval.
+        if (FaqConversationIntent.IsConversational(question))
+        {
+            logger.LogDebug("FAQ message answerable from the conversation; skipping retrieval.");
+
+            var reply = await GenerateAsync(_prompt.ConversationalPrompt, question, history, ct);
+
+            return new FaqAnswerDto(reply, FaqAnswerKindDto.Conversational, Citations: []);
+        }
+
         var chunks = await knowledgeSearch.SearchAsync(question, ct);
 
         if (chunks.Count == 0)
         {
             logger.LogInformation("FAQ question had no grounding context; returning the no-context reply.");
-            return new FaqAnswerDto(_prompt.NoContextReply, IsGrounded: false, Citations: []);
+            return new FaqAnswerDto(_prompt.NoContextReply, FaqAnswerKindDto.Unsupported, Citations: []);
         }
 
+        var answer = await GenerateAsync(
+            FaqPromptBuilder.BuildSystemPrompt(_prompt, chunks),
+            question,
+            history,
+            ct);
+
+        return new FaqAnswerDto(answer, FaqAnswerKindDto.Grounded, BuildCitations(chunks));
+    }
+
+    private async Task<string> GenerateAsync(
+        string systemPrompt,
+        string question,
+        IReadOnlyList<FaqChatTurnDto> history,
+        CancellationToken ct)
+    {
         var chatHistory = new ChatHistory();
-        chatHistory.AddSystemMessage(FaqPromptBuilder.BuildSystemPrompt(_prompt, chunks));
+        chatHistory.AddSystemMessage(systemPrompt);
 
         foreach (var turn in history)
         {
@@ -59,15 +85,15 @@ internal class FaqAssistantService(
 
         chatHistory.AddUserMessage(question.Trim());
 
-        var answer = await CompleteAsync(chatHistory, ct);
+        var completion = await CompleteAsync(chatHistory, ct);
 
-        if (string.IsNullOrWhiteSpace(answer))
+        if (string.IsNullOrWhiteSpace(completion))
         {
             throw new ExternalServiceUnavailableException(
                 "The assistant could not generate a response. Please try again in a moment.");
         }
 
-        return new FaqAnswerDto(answer.Trim(), IsGrounded: true, Citations: BuildCitations(chunks));
+        return completion.Trim();
     }
 
     private async Task<string?> CompleteAsync(ChatHistory chatHistory, CancellationToken ct)
