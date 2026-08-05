@@ -36,6 +36,21 @@ internal class FaqAssistantService(
         IReadOnlyList<FaqChatTurnDto> history,
         CancellationToken ct = default)
     {
+        try
+        {
+            return await AnswerAsync(question, history, ct);
+        }
+        catch (ContentFilteredException)
+        {
+            return new FaqAnswerDto(_prompt.BlockedReply, FaqAnswerKindDto.Unsupported, Citations: []);
+        }
+    }
+
+    private async Task<FaqAnswerDto> AnswerAsync(
+        string question,
+        IReadOnlyList<FaqChatTurnDto> history,
+        CancellationToken ct)
+    {
         // Checked first only because it is cheap; the patterns are whole-message anchored, so a question
         // with a greeting attached still reaches retrieval.
         if (FaqConversationIntent.IsConversational(question))
@@ -147,6 +162,12 @@ internal class FaqAssistantService(
                 ct);
             return result.Content;
         }
+        catch (Exception ex) when (IsContentFiltered(ex))
+        {
+            logger.LogInformation("FAQ request blocked by the Azure OpenAI content filter.");
+
+            throw new ContentFilteredException(ex);
+        }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.LogError(ex, "FAQ chat completion failed.");
@@ -155,6 +176,12 @@ internal class FaqAssistantService(
                 "The assistant is temporarily unavailable. Please try again in a moment.", ex);
         }
     }
+
+    // Azure returns 400 content_filter for blocked prompts, including its jailbreak shield. That is a
+    // refusal, so it must not be reported as an outage.
+    private static bool IsContentFiltered(Exception exception) =>
+        exception is HttpOperationException { StatusCode: System.Net.HttpStatusCode.BadRequest }
+        && exception.Message.Contains("content_filter", StringComparison.OrdinalIgnoreCase);
 
     private AzureOpenAIPromptExecutionSettings BuildExecutionSettings(Kernel activeKernel)
     {

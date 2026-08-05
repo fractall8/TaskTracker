@@ -38,7 +38,7 @@ public class AiDataRepositoryLeakTests(AiSentinelFixture fixture) : IClassFixtur
     {
         var tasks = await Repository.GetBoardTasksAsync(fixture.BoardId, fixture.CallerId, new AiTaskFilter());
 
-        Assert.Equal(3, tasks.Count);
+        Assert.Equal(5, tasks.Count);
         Assert.Contains(tasks, task => task is { IsAssignedToMe: true, IsAssigned: true });
         Assert.Contains(tasks, task => task is { IsAssignedToMe: false, IsAssigned: true });
         Assert.Contains(tasks, task => !task.IsAssigned);
@@ -93,10 +93,13 @@ public class AiDataRepositoryLeakTests(AiSentinelFixture fixture) : IClassFixtur
         Assert.Equal("Overdue and mine", Assert.Single(overdue).Title);
     }
 
+    // The outsider owns their own tenant, so this asserts isolation rather than an empty account.
     [Fact]
-    public async Task Non_member_sees_nothing()
+    public async Task Non_member_sees_nothing_of_this_workspace()
     {
-        Assert.Empty(await Repository.GetMyWorkspacesAsync(fixture.OutsiderId));
+        var theirs = await Repository.GetMyWorkspacesAsync(fixture.OutsiderId);
+
+        Assert.Equal(fixture.ForeignWorkspaceId, Assert.Single(theirs).Id);
         Assert.Null(await Repository.GetWorkspaceUsageAsync(fixture.WorkspaceId, fixture.OutsiderId));
         Assert.Empty(await Repository.GetBoardsAsync(fixture.WorkspaceId, fixture.OutsiderId, true));
         Assert.Empty(await Repository.GetBoardTasksAsync(fixture.BoardId, fixture.OutsiderId, new AiTaskFilter()));
@@ -108,7 +111,7 @@ public class AiDataRepositoryLeakTests(AiSentinelFixture fixture) : IClassFixtur
         var counts = await Repository.CountWorkspaceTasksAsync(
             fixture.WorkspaceId, fixture.CallerId, boardId: null, fixture.AsOf);
 
-        Assert.Equal(3, counts.Total);
+        Assert.Equal(5, counts.Total);
         Assert.Equal(1, counts.Overdue);
         Assert.Equal(1, counts.DueThisWeek);
         Assert.Equal(1, counts.AssignedToMe);
@@ -121,11 +124,11 @@ public class AiDataRepositoryLeakTests(AiSentinelFixture fixture) : IClassFixtur
 
         Assert.NotNull(detail);
         Assert.Equal(Contracts.Enums.BoardRoleDto.Admin, detail.MyBoardRole);
-        Assert.Equal(3, detail.TaskCount);
+        Assert.Equal(5, detail.TaskCount);
         Assert.Equal(1, detail.OverdueTaskCount);
-        Assert.Equal(1, detail.UnassignedTaskCount);
+        Assert.Equal(3, detail.UnassignedTaskCount);
         Assert.Single(detail.Columns);
-        Assert.Equal(3, detail.Columns[0].TaskCount);
+        Assert.Equal(5, detail.Columns[0].TaskCount);
     }
 
     [Fact]

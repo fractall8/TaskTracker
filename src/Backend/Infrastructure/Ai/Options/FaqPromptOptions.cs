@@ -16,6 +16,9 @@ public class FaqPromptOptions
     // Runs with no retrieved documentation, so it must forbid product claims outright.
     public string ConversationalPrompt { get; set; } = string.Empty;
 
+    // Shown when Azure OpenAI blocks the request under its content policy — a refusal, not an outage.
+    public string BlockedReply { get; set; } = string.Empty;
+
     // Appended when the workspace-data tools are available. Fences tool output separately from
     // documentation, and relaxes the conditional-answer rule only for facts a tool actually returned.
     public string DataToolInstruction { get; set; } = string.Empty;
@@ -40,6 +43,11 @@ public class FaqPromptOptions
         if (string.IsNullOrWhiteSpace(ConversationalPrompt))
         {
             throw new InvalidOperationException($"{SectionName}:{nameof(ConversationalPrompt)} is not configured.");
+        }
+
+        if (string.IsNullOrWhiteSpace(BlockedReply))
+        {
+            throw new InvalidOperationException($"{SectionName}:{nameof(BlockedReply)} is not configured.");
         }
 
         if (string.IsNullOrWhiteSpace(DataToolInstruction))
