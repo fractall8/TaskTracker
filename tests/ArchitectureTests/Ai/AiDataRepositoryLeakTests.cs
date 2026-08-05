@@ -72,6 +72,19 @@ public class AiDataRepositoryLeakTests(AiSentinelFixture fixture) : IClassFixtur
     }
 
     [Fact]
+    public async Task Attachments_and_comments_are_counted_not_disclosed()
+    {
+        var tasks = await Repository.GetBoardTasksAsync(fixture.BoardId, fixture.CallerId, new AiTaskFilter());
+        var withAttachments = tasks.Single(task => task.Title == "Overdue and mine");
+
+        Assert.Equal(1, withAttachments.AttachmentCount);
+        Assert.Equal(2, withAttachments.CommentCount);
+        Assert.All(
+            tasks.Where(task => task.Title != "Overdue and mine"),
+            task => Assert.Equal(0, task.AttachmentCount + task.CommentCount));
+    }
+
+    [Fact]
     public async Task Overdue_read_returns_only_overdue_tasks()
     {
         var overdue = await Repository.GetWorkspaceOverdueTasksAsync(

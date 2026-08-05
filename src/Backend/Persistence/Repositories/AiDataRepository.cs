@@ -1,6 +1,7 @@
 using Application.Ai.Projections;
 using Application.Interfaces.Repositories;
 using Contracts.Enums;
+using Domain.Constants;
 using Microsoft.EntityFrameworkCore;
 using Persistence.Contexts;
 
@@ -133,6 +134,30 @@ public class AiDataRepository(TaskTrackerDbContext dbContext) : IAiDataRepositor
                            && task.DueDate < asOf);
 
         return await Summarise(query, currentUserId, take).ToListAsync(ct);
+    }
+
+    // Same billable-status filter as SubscriptionRepository, so the AI reports the plan the app enforces.
+    public async Task<string?> GetWorkspacePlanIdAsync(
+        Guid workspaceId,
+        Guid currentUserId,
+        CancellationToken ct = default)
+    {
+        var isMember = await dbContext.WorkspaceMembers
+            .AsNoTracking()
+            .AnyAsync(member => member.WorkspaceId == workspaceId && member.UserId == currentUserId, ct);
+
+        if (!isMember)
+        {
+            return null;
+        }
+
+        return await dbContext.Subscriptions
+            .AsNoTracking()
+            .Where(subscription => subscription.WorkspaceId == workspaceId
+                                   && !subscription.IsDeleted
+                                   && SubscriptionStatus.AllBillable.Contains(subscription.Status))
+            .Select(subscription => subscription.PlanId)
+            .FirstOrDefaultAsync(ct);
     }
 
     public async Task<AiTaskCounts> CountWorkspaceTasksAsync(

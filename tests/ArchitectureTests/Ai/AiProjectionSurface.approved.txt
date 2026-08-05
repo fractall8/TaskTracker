@@ -32,7 +32,7 @@ AiColumnTaskCount.Position : int
 AiColumnTaskCount.TaskCount : int
 AiPlanLimits.BoardsUsed : int
 AiPlanLimits.CanExportBoard : bool
-AiPlanLimits.MaxAttachmentSizeMb : int
+AiPlanLimits.MaxAttachmentSizeMb : int?
 AiPlanLimits.MaxBoardsPerWorkspace : int?
 AiPlanLimits.MaxColumnsPerBoard : int?
 AiPlanLimits.MaxMembersPerWorkspace : int?

@@ -17,6 +17,9 @@ public static class OptionExtensions
         services.Configure<FaqChatOptions>(
             configuration.GetSection(FaqChatOptions.SectionName));
 
+        services.Configure<AiToolOptions>(
+            configuration.GetSection(AiToolOptions.SectionName));
+
         return services;
     }
 }

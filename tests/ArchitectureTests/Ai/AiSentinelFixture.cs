@@ -17,6 +17,9 @@ public sealed class AiSentinelFixture : IAsyncLifetime
     public const string CallerEmail = "sentinel-caller@leak.invalid";
     public const string OutsiderBoardName = "OUTSIDER-BOARD";
     public const string SecretDescription = "SENTINEL-TASK-DESCRIPTION";
+    public const string SecretCommentText = "SENTINEL-COMMENT-TEXT";
+    public const string SecretAttachmentFileName = "SENTINEL-ATTACHMENT-FILENAME.pdf";
+    public const string SecretAttachmentUrl = "https://sentinel.invalid/SENTINEL-BLOB-URL";
 
     // Must match docker-compose.yml — testing on a different major version defeats the point.
     private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:17-alpine").Build();
@@ -46,7 +49,8 @@ public sealed class AiSentinelFixture : IAsyncLifetime
     public IReadOnlyList<string> Sentinels =>
     [
         OtherUserDisplayName, OtherUserEmail, CallerDisplayName, CallerEmail,
-        SecretDescription, OutsiderBoardName,
+        SecretDescription, SecretCommentText, SecretAttachmentFileName, SecretAttachmentUrl,
+        OutsiderBoardName,
         CallerId.ToString(), OtherUserId.ToString(), OutsiderId.ToString()
     ];
 
@@ -140,10 +144,12 @@ public sealed class AiSentinelFixture : IAsyncLifetime
 
         Context.Columns.Add(new Column { Id = ColumnId, BoardId = BoardId, Name = "In Progress", Position = 0 });
 
+        var overdueTaskId = Guid.NewGuid();
+
         Context.Tasks.AddRange(
             new TaskItem
             {
-                Id = Guid.NewGuid(), ColumnId = ColumnId, Title = "Overdue and mine",
+                Id = overdueTaskId, ColumnId = ColumnId, Title = "Overdue and mine",
                 Description = SecretDescription, AssigneeId = CallerId, ReporterId = OtherUserId,
                 DueDate = AsOf.AddDays(-3), Position = 0
             },
@@ -158,6 +164,18 @@ public sealed class AiSentinelFixture : IAsyncLifetime
                 Id = Guid.NewGuid(), ColumnId = ColumnId, Title = "Unassigned, no due date",
                 Description = SecretDescription, ReporterId = CallerId, Position = 2
             });
+
+        // Content the AI must never see: only AttachmentCount and CommentCount are approved.
+        Context.Attachments.Add(new Attachment
+        {
+            Id = Guid.NewGuid(), TaskId = overdueTaskId, FileName = SecretAttachmentFileName,
+            FileUrl = SecretAttachmentUrl, ContentType = "application/pdf", SizeInBytes = 1024,
+            UploadedById = OtherUserId
+        });
+
+        Context.Comments.AddRange(
+            new Comment { Id = Guid.NewGuid(), TaskId = overdueTaskId, Text = SecretCommentText, AuthorId = OtherUserId },
+            new Comment { Id = Guid.NewGuid(), TaskId = overdueTaskId, Text = SecretCommentText, AuthorId = CallerId });
 
         await Context.SaveChangesAsync();
     }

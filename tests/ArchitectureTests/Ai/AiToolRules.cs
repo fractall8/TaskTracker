@@ -15,7 +15,8 @@ public static class AiToolRules
         "ICurrentUserAccessor",
         "IPlanCatalog",
         "IOptions`1",
-        "ILogger`1"
+        "ILogger`1",
+        "IDateTimeProvider"
     ];
 
     // Handlers only. Request records and validators share the namespace (AD-2) but their constructor

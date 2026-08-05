@@ -41,6 +41,13 @@ public interface IAiDataRepository
         int take,
         CancellationToken ct = default);
 
+    // Scalar, so it stays out of the approved manifest. Null when the workspace has no billable
+    // subscription; the caller resolves the default through IPlanCatalog.
+    Task<string?> GetWorkspacePlanIdAsync(
+        Guid workspaceId,
+        Guid currentUserId,
+        CancellationToken ct = default);
+
     // Not "open" tasks: TaskItem has no completion state, so there is nothing to filter closed ones by.
     Task<AiTaskCounts> CountWorkspaceTasksAsync(
         Guid workspaceId,

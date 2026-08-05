@@ -72,7 +72,7 @@ public sealed record AiPlanLimits(
     int? MaxBoardsPerWorkspace,
     int? MaxColumnsPerBoard,
     int? MaxTasksPerBoard,
-    int MaxAttachmentSizeMb,
+    int? MaxAttachmentSizeMb,
     bool CanExportBoard,
     int BoardsUsed,
     int MembersUsed);
