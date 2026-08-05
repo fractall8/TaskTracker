@@ -25,7 +25,7 @@ public class AiToolCatalogueTests
     ];
 
     [Fact]
-    public void Catalogue_contains_exactly_the_expected_eight_tools()
+    public void Catalogue_contains_exactly_the_expected_tools()
     {
         var handlers = AiToolRules.ToolTypes(_applicationAssembly);
 

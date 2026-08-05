@@ -13,6 +13,14 @@
         <div class="bubble-text">@Message.Content</div>
     </div>
 
+    @if (IsDataBacked)
+    {
+        <div class="provenance">
+            <MudIcon Icon="@Icons.Material.Outlined.Dashboard" Size="Size.Small"/>
+            Based on your workspace data
+        </div>
+    }
+
     @if (Citations.Count > 0)
     {
         <div class="citations">
@@ -34,6 +42,10 @@
     private bool IsUser => Message.Role == FaqChatRoleDto.User;
 
     private bool IsRefusal => !IsUser && Message.Kind == FaqAnswerKindDto.Unsupported;
+
+    // A data answer may also carry citations, so provenance and sources render together rather than
+    // as alternatives — the answer must never look purely documentation-sourced when it is not.
+    private bool IsDataBacked => !IsUser && Message.Kind == FaqAnswerKindDto.DataBacked;
 
     private IReadOnlyList<FaqCitationDto> Citations => Message.Citations ?? [];
 }

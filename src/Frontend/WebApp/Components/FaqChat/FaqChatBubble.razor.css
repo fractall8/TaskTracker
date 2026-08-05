@@ -60,6 +60,22 @@
     word-break: break-word;
 }
 
+/* Distinct from a documentation citation: this answer came from the caller's own live data. */
+.provenance {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 6px;
+    padding: 3px 9px 3px 7px;
+    border: 1px solid var(--mud-palette-primary);
+    border-radius: 999px;
+    background: rgba(var(--mud-palette-primary-rgb), 0.09);
+    color: var(--mud-palette-primary);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
 .citations {
     margin-top: 6px;
     display: flex;
