@@ -12,15 +12,10 @@ public class AzureOpenAiOptions
 
     public int MaxOutputTokens { get; set; }
 
-    /// <summary>
-    /// Leave null for reasoning models (gpt-5*, o*), which reject any non-default temperature —
-    /// null means the parameter is omitted from the request entirely rather than sent as a default.
-    /// </summary>
+    // Null for reasoning models (gpt-5*, o*): they reject any non-default temperature. Null omits it.
     public float? Temperature { get; set; }
 
-    /// <summary>
-    /// Reasoning models only: minimal, low, medium, or high. Null omits the parameter.
-    /// </summary>
+    // Reasoning models only: minimal, low, medium, high. Null omits it.
     public string? ReasoningEffort { get; set; }
 
     public void Validate()

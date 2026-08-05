@@ -12,10 +12,7 @@ public class AzureAiSearchOptions
 
     public string SemanticConfigurationName { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Field and configuration names are whatever the portal's import wizard generated — they are
-    /// configuration, not constants, because re-running the wizard can produce different names.
-    /// </summary>
+    // Portal-wizard-generated names: configuration, not constants — re-running it changes them.
     public string VectorFieldName { get; set; } = string.Empty;
 
     public string ContentFieldName { get; set; } = string.Empty;
@@ -24,20 +21,11 @@ public class AzureAiSearchOptions
 
     public int TopK { get; set; }
 
-    /// <summary>
-    /// Minimum semantic reranker score (0–4 scale) for a chunk to be treated as relevant. This is
-    /// deliberately not a cosine-similarity threshold: similarity scores are uncalibrated and shift
-    /// with corpus and embedding model, while the reranker score is comparable across queries.
-    /// Calibrated against the live index: in-corpus questions score 2.40–3.21, off-corpus 0.43–1.02,
-    /// and a prompt-injection probe scored 1.57 — hence a floor of 2.0 rather than the original 1.5.
-    /// </summary>
+    // Reranker score (0–4), not cosine similarity — similarity is uncalibrated across corpora.
+    // Calibrated live: in-corpus 2.40–3.21, off-corpus 0.43–1.02, an injection probe 1.57. Hence 2.0.
     public double MinRerankerScore { get; set; }
 
-    /// <summary>
-    /// Retry attempts for a search call. The embedding deployment behind the index's vectorizer
-    /// returns 404 under concurrent load (surfacing as 502 from Search), and neither the Search SDK
-    /// nor typical resilience defaults retry those — a 404 is normally a permanent error.
-    /// </summary>
+    // The vectorizer's embedding deployment 404s under load (seen as 502); nothing retries that by default.
     public int MaxRetryAttempts { get; set; }
 
     public int RetryDelayMilliseconds { get; set; }

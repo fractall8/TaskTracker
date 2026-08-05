@@ -5,6 +5,8 @@
 
 .env
 *.txt
+# Approval-test baselines are source, not scratch files — they must be reviewable in a diff.
+!**/*.approved.txt
 CLAUDE.md
 
 resources/

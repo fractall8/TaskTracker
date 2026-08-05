@@ -1,32 +1,19 @@
 namespace Infrastructure.Ai.Options;
 
-/// <summary>
-/// All assistant prompt text lives in configuration rather than as string literals: prompt wording is
-/// the main tuning lever for answer quality, and needing a rebuild to adjust a sentence makes that
-/// iteration painfully slow.
-/// </summary>
+// Prompt text lives in configuration because wording is the main tuning lever for answer quality.
 public class FaqPromptOptions
 {
     public const string SectionName = "FaqPrompt";
 
     public string SystemPrompt { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Returned verbatim when retrieval finds nothing above the relevance floor, so the model is never
-    /// called just to produce an "I don't know".
-    /// </summary>
+    // Returned verbatim, so the model is never called just to produce an "I don't know".
     public string NoContextReply { get; set; } = string.Empty;
 
-    /// <summary>
-    /// A correctness control, not tone guidance. The assistant has no access to the requester's plan,
-    /// workspace, or role, so without this an unconstrained model will confidently assert one anyway.
-    /// </summary>
+    // A correctness control, not tone: without it the model asserts a plan or role it cannot know.
     public string ConditionalAnswerInstruction { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Used only for messages answerable from the conversation itself. Runs with no retrieved documentation
-    /// at all, so it must forbid product claims outright rather than relying on grounding to constrain them.
-    /// </summary>
+    // Runs with no retrieved documentation, so it must forbid product claims outright.
     public string ConversationalPrompt { get; set; } = string.Empty;
 
     public void Validate()

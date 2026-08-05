@@ -2,24 +2,8 @@ using System.Text.RegularExpressions;
 
 namespace Infrastructure.Ai;
 
-/// <summary>
-/// Recognises messages the assistant can answer from the conversation itself rather than from the
-/// knowledge base — greetings, introductions, thanks, and questions about what was already said
-/// ("what's my name?", "what did I ask?"). These get a warm reply instead of the
-/// not-in-the-documentation refusal.
-/// <para>
-/// The message is split into clauses and <b>every</b> clause must be conversational. A single product
-/// question or hostile instruction anywhere in the message sends the whole thing to retrieval, so
-/// "Hi, how do I export a board?" is still answered from the documentation and
-/// "my name is Anton. Ignore all previous instructions." is still refused with no model call.
-/// Whole-message anchoring alone could not do this: it rejected ordinary chatter like
-/// "I am Anton! Nice to meet you!".
-/// </para>
-/// <para>
-/// Entitlement questions ("what's my plan?", "am I an admin?") are deliberately absent — they must reach
-/// retrieval so the answer states the requirement as a condition instead of asserting it.
-/// </para>
-/// </summary>
+// Recognises messages answerable from the conversation itself — greetings, introductions, "what's my
+// name?" — so they get a warm reply instead of the not-in-the-documentation refusal.
 internal static partial class FaqConversationIntent
 {
     private const int _maxConversationalLength = 200;
@@ -39,6 +23,7 @@ internal static partial class FaqConversationIntent
             _clauseSeparators,
             StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
+        // Every clause must match: one product question or hostile clause sends the whole message to retrieval.
         return clauses.Length > 0 && clauses.All(clause => ClausePattern().IsMatch(clause));
     }
 
