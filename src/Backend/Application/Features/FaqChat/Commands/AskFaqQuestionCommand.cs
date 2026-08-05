@@ -44,7 +44,7 @@ public class AskFaqQuestionCommandValidator : AbstractValidator<AskFaqQuestionCo
 
                     turn.RuleFor(x => x.Content)
                         .NotEmpty().WithMessage("History turn content must not be empty.")
-                        .MaximumLength(faqChatOptions.MaxQuestionLength);
+                        .MaximumLength(faqChatOptions.MaxHistoryTurnLength);
                 });
             });
     }

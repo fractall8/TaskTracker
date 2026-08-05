@@ -61,6 +61,31 @@ public class FaqToolInvocationFilterTests
         Assert.Equal("That information could not be retrieved right now.", result);
     }
 
+    // Model that keeps calling tools must be stopped by the budget, not by luck.
+    [Fact]
+    public async Task A_runaway_tool_loop_terminates_at_the_budget()
+    {
+        const int budget = 3;
+        const int attempts = 25;
+
+        var executed = 0;
+        var kernel = KernelWith(new AiToolBudget(budget), () => { executed++; return "more work"; });
+        var terminal = 0;
+
+        for (var i = 0; i < attempts; i++)
+        {
+            var result = (await kernel.InvokeAsync("probe", "probe")).GetValue<string>();
+
+            if (result == FaqToolInvocationFilter.BudgetExhaustedResult)
+            {
+                terminal++;
+            }
+        }
+
+        Assert.Equal(budget, executed);
+        Assert.Equal(attempts - budget, terminal);
+    }
+
     [Fact]
     public async Task Bad_arguments_get_a_corrective_message_the_model_can_act_on()
     {

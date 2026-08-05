@@ -75,19 +75,17 @@ internal class FaqAssistantService(
             toolKernel,
             ct);
 
-        var citations = chunks.Count > 0 ? BuildCitations(chunks) : [];
-
-        // Tools take precedence over documentation: when both contributed, the definitive statements came
-        // from the caller's own data, and labelling that Grounded would attribute them to a doc citation.
-        // Citations are still returned when documentation also contributed.
+        // A tool-answered turn carries no citations. Retrieval runs on every question and usually returns
+        // something above the relevance floor, but those chunks did not produce the answer — attaching them
+        // credited "Feature: Share Your Screen in a Call" for a list of tasks.
         if (toolBudget.Used > 0)
         {
-            return new FaqAnswerDto(answer, FaqAnswerKindDto.DataBacked, citations);
+            return new FaqAnswerDto(answer, FaqAnswerKindDto.DataBacked, Citations: []);
         }
 
         if (chunks.Count > 0)
         {
-            return new FaqAnswerDto(answer, FaqAnswerKindDto.Grounded, citations);
+            return new FaqAnswerDto(answer, FaqAnswerKindDto.Grounded, BuildCitations(chunks));
         }
 
         // Neither documentation nor a tool supported an answer, so whatever the model produced is
@@ -140,27 +138,43 @@ internal class FaqAssistantService(
 
         var completion = await CompleteAsync(chatHistory, activeKernel, ct);
 
-        if (string.IsNullOrWhiteSpace(completion))
+        LogTurnCost(FaqTurnUsage.Measure(chatHistory, completion));
+
+        if (string.IsNullOrWhiteSpace(completion?.Content))
         {
             throw new ExternalServiceUnavailableException(
                 "The assistant could not generate a response. Please try again in a moment.");
         }
 
-        return completion.Trim();
+        return completion.Content.Trim();
     }
 
-    private async Task<string?> CompleteAsync(ChatHistory chatHistory, Kernel activeKernel, CancellationToken ct)
+    // Counts only — the message contents themselves are never logged.
+    private void LogTurnCost(FaqTurnUsage usage) =>
+        logger.LogInformation(
+            "FAQ turn cost: {ModelCalls} model call(s), {ToolCalls}/{ToolBudget} tool call(s), "
+            + "{InputTokens} input and {OutputTokens} output token(s), of which {ReasoningTokens} reasoning.",
+            usage.ModelCalls,
+            toolBudget.Used,
+            toolBudget.MaxCalls,
+            usage.InputTokens,
+            usage.OutputTokens,
+            usage.ReasoningTokens);
+
+    private async Task<ChatMessageContent?> CompleteAsync(
+        ChatHistory chatHistory,
+        Kernel activeKernel,
+        CancellationToken ct)
     {
         var chat = activeKernel.GetRequiredService<IChatCompletionService>();
 
         try
         {
-            var result = await chat.GetChatMessageContentAsync(
+            return await chat.GetChatMessageContentAsync(
                 chatHistory,
                 BuildExecutionSettings(activeKernel),
                 activeKernel,
                 ct);
-            return result.Content;
         }
         catch (Exception ex) when (IsContentFiltered(ex))
         {
