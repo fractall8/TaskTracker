@@ -62,6 +62,21 @@ public class FaqToolInvocationFilterTests
     }
 
     [Fact]
+    public async Task Bad_arguments_get_a_corrective_message_the_model_can_act_on()
+    {
+        var kernel = KernelWith(
+            new AiToolBudget(5),
+            () => throw new KernelException(
+                "Missing argument for function parameter 'workspaceId'",
+                new ArgumentException("Unrecognized Guid format.", "workspaceId")));
+
+        var result = (await kernel.InvokeAsync("probe", "probe")).GetValue<string>();
+
+        Assert.Contains("GUID", result!, StringComparison.Ordinal);
+        Assert.Contains("call the tool again", result!, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Cancellation_is_not_swallowed()
     {
         var kernel = KernelWith(new AiToolBudget(5), () => throw new OperationCanceledException());

@@ -25,6 +25,7 @@ public class AiToolAuthorizationTests
         nameof(ListTasksTool),
         nameof(CountWorkspaceTasksTool),
         nameof(ListWorkspaceOverdueTasksTool),
+        nameof(ListWorkspaceTasksDueSoonTool),
         nameof(GetMyPlanLimitsTool)
     ];
 
@@ -70,6 +71,9 @@ public class AiToolAuthorizationTests
             nameof(ListWorkspaceOverdueTasksTool) =>
                 new ListWorkspaceOverdueTasksToolHandler(repository, workspace, options, clock)
                     .Handle(new ListWorkspaceOverdueTasksTool(id), default),
+            nameof(ListWorkspaceTasksDueSoonTool) =>
+                new ListWorkspaceTasksDueSoonToolHandler(repository, workspace, options, clock)
+                    .Handle(new ListWorkspaceTasksDueSoonTool(id), default),
             nameof(GetMyPlanLimitsTool) =>
                 new GetMyPlanLimitsToolHandler(repository, workspace, new UnusedPlanCatalog())
                     .Handle(new GetMyPlanLimitsTool(id), default),
@@ -98,6 +102,10 @@ public class AiToolAuthorizationTests
 
         public Task<IReadOnlyList<AiTaskSummary>> GetWorkspaceOverdueTasksAsync(
             Guid w, Guid c, DateTimeOffset asOf, int take, CancellationToken ct = default) =>
+            Fail<IReadOnlyList<AiTaskSummary>>();
+
+        public Task<IReadOnlyList<AiTaskSummary>> GetWorkspaceTasksDueSoonAsync(
+            Guid w, Guid c, DateTimeOffset asOf, TimeSpan window, int take, CancellationToken ct = default) =>
             Fail<IReadOnlyList<AiTaskSummary>>();
 
         public Task<string?> GetWorkspacePlanIdAsync(Guid w, Guid c, CancellationToken ct = default) =>

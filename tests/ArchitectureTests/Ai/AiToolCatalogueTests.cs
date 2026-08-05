@@ -20,6 +20,7 @@ public class AiToolCatalogueTests
         typeof(ListTasksTool),
         typeof(CountWorkspaceTasksTool),
         typeof(ListWorkspaceOverdueTasksTool),
+        typeof(ListWorkspaceTasksDueSoonTool),
         typeof(GetMyPlanLimitsTool)
     ];
 

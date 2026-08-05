@@ -55,6 +55,22 @@ public class FaqToolInvocationFilter(AiToolBudget budget, ILogger<FaqToolInvocat
 
             context.Result = new FunctionResult(context.Function, ex.Message);
         }
+        catch (Exception ex) when (IsArgumentProblem(ex))
+        {
+            // A bad argument is recoverable, so hand back a corrective instruction instead of a dead end —
+            // the model can retry within its budget. Seen in practice when a workspace named "1" led the
+            // model to pass the name where the GUID belonged.
+            logger.LogWarning(
+                "FAQ tool {Tool} rejected the model's arguments: {Reason}.",
+                context.Function.Name,
+                ex.Message);
+
+            context.Result = new FunctionResult(
+                context.Function,
+                "Those arguments were not valid. Ids must be the GUID from the Id field of a previous tool "
+                + "result, never a name, and optional arguments should be omitted rather than guessed. "
+                + "Correct the arguments and call the tool again.");
+        }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.LogError(ex, "FAQ tool {Tool} failed.", context.Function.Name);
@@ -63,6 +79,20 @@ public class FaqToolInvocationFilter(AiToolBudget budget, ILogger<FaqToolInvocat
                 context.Function,
                 "That information could not be retrieved right now.");
         }
+    }
+
+    // SK wraps marshalling failures in KernelException, so check the chain rather than the outer type.
+    private static bool IsArgumentProblem(Exception exception)
+    {
+        for (var current = exception; current is not null; current = current.InnerException)
+        {
+            if (current is ArgumentException or FormatException)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static int RowCount(FunctionResult? result) => result?.GetValue<object>() switch

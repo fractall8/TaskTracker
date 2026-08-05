@@ -16,6 +16,10 @@ public class FaqPromptOptions
     // Runs with no retrieved documentation, so it must forbid product claims outright.
     public string ConversationalPrompt { get; set; } = string.Empty;
 
+    // Appended when the workspace-data tools are available. Fences tool output separately from
+    // documentation, and relaxes the conditional-answer rule only for facts a tool actually returned.
+    public string DataToolInstruction { get; set; } = string.Empty;
+
     public void Validate()
     {
         if (string.IsNullOrWhiteSpace(SystemPrompt))
@@ -36,6 +40,11 @@ public class FaqPromptOptions
         if (string.IsNullOrWhiteSpace(ConversationalPrompt))
         {
             throw new InvalidOperationException($"{SectionName}:{nameof(ConversationalPrompt)} is not configured.");
+        }
+
+        if (string.IsNullOrWhiteSpace(DataToolInstruction))
+        {
+            throw new InvalidOperationException($"{SectionName}:{nameof(DataToolInstruction)} is not configured.");
         }
     }
 }

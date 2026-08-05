@@ -113,6 +113,11 @@ public class AiDataRepository(TaskTrackerDbContext dbContext) : IAiDataRepositor
             query = query.Where(task => task.AssigneeId == currentUserId);
         }
 
+        if (filter.DueAfter is { } dueAfter)
+        {
+            query = query.Where(task => task.DueDate != null && task.DueDate >= dueAfter);
+        }
+
         if (filter.DueBefore is { } dueBefore)
         {
             query = query.Where(task => task.DueDate != null && task.DueDate < dueBefore);
@@ -132,6 +137,25 @@ public class AiDataRepository(TaskTrackerDbContext dbContext) : IAiDataRepositor
             .Where(task => task.Column!.Board!.WorkspaceId == workspaceId
                            && task.DueDate != null
                            && task.DueDate < asOf);
+
+        return await Summarise(query, currentUserId, take).ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<AiTaskSummary>> GetWorkspaceTasksDueSoonAsync(
+        Guid workspaceId,
+        Guid currentUserId,
+        DateTimeOffset asOf,
+        TimeSpan window,
+        int take,
+        CancellationToken ct = default)
+    {
+        var windowEnd = asOf + window;
+
+        var query = VisibleTasks(currentUserId)
+            .Where(task => task.Column!.Board!.WorkspaceId == workspaceId
+                           && task.DueDate != null
+                           && task.DueDate >= asOf
+                           && task.DueDate < windowEnd);
 
         return await Summarise(query, currentUserId, take).ToListAsync(ct);
     }

@@ -14,7 +14,7 @@ public record ListTasksTool(
     Guid? ColumnId = null,
     bool OnlyAssignedToMe = false,
     bool OnlyOverdue = false,
-    DateTimeOffset? DueBefore = null,
+    int? DueWithinDays = null,
     int? Take = null) : IRequest<IReadOnlyList<AiTaskSummary>>;
 
 public class ListTasksToolHandler(
@@ -24,27 +24,39 @@ public class ListTasksToolHandler(
     IDateTimeProvider dateTimeProvider)
     : IRequestHandler<ListTasksTool, IReadOnlyList<AiTaskSummary>>
 {
+    private const int _maxWindowDays = 90;
+
     public async Task<IReadOnlyList<AiTaskSummary>> Handle(ListTasksTool request, CancellationToken ct)
     {
         var access = await boardAccessService.EnsureCanViewBoardAsync(request.BoardId, ct);
         var maxRows = toolOptions.Value.MaxRowsPerTool;
 
-        // OnlyOverdue collapses into DueBefore=now, which is what keeps the repository clock-free.
-        var dueBefore = request.OnlyOverdue
-            ? Earliest(request.DueBefore, dateTimeProvider.UtcNow)
-            : request.DueBefore;
+        var now = dateTimeProvider.UtcNow;
+
+        // Both windows resolve to absolute bounds here, which is what keeps the repository clock-free.
+        // OnlyOverdue wins if both are supplied: "overdue" and "due soon" are disjoint by definition.
+        DateTimeOffset? dueAfter = null;
+        DateTimeOffset? dueBefore = null;
+
+        if (request.OnlyOverdue)
+        {
+            dueBefore = now;
+        }
+        else if (request.DueWithinDays is { } days)
+        {
+            dueAfter = now;
+            dueBefore = now.AddDays(Math.Clamp(days, 1, _maxWindowDays));
+        }
 
         var filter = new AiTaskFilter(
             request.ColumnId,
             request.OnlyAssignedToMe,
+            dueAfter,
             dueBefore,
             Math.Clamp(request.Take ?? maxRows, 1, maxRows));
 
         return await aiDataRepository.GetBoardTasksAsync(request.BoardId, access.UserId, filter, ct);
     }
-
-    private static DateTimeOffset Earliest(DateTimeOffset? requested, DateTimeOffset now) =>
-        requested is { } value && value < now ? value : now;
 }
 
 public class ListTasksToolValidator : AbstractValidator<ListTasksTool>
@@ -52,6 +64,10 @@ public class ListTasksToolValidator : AbstractValidator<ListTasksTool>
     public ListTasksToolValidator(IOptions<AiToolOptions> toolOptions)
     {
         RuleFor(tool => tool.BoardId).NotEmpty();
+
+        RuleFor(tool => tool.DueWithinDays)
+            .InclusiveBetween(1, 90)
+            .When(tool => tool.DueWithinDays.HasValue);
 
         RuleFor(tool => tool.Take)
             .InclusiveBetween(1, toolOptions.Value.MaxRowsPerTool)

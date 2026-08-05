@@ -15,6 +15,7 @@ public class FaqToolPluginTests
         "list_tasks",
         "count_workspace_tasks",
         "list_workspace_overdue_tasks",
+        "list_workspace_tasks_due_soon",
         "get_my_plan_limits"
     ];
 
@@ -22,7 +23,7 @@ public class FaqToolPluginTests
         KernelPluginFactory.CreateFromObject(new FaqToolPlugin(new UnusedSender()), FaqToolPlugin.PluginName);
 
     [Fact]
-    public void Plugin_exposes_exactly_the_eight_whitelisted_tools()
+    public void Plugin_exposes_exactly_the_whitelisted_tools()
     {
         var names = Plugin().Select(function => function.Name).OrderBy(name => name, StringComparer.Ordinal);
 

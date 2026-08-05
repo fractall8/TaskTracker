@@ -11,5 +11,8 @@ public enum FaqAnswerKindDto : byte
     Conversational = 2,
 
     // Nothing in the documentation covered it — must not be styled as authoritative.
-    Unsupported = 3
+    Unsupported = 3,
+
+    // Answered from the caller's own workspace data via tools; no documentation citations.
+    DataBacked = 4
 }

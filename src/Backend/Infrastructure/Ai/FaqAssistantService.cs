@@ -1,8 +1,10 @@
 using Application.Interfaces.Services;
+using Application.Options;
 using Contracts.DTOs;
 using Contracts.Enums;
 using Domain.Exceptions;
 using Infrastructure.Ai.Options;
+using Infrastructure.Ai.Tools;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
@@ -14,8 +16,12 @@ namespace Infrastructure.Ai;
 internal class FaqAssistantService(
     Kernel kernel,
     IFaqKnowledgeSearch knowledgeSearch,
+    FaqToolPlugin toolPlugin,
+    AiToolBudget toolBudget,
+    FaqToolInvocationFilter toolFilter,
     IOptions<AzureOpenAiOptions> openAiOptions,
     IOptions<FaqPromptOptions> promptOptions,
+    IOptions<AiToolOptions> toolOptions,
     ILogger<FaqAssistantService> logger) : IFaqAssistantService
 {
     private const int _maxCitationExcerptLength = 220;
@@ -23,6 +29,7 @@ internal class FaqAssistantService(
 
     private readonly AzureOpenAiOptions _openAi = openAiOptions.Value;
     private readonly FaqPromptOptions _prompt = promptOptions.Value;
+    private readonly AiToolOptions _tools = toolOptions.Value;
 
     public async Task<FaqAnswerDto> AskAsync(
         string question,
@@ -35,32 +42,63 @@ internal class FaqAssistantService(
         {
             logger.LogDebug("FAQ message answerable from the conversation; skipping retrieval.");
 
-            var reply = await GenerateAsync(_prompt.ConversationalPrompt, question, history, ct);
+            var reply = await GenerateAsync(_prompt.ConversationalPrompt, question, history, kernel, ct);
 
             return new FaqAnswerDto(reply, FaqAnswerKindDto.Conversational, Citations: []);
         }
 
         var chunks = await knowledgeSearch.SearchAsync(question, ct);
 
-        if (chunks.Count == 0)
-        {
-            logger.LogInformation("FAQ question had no grounding context; returning the no-context reply.");
-            return new FaqAnswerDto(_prompt.NoContextReply, FaqAnswerKindDto.Unsupported, Citations: []);
-        }
+        // Zero chunks no longer means refusal: a question about the caller's own data legitimately matches
+        // no documentation but is answerable by a tool (EPIC 3 Decision 9).
+        var toolKernel = _tools.Enabled ? BuildToolKernel() : kernel;
 
         var answer = await GenerateAsync(
-            FaqPromptBuilder.BuildSystemPrompt(_prompt, chunks),
+            FaqPromptBuilder.BuildSystemPrompt(_prompt, chunks, _tools.Enabled),
             question,
             history,
+            toolKernel,
             ct);
 
-        return new FaqAnswerDto(answer, FaqAnswerKindDto.Grounded, BuildCitations(chunks));
+        var citations = chunks.Count > 0 ? BuildCitations(chunks) : [];
+
+        // Tools take precedence over documentation: when both contributed, the definitive statements came
+        // from the caller's own data, and labelling that Grounded would attribute them to a doc citation.
+        // Citations are still returned when documentation also contributed.
+        if (toolBudget.Used > 0)
+        {
+            return new FaqAnswerDto(answer, FaqAnswerKindDto.DataBacked, citations);
+        }
+
+        if (chunks.Count > 0)
+        {
+            return new FaqAnswerDto(answer, FaqAnswerKindDto.Grounded, citations);
+        }
+
+        // Neither documentation nor a tool supported an answer, so whatever the model produced is
+        // ungrounded — discard it rather than relay an assertion nothing backs.
+        logger.LogInformation("FAQ question matched no documentation and no tool; returning the no-context reply.");
+
+        return new FaqAnswerDto(_prompt.NoContextReply, FaqAnswerKindDto.Unsupported, Citations: []);
+    }
+
+    // The registered Kernel is a singleton, so filters and plugins must go on a per-request clone —
+    // otherwise one caller's tool budget would be shared with every other caller.
+    private Kernel BuildToolKernel()
+    {
+        var scoped = kernel.Clone();
+
+        scoped.FunctionInvocationFilters.Add(toolFilter);
+        scoped.Plugins.AddFromObject(toolPlugin, FaqToolPlugin.PluginName);
+
+        return scoped;
     }
 
     private async Task<string> GenerateAsync(
         string systemPrompt,
         string question,
         IReadOnlyList<FaqChatTurnDto> history,
+        Kernel activeKernel,
         CancellationToken ct)
     {
         var chatHistory = new ChatHistory();
@@ -85,7 +123,7 @@ internal class FaqAssistantService(
 
         chatHistory.AddUserMessage(question.Trim());
 
-        var completion = await CompleteAsync(chatHistory, ct);
+        var completion = await CompleteAsync(chatHistory, activeKernel, ct);
 
         if (string.IsNullOrWhiteSpace(completion))
         {
@@ -96,13 +134,17 @@ internal class FaqAssistantService(
         return completion.Trim();
     }
 
-    private async Task<string?> CompleteAsync(ChatHistory chatHistory, CancellationToken ct)
+    private async Task<string?> CompleteAsync(ChatHistory chatHistory, Kernel activeKernel, CancellationToken ct)
     {
-        var chat = kernel.GetRequiredService<IChatCompletionService>();
+        var chat = activeKernel.GetRequiredService<IChatCompletionService>();
 
         try
         {
-            var result = await chat.GetChatMessageContentAsync(chatHistory, BuildExecutionSettings(), kernel, ct);
+            var result = await chat.GetChatMessageContentAsync(
+                chatHistory,
+                BuildExecutionSettings(activeKernel),
+                activeKernel,
+                ct);
             return result.Content;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -114,7 +156,7 @@ internal class FaqAssistantService(
         }
     }
 
-    private AzureOpenAIPromptExecutionSettings BuildExecutionSettings()
+    private AzureOpenAIPromptExecutionSettings BuildExecutionSettings(Kernel activeKernel)
     {
 #pragma warning disable SKEXP0010 // SetNewMaxCompletionTokensEnabled: sends max_completion_tokens instead
         // of max_tokens, which reasoning models (gpt-5*, o*) require. Verified against gpt-5-mini.
@@ -134,6 +176,14 @@ internal class FaqAssistantService(
         if (!string.IsNullOrWhiteSpace(_openAi.ReasoningEffort))
         {
             settings.ReasoningEffort = _openAi.ReasoningEffort;
+        }
+
+        // Offered only when the kernel actually carries the plugin, so the conversational path never sees
+        // tools. Sequential invocation is intentional: AiToolBudget is not thread-safe.
+        if (activeKernel.Plugins.Count > 0)
+        {
+            settings.FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(
+                options: new FunctionChoiceBehaviorOptions { AllowConcurrentInvocation = false });
         }
 
         return settings;

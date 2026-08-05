@@ -1,3 +1,4 @@
+using Application.Behaviors;
 using Application.Interfaces.Services;
 using Application.Options;
 using Contracts.DTOs;
@@ -8,7 +9,7 @@ using Microsoft.Extensions.Options;
 namespace Application.Features.FaqChat.Commands;
 
 public record AskFaqQuestionCommand(string Question, IReadOnlyList<FaqChatTurnDto> History)
-    : IRequest<FaqAnswerDto>;
+    : IRequest<FaqAnswerDto>, ISensitivePayload;
 
 public class AskFaqQuestionCommandHandler(IFaqAssistantService faqAssistantService)
     : IRequestHandler<AskFaqQuestionCommand, FaqAnswerDto>

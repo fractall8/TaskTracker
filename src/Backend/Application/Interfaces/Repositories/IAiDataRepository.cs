@@ -41,6 +41,15 @@ public interface IAiDataRepository
         int take,
         CancellationToken ct = default);
 
+    // Due on or after asOf and before asOf + window, so it excludes anything already overdue.
+    Task<IReadOnlyList<AiTaskSummary>> GetWorkspaceTasksDueSoonAsync(
+        Guid workspaceId,
+        Guid currentUserId,
+        DateTimeOffset asOf,
+        TimeSpan window,
+        int take,
+        CancellationToken ct = default);
+
     // Scalar, so it stays out of the approved manifest. Null when the workspace has no billable
     // subscription; the caller resolves the default through IPlanCatalog.
     Task<string?> GetWorkspacePlanIdAsync(
@@ -62,5 +71,6 @@ public interface IAiDataRepository
 public sealed record AiTaskFilter(
     Guid? ColumnId = null,
     bool OnlyAssignedToMe = false,
+    DateTimeOffset? DueAfter = null,
     DateTimeOffset? DueBefore = null,
     int Take = 25);
