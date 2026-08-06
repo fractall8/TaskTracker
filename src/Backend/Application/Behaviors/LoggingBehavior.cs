@@ -10,14 +10,26 @@ public class LoggingBehavior<TRequest, TResponse>(ILogger<LoggingBehavior<TReque
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
         var requestName = typeof(TRequest).Name;
+        var sensitive = request is ISensitivePayload;
 
-        logger.LogInformation("Executing {RequestName} with parameters: {@Request}", requestName, request);
+        if (sensitive)
+        {
+            logger.LogInformation("Executing {RequestName}. Payload not logged.", requestName);
+        }
+        else
+        {
+            logger.LogInformation("Executing {RequestName} with parameters: {@Request}", requestName, request);
+        }
 
         try
         {
             var response = await next(cancellationToken);
 
-            if (response is ICollection collection)
+            if (sensitive)
+            {
+                logger.LogInformation("Completed {RequestName}. Response not logged.", requestName);
+            }
+            else if (response is ICollection collection)
             {
                 logger.LogInformation("Completed {RequestName}. Returned {Type} with {Count} items.",
                     requestName, response.GetType().Name, collection.Count);

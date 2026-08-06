@@ -1,0 +1,68 @@
+# APPROVED AI EXPOSURE SURFACE
+#
+# Every line below is a field the language model can read. This file is the audit artifact for
+# EPIC 3 Decision 14: a reviewer should be able to approve or reject a change to what the AI sees
+# by reading the diff of this file alone.
+#
+# Format:  TypeName.PropertyName : PropertyType     (sorted, set semantics — order is not tracked)
+#
+# Before adding a line, check it against EPIC 3 §6. Never approve:
+#   - any user name, email, avatar, or user identifier (AssigneeId, ReporterId, *ById, ...)
+#   - task/board/workspace Description, comment bodies, attachment names
+#   - a role property not prefixed My*
+
+AiBoardDetail.Columns : IReadOnlyList<AiColumnTaskCount>
+AiBoardDetail.Id : Guid
+AiBoardDetail.IsArchived : bool
+AiBoardDetail.MyBoardRole : BoardRoleDto?
+AiBoardDetail.Name : string
+AiBoardDetail.OverdueTaskCount : int
+AiBoardDetail.TaskCount : int
+AiBoardDetail.UnassignedTaskCount : int
+AiBoardSummary.ArchivedAt : DateTimeOffset?
+AiBoardSummary.ColumnCount : int
+AiBoardSummary.Id : Guid
+AiBoardSummary.IsArchived : bool
+AiBoardSummary.MyBoardRole : BoardRoleDto?
+AiBoardSummary.Name : string
+AiBoardSummary.TaskCount : int
+AiColumnTaskCount.Id : Guid
+AiColumnTaskCount.Name : string
+AiColumnTaskCount.Position : int
+AiColumnTaskCount.TaskCount : int
+AiPlanLimits.BoardsUsed : int
+AiPlanLimits.CanExportBoard : bool
+AiPlanLimits.MaxAttachmentSizeMb : int?
+AiPlanLimits.MaxBoardsPerWorkspace : int?
+AiPlanLimits.MaxColumnsPerBoard : int?
+AiPlanLimits.MaxMembersPerWorkspace : int?
+AiPlanLimits.MaxTasksPerBoard : int?
+AiPlanLimits.MembersUsed : int
+AiPlanLimits.PlanDisplayName : string
+AiPlanLimits.PlanId : string
+AiTaskCounts.AssignedToMe : int
+AiTaskCounts.DueThisWeek : int
+AiTaskCounts.Overdue : int
+AiTaskCounts.Total : int
+AiTaskSummary.AttachmentCount : int
+AiTaskSummary.ColumnName : string
+AiTaskSummary.CommentCount : int
+AiTaskSummary.CreatedAt : DateTimeOffset
+AiTaskSummary.DueDate : DateTimeOffset?
+AiTaskSummary.Id : Guid
+AiTaskSummary.IsAssigned : bool
+AiTaskSummary.IsAssignedToMe : bool
+AiTaskSummary.IsReportedByMe : bool
+AiTaskSummary.Position : int
+AiTaskSummary.Title : string
+AiTaskSummary.UpdatedAt : DateTimeOffset?
+AiWorkspaceSummary.Id : Guid
+AiWorkspaceSummary.MyBoardCount : int
+AiWorkspaceSummary.MyWorkspaceRole : WorkspaceRoleDto
+AiWorkspaceSummary.Name : string
+AiWorkspaceUsage.ArchivedBoardCount : int
+AiWorkspaceUsage.BoardCount : int
+AiWorkspaceUsage.Id : Guid
+AiWorkspaceUsage.MemberCount : int
+AiWorkspaceUsage.MyWorkspaceRole : WorkspaceRoleDto
+AiWorkspaceUsage.Name : string

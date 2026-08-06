@@ -10,6 +10,7 @@ internal static class RepositoriesModule
     public static IServiceCollection AddRepositoriesModule(this IServiceCollection services)
     {
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IAiDataRepository, AiDataRepository>();
         services.AddScoped<IBoardRepository, BoardRepository>();
         services.AddScoped<IBoardMemberRepository, BoardMemberRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
