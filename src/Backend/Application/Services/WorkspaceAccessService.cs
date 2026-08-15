@@ -46,6 +46,13 @@ public class WorkspaceAccessService(
             "You don't have permission to edit this workspace.", ct);
     }
 
+    public async Task<(Guid UserId, string Email)> EnsureCanCurateTagsAsync(Guid workspaceId,
+        CancellationToken ct = default)
+    {
+        return await EnsureAccessAsync(workspaceId, WorkspaceRolePermissions.CanCurateTags,
+            "You don't have permission to manage tags in this workspace.", ct);
+    }
+
     public async Task EnsureCanManageMembersAsync(Guid workspaceId, CancellationToken ct = default)
     {
         await EnsureAccessAsync(workspaceId, WorkspaceRolePermissions.CanManageMembers,

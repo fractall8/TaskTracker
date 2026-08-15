@@ -24,4 +24,9 @@ public static class WorkspaceRolePermissions
 
     public static bool CanManageSubscriptions(WorkspaceRole role) =>
         role is WorkspaceRole.Owner;
+
+    // Renaming, recolouring and deleting change or remove a tag on tasks across every board, so they are
+    // curator actions. Creating is not: any member may add to the vocabulary.
+    public static bool CanCurateTags(WorkspaceRole role) =>
+        role is WorkspaceRole.Admin or WorkspaceRole.Owner;
 }

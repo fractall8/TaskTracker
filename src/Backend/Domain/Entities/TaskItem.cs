@@ -34,4 +34,6 @@ public class TaskItem : BaseEntity<Guid>
     public ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
 
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
+
+    public ICollection<TaskTag> TaskTags { get; set; } = new List<TaskTag>();
 }
