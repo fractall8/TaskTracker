@@ -6,6 +6,8 @@ public record TaskDto(
     string? Description,
     int Position,
     DateTimeOffset? DueDate,
+    bool IsCompleted,
+    DateTimeOffset? CompletedAt,
     Guid ColumnId,
 
     Guid? AssigneeId,

@@ -644,6 +644,8 @@ public class BoardDetailsStore(
             Description: null,
             Position: payload.Position,
             DueDate: null,
+            IsCompleted: false,
+            CompletedAt: null,
             ColumnId: payload.ColumnId,
             AssigneeId: payload.AssigneeId,
             AssigneeName: null,

@@ -87,6 +87,28 @@ public class TasksController(ISender sender) : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("{taskId:guid}/complete")]
+    public async Task<ActionResult<TaskDto>> Complete(
+        [FromRoute] Guid boardId,
+        [FromRoute] Guid taskId,
+        CancellationToken ct)
+    {
+        var result = await sender.Send(new CompleteTaskCommand(boardId, taskId), ct);
+
+        return Ok(result);
+    }
+
+    [HttpPost("{taskId:guid}/reopen")]
+    public async Task<ActionResult<TaskDto>> Reopen(
+        [FromRoute] Guid boardId,
+        [FromRoute] Guid taskId,
+        CancellationToken ct)
+    {
+        var result = await sender.Send(new ReopenTaskCommand(boardId, taskId), ct);
+
+        return Ok(result);
+    }
+
     [HttpDelete("{taskId:guid}")]
     public async Task<IActionResult> Delete([FromRoute] Guid boardId, [FromRoute] Guid taskId, CancellationToken ct)
     {

@@ -21,6 +21,7 @@ public class GetTasksByBoardIdQueryHandler(
 
         return [.. tasks.Select(task => new TaskDto(
             task.Id, task.Title, task.Description, task.Position, task.DueDate,
+            task.IsCompleted, task.CompletedAt,
             task.ColumnId, task.AssigneeId, task.Assignee?.DisplayName, task.Assignee?.AvatarUrl, task.ReporterId,
             task.Reporter?.DisplayName,
             task.Reporter?.AvatarUrl,

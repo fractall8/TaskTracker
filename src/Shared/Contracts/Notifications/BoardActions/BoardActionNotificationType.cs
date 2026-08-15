@@ -23,4 +23,5 @@ public enum BoardActionNotificationType : byte
     CallStarted = 19,
     CallParticipantsChanged = 20,
     CallEnded = 21,
+    TaskCompletionChanged = 22,
 }

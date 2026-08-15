@@ -42,6 +42,8 @@ public class GetBoardByIdQueryHandler(
                     Description: t.Description,
                     Position: t.Position,
                     DueDate: t.DueDate,
+                    IsCompleted: t.IsCompleted,
+                    CompletedAt: t.CompletedAt,
                     ColumnId: t.ColumnId,
                     AssigneeId: t.AssigneeId,
                     AssigneeName: t.Assignee?.DisplayName,

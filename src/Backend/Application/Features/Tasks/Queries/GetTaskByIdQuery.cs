@@ -1,3 +1,4 @@
+using Application.Common.Mappings;
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
@@ -29,15 +30,7 @@ public class GetTaskByIdQueryHandler(
             throw new NotFoundException("Task not found on this board.");
         }
 
-        var attachments = task.Attachments.Select(a => new AttachmentDto(
-            a.Id, a.FileName, a.FileUrl, a.SizeInBytes, a.CreatedAt, a.CreatedById)).ToList() ?? [];
-
-        return new TaskDto(
-            task.Id, task.Title, task.Description, task.Position, task.DueDate,
-            task.ColumnId, task.AssigneeId, task.Assignee?.DisplayName, task.Assignee?.AvatarUrl, task.ReporterId,
-            task.Reporter?.DisplayName,
-            task.Reporter?.AvatarUrl,
-            attachments);
+        return task.ToDto();
     }
 }
 

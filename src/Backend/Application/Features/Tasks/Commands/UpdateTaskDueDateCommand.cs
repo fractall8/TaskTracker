@@ -1,4 +1,5 @@
 ﻿using Application.Common.Interfaces;
+using Application.Common.Mappings;
 using Application.Interfaces.Notifiers;
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
@@ -26,19 +27,22 @@ public class UpdateTaskDueDateCommandHandler(
     {
         var boardAccessContext = await boardAccessService.EnsureCanManageTasksAsync(request.BoardId, cancellationToken);
 
-        var task = await taskRepository.GetByIdAsync(request.TaskId, cancellationToken);
+        var task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, cancellationToken);
 
         if (task == null)
         {
             throw new NotFoundException("Task not found.");
         }
 
+        // Without this, holding a role on one board would authorise editing a task on another.
+        if (task.Column?.BoardId != request.BoardId)
+        {
+            throw new NotFoundException("Task not found on this board.");
+        }
+
         task.DueDate = request.DueDate;
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
-
-        var attachments = task.Attachments?.Select(a => new AttachmentDto(
-            a.Id, a.FileName, a.FileUrl, a.SizeInBytes, a.CreatedAt, a.CreatedById)).ToList() ?? [];
 
         await boardActionNotifier.NotifyAsync(new BoardActionNotification(
             request.BoardId,
@@ -48,22 +52,7 @@ public class UpdateTaskDueDateCommandHandler(
             new TaskDueDateUpdatedPayload(task.Id, task.DueDate)
         ), cancellationToken);
 
-        return new TaskDto
-        (
-            task.Id,
-            task.Title,
-            task.Description,
-            task.Position,
-            task.DueDate,
-            task.ColumnId,
-            task.AssigneeId,
-            task.Assignee?.DisplayName,
-            task.Assignee?.AvatarUrl,
-            task.ReporterId,
-            task.Reporter?.DisplayName,
-            task.Reporter?.AvatarUrl,
-            attachments
-        );
+        return task.ToDto();
     }
 }
 
