@@ -42,6 +42,8 @@ public interface IBoardDetailsStore
 
     Task<TaskDto?> UpdateTaskDueDateAsync(Guid taskId, UpdateTaskDueDateRequest request, CancellationToken ct = default);
 
+    Task SetTaskCompletionAsync(Guid taskId, bool isCompleted, CancellationToken ct = default);
+
     Task DeleteTaskAsync(Guid taskId, CancellationToken ct = default);
 
     Task CreateTaskAsync(Guid columnId, CreateTaskRequest request, CancellationToken ct = default);

@@ -11,6 +11,25 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
+/* Completion is independent of column, so the card itself has to carry the state. */
+.task-card.completed {
+    background: var(--mud-palette-background-grey);
+    border-style: dashed;
+}
+
+.task-card.completed .task-title {
+    text-decoration: line-through;
+    color: var(--mud-palette-text-secondary);
+}
+
+.task-card.completed .task-desc {
+    opacity: 0.6;
+}
+
+.task-check {
+    margin: -6px 0 0 -6px;
+}
+
 .task-card-top {
     display: flex;
     align-items: flex-start;

@@ -38,6 +38,12 @@ public interface ITasksApi
     [Patch("/api/boards/{boardId}/tasks/{taskId}/due-date")]
     Task<IApiResponse<TaskDto>> UpdateDueDateAsync(Guid boardId, Guid taskId, [Body] UpdateTaskDueDateRequest request, CancellationToken ct = default);
 
+    [Post("/api/boards/{boardId}/tasks/{taskId}/complete")]
+    Task<IApiResponse<TaskDto>> CompleteAsync(Guid boardId, Guid taskId, CancellationToken ct = default);
+
+    [Post("/api/boards/{boardId}/tasks/{taskId}/reopen")]
+    Task<IApiResponse<TaskDto>> ReopenAsync(Guid boardId, Guid taskId, CancellationToken ct = default);
+
     [Delete("/api/boards/{boardId}/tasks/{taskId}")]
     Task<IApiResponse> DeleteAsync(Guid boardId, Guid taskId, CancellationToken ct = default);
 

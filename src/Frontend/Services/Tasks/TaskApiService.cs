@@ -40,6 +40,15 @@ public class TaskApiService(ITasksApi tasksApi) : ITaskApiService
         return await response.HandleResponseAsync();
     }
 
+    public async Task<TaskDto> SetTaskCompletionAsync(Guid boardId, Guid taskId, bool isCompleted, CancellationToken ct = default)
+    {
+        var response = isCompleted
+            ? await tasksApi.CompleteAsync(boardId, taskId, ct)
+            : await tasksApi.ReopenAsync(boardId, taskId, ct);
+
+        return await response.HandleResponseAsync();
+    }
+
     public async Task DeleteTaskAsync(Guid boardId, Guid taskId, CancellationToken ct = default)
     {
         var response = await tasksApi.DeleteAsync(boardId, taskId, ct);

@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Application.Ai.Projections;
 using Application.Interfaces.Repositories;
 using Contracts.Enums;
@@ -83,7 +84,8 @@ public class AiDataRepository(TaskTrackerDbContext dbContext) : IAiDataRepositor
                     .FirstOrDefault(),
                 board.Columns.SelectMany(column => column.Tasks).Count(),
                 board.Columns.SelectMany(column => column.Tasks)
-                    .Count(task => task.DueDate != null && task.DueDate < asOf),
+                    .AsQueryable()
+                    .Count(Outstanding.Overdue(asOf)),
                 board.Columns.SelectMany(column => column.Tasks).Count(task => task.AssigneeId == null),
                 board.Columns
                     .OrderBy(column => column.Position)
@@ -115,12 +117,12 @@ public class AiDataRepository(TaskTrackerDbContext dbContext) : IAiDataRepositor
 
         if (filter.DueAfter is { } dueAfter)
         {
-            query = query.Where(task => task.DueDate != null && task.DueDate >= dueAfter);
+            query = query.Where(Outstanding.DueFrom(dueAfter));
         }
 
         if (filter.DueBefore is { } dueBefore)
         {
-            query = query.Where(task => task.DueDate != null && task.DueDate < dueBefore);
+            query = query.Where(Outstanding.DueBefore(dueBefore));
         }
 
         return await Summarise(query, currentUserId, filter.Take).ToListAsync(ct);
@@ -134,9 +136,8 @@ public class AiDataRepository(TaskTrackerDbContext dbContext) : IAiDataRepositor
         CancellationToken ct = default)
     {
         var query = VisibleTasks(currentUserId)
-            .Where(task => task.Column!.Board!.WorkspaceId == workspaceId
-                           && task.DueDate != null
-                           && task.DueDate < asOf);
+            .Where(task => task.Column!.Board!.WorkspaceId == workspaceId)
+            .Where(Outstanding.Overdue(asOf));
 
         return await Summarise(query, currentUserId, take).ToListAsync(ct);
     }
@@ -152,10 +153,8 @@ public class AiDataRepository(TaskTrackerDbContext dbContext) : IAiDataRepositor
         var windowEnd = asOf + window;
 
         var query = VisibleTasks(currentUserId)
-            .Where(task => task.Column!.Board!.WorkspaceId == workspaceId
-                           && task.DueDate != null
-                           && task.DueDate >= asOf
-                           && task.DueDate < windowEnd);
+            .Where(task => task.Column!.Board!.WorkspaceId == workspaceId)
+            .Where(Outstanding.DueBetween(asOf, windowEnd));
 
         return await Summarise(query, currentUserId, take).ToListAsync(ct);
     }
@@ -206,8 +205,8 @@ public class AiDataRepository(TaskTrackerDbContext dbContext) : IAiDataRepositor
             .GroupBy(_ => 1)
             .Select(group => new AiTaskCounts(
                 group.Count(),
-                group.Count(task => task.DueDate != null && task.DueDate < asOf),
-                group.Count(task => task.DueDate != null && task.DueDate >= asOf && task.DueDate < weekEnd),
+                group.AsQueryable().Count(Outstanding.Overdue(asOf)),
+                group.AsQueryable().Count(Outstanding.DueBetween(asOf, weekEnd)),
                 group.Count(task => task.AssigneeId == currentUserId)))
             .FirstOrDefaultAsync(ct);
 
@@ -226,6 +225,25 @@ public class AiDataRepository(TaskTrackerDbContext dbContext) : IAiDataRepositor
             .AsNoTracking()
             .Where(task => task.Column!.Board!.Members
                 .Any(member => member.WorkspaceMember!.UserId == currentUserId));
+
+    // A due date only describes outstanding work, so completion removes a task from every due-date view.
+    // Every due-date predicate in this file is built here; none is written inline.
+    private static class Outstanding
+    {
+        internal static Expression<Func<Domain.Entities.TaskItem, bool>> Overdue(DateTimeOffset asOf) =>
+            task => !task.IsCompleted && task.DueDate != null && task.DueDate < asOf;
+
+        internal static Expression<Func<Domain.Entities.TaskItem, bool>> DueFrom(DateTimeOffset from) =>
+            task => !task.IsCompleted && task.DueDate != null && task.DueDate >= from;
+
+        internal static Expression<Func<Domain.Entities.TaskItem, bool>> DueBefore(DateTimeOffset until) =>
+            task => !task.IsCompleted && task.DueDate != null && task.DueDate < until;
+
+        internal static Expression<Func<Domain.Entities.TaskItem, bool>> DueBetween(
+            DateTimeOffset from,
+            DateTimeOffset until) =>
+            task => !task.IsCompleted && task.DueDate != null && task.DueDate >= from && task.DueDate < until;
+    }
 
     private static IQueryable<AiTaskSummary> Summarise(
         IQueryable<Domain.Entities.TaskItem> query,

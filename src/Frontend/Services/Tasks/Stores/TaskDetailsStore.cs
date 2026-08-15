@@ -83,6 +83,16 @@ public class TaskDetailsStore(
         NotifyStateChanged();
     }
 
+    public async Task SetTaskCompletionAsync(Guid boardId, Guid taskId, bool isCompleted,
+        CancellationToken ct = default)
+    {
+        var updatedTask = await taskApi.SetTaskCompletionAsync(boardId, taskId, isCompleted, ct);
+
+        var currentAttachments = Task?.Attachments ?? [];
+        Task = updatedTask with { Attachments = currentAttachments };
+        NotifyStateChanged();
+    }
+
     public async Task DeleteTaskAsync(Guid boardId, Guid taskId, CancellationToken ct = default)
     {
         await taskApi.DeleteTaskAsync(boardId, taskId, ct);
@@ -173,6 +183,8 @@ public class TaskDetailsStore(
                 (AttachmentDeletedPayload)notification.Payload),
             BoardActionNotificationType.TaskDetailsUpdated => ApplyTaskDetailsUpdated((TaskDetailsUpdatedPayload)notification.Payload),
             BoardActionNotificationType.TaskDueDateUpdated => ApplyTaskDueDateUpdated((TaskDueDateUpdatedPayload)notification.Payload),
+            BoardActionNotificationType.TaskCompletionChanged => ApplyTaskCompletionChanged(
+                (TaskCompletionChangedPayload)notification.Payload),
             _ => false
         };
 
@@ -292,6 +304,21 @@ public class TaskDetailsStore(
         Task = Task with
         {
             DueDate = payload.DueDate
+        };
+        return true;
+    }
+
+    private bool ApplyTaskCompletionChanged(TaskCompletionChangedPayload payload)
+    {
+        if (Task == null || Task.Id != payload.TaskId)
+        {
+            return false;
+        }
+
+        Task = Task with
+        {
+            IsCompleted = payload.IsCompleted,
+            CompletedAt = payload.CompletedAt
         };
         return true;
     }

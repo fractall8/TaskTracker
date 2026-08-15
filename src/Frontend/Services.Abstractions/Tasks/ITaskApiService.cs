@@ -24,6 +24,8 @@ public interface ITaskApiService
     Task<TaskDto> UpdateTaskDueDateAsync(Guid boardId, Guid taskId, UpdateTaskDueDateRequest request,
         CancellationToken ct = default);
 
+    Task<TaskDto> SetTaskCompletionAsync(Guid boardId, Guid taskId, bool isCompleted, CancellationToken ct = default);
+
     Task DeleteTaskAsync(Guid boardId, Guid taskId, CancellationToken ct = default);
 
     Task MoveTaskAsync(Guid boardId, Guid taskId, MoveTaskRequest request, CancellationToken ct = default);

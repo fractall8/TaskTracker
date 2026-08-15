@@ -125,6 +125,19 @@
                     </button>
                 </div>
 
+                <div class="side-meta-row mt-2">
+                    <p class="info-label">Status</p>
+
+                    <MudCheckBox T="bool"
+                                 Value="TaskStore.Task.IsCompleted"
+                                 ValueChanged="OnCompletionChangedAsync"
+                                 Disabled="@(!CanCompleteTasks || _isTogglingCompletion)"
+                                 Dense="true"
+                                 Size="Size.Small"
+                                 Color="Color.Success"
+                                 Label="@CompletionLabel"/>
+                </div>
+
                 <div class="side-meta-row mt-2" style="position: relative;">
                     <p class="info-label">Due date</p>
 
@@ -142,7 +155,7 @@
                         <span style="display: flex; align-items: center; gap: 8px;">
                             <MudIcon Icon="@Icons.Material.Outlined.CalendarToday" Size="Size.Small"
                                      Style="flex-shrink: 0;"/>
-                            @{ var due = GetDueInfo(TaskStore.Task.DueDate); }
+                            @{ var due = GetDueInfo(TaskStore.Task.DueDate, TaskStore.Task.IsCompleted); }
 
                             <span class="d-flex flex-column align-start text-left" style="line-height: 1.3;">
                                 <span class="due-text due-@due.tone">@due.dateStr</span>
@@ -171,8 +184,46 @@
 
     private MudDatePicker _datePicker = null!;
 
+    private bool _isTogglingCompletion;
+
     private bool IsArchived => BoardDetailsStore.Board?.IsArchived == true;
     private bool CanManageTasks => !IsArchived && BoardDetailsStore.Board?.BoardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
+
+    // Matches the server: completing is permitted wherever moving is, so a User can close their own work.
+    private bool CanCompleteTasks => !IsArchived &&
+                                     BoardDetailsStore.Board?.BoardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster or BoardRoleDto.User;
+
+    private string CompletionLabel
+    {
+        get
+        {
+            if (TaskStore.Task is not { IsCompleted: true }) return "Not completed";
+
+            return TaskStore.Task.CompletedAt is { } completedAt
+                ? $"Completed {completedAt.ToLocalTime():MMM d, yyyy}"
+                : "Completed";
+        }
+    }
+
+    private async Task OnCompletionChangedAsync(bool isCompleted)
+    {
+        if (!CanCompleteTasks || _isTogglingCompletion) return;
+
+        _isTogglingCompletion = true;
+
+        try
+        {
+            await TaskStore.SetTaskCompletionAsync(BoardId, TaskId, isCompleted);
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Failed to update task: {ex.Message}");
+        }
+        finally
+        {
+            _isTogglingCompletion = false;
+        }
+    }
 
     private string GetInitials(string? name)
     {
@@ -182,7 +233,7 @@
         return (parts[0][..1] + parts[1][..1]).ToUpper();
     }
 
-    private (string dateStr, string statusStr, string tone) GetDueInfo(DateTimeOffset? dueDate)
+    private (string dateStr, string statusStr, string tone) GetDueInfo(DateTimeOffset? dueDate, bool isCompleted)
     {
         if (!dueDate.HasValue) return ("No due date", "", "muted");
 
@@ -191,6 +242,9 @@
         var diff = (int)(due - today).TotalDays;
 
         var dateStr = due.ToString("MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture);
+
+        // A due date only describes outstanding work, so a finished task is never late or upcoming.
+        if (isCompleted) return (dateStr, "", "muted");
 
         if (diff < 0) return (dateStr, $"Overdue by {-diff} day{(-diff == 1 ? "" : "s")}", "danger");
         if (diff == 0) return (dateStr, "Due today", "warning");

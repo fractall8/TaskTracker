@@ -103,6 +103,20 @@
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
+.filter-input {
+    width: 160px;
+}
+
+.filter-input select {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 13px;
+    color: var(--mud-palette-text-primary);
+    width: 100%;
+    cursor: pointer;
+}
+
 .search-input:focus-within {
     border-color: var(--mud-palette-primary);
     box-shadow: 0 0 0 1px var(--mud-palette-primary);
