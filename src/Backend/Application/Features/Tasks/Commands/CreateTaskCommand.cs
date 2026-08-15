@@ -104,6 +104,7 @@ public class CreateTaskCommandHandler(
             task.ColumnId, task.AssigneeId, task.Assignee?.DisplayName, task.Assignee?.AvatarUrl, task.ReporterId,
             task.Reporter?.DisplayName,
             task.Reporter?.AvatarUrl,
+            [],
             []);
     }
 }

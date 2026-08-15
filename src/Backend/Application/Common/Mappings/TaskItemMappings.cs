@@ -27,5 +27,13 @@ public static class TaskItemMappings
                 attachment.FileUrl,
                 attachment.SizeInBytes,
                 attachment.CreatedAt,
-                attachment.CreatedById)).ToList() ?? []);
+                attachment.CreatedById)).ToList() ?? [],
+            task.ToTagDtos());
+
+    public static List<TagDto> ToTagDtos(this TaskItem task) =>
+        task.TaskTags?
+            .Where(link => link.Tag != null)
+            .Select(link => new TagDto(link.Tag!.Id, link.Tag.Name, link.Tag.Color))
+            .OrderBy(tag => tag.Name)
+            .ToList() ?? [];
 }

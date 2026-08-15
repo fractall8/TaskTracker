@@ -26,6 +26,11 @@ public static class BoardRolePermissions
     public static bool CanCompleteTasks(BoardRole role) =>
         role is BoardRole.Admin or BoardRole.ScrumMaster or BoardRole.User;
 
+    // Attaching a tag organises existing work rather than authoring it, so it sits with moving and
+    // completing. Curating the workspace catalogue stays an Admin/Owner action.
+    public static bool CanTagTasks(BoardRole role) =>
+        role is BoardRole.Admin or BoardRole.ScrumMaster or BoardRole.User;
+
     public static bool CanManageMembers(BoardRole role) =>
         role is BoardRole.Admin;
 

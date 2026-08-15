@@ -24,6 +24,8 @@ public class TaskRepository(TaskTrackerDbContext dbContext) : Repository<TaskIte
             .Include(t => t.Attachments)
             .Include(t => t.Reporter)
             .Include(t => t.Assignee)
+            .Include(t => t.TaskTags)
+            .ThenInclude(link => link.Tag)
             .FirstOrDefaultAsync(t => t.Id == taskId, ct);
     }
 
@@ -33,6 +35,8 @@ public class TaskRepository(TaskTrackerDbContext dbContext) : Repository<TaskIte
             .Include(t => t.Column)
             .Include(t => t.Reporter)
             .Include(t => t.Assignee)
+            .Include(t => t.TaskTags)
+            .ThenInclude(link => link.Tag)
             .Where(t => t.Column!.BoardId == boardId)
             .OrderBy(t => t.Position)
             .ToListAsync(ct);
@@ -52,6 +56,8 @@ public class TaskRepository(TaskTrackerDbContext dbContext) : Repository<TaskIte
     {
         return await DbContext.Tasks
             .Include(t => t.Column)
+            .Include(t => t.TaskTags)
+            .ThenInclude(link => link.Tag)
             .FirstOrDefaultAsync(t => t.Id == taskId, ct);
     }
 

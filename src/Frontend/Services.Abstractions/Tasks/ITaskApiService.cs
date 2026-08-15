@@ -26,6 +26,10 @@ public interface ITaskApiService
 
     Task<TaskDto> SetTaskCompletionAsync(Guid boardId, Guid taskId, bool isCompleted, CancellationToken ct = default);
 
+    Task<TaskDto> AttachTagAsync(Guid boardId, Guid taskId, Guid tagId, CancellationToken ct = default);
+
+    Task<TaskDto> DetachTagAsync(Guid boardId, Guid taskId, Guid tagId, CancellationToken ct = default);
+
     Task DeleteTaskAsync(Guid boardId, Guid taskId, CancellationToken ct = default);
 
     Task MoveTaskAsync(Guid boardId, Guid taskId, MoveTaskRequest request, CancellationToken ct = default);

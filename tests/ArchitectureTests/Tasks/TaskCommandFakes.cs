@@ -50,6 +50,9 @@ internal class StubAccessService : IBoardAccessService
     public virtual Task<BoardAccessContext> EnsureCanManageTasksAsync(Guid boardId, CancellationToken ct = default) =>
         throw new NotSupportedException();
 
+    public virtual Task<BoardAccessContext> EnsureCanTagTasksAsync(Guid boardId, CancellationToken ct = default) =>
+        throw new NotSupportedException();
+
     public Task<(Guid UserId, string Email)> GetCurrentUserAsync(CancellationToken ct = default) =>
         throw new NotSupportedException();
 

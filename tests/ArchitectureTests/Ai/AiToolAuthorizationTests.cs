@@ -173,6 +173,9 @@ public class AiToolAuthorizationTests
         public Task<BoardAccessContext> EnsureCanCompleteTasksAsync(Guid b, CancellationToken ct = default) =>
             throw Forbidden();
 
+        public Task<BoardAccessContext> EnsureCanTagTasksAsync(Guid b, CancellationToken ct = default) =>
+            throw Forbidden();
+
         public Task<BoardAccessContext> EnsureCanManageCommentsAsync(Guid b, CancellationToken ct = default) =>
             throw Forbidden();
 

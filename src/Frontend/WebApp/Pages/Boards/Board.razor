@@ -57,6 +57,26 @@
                 </select>
             </div>
 
+            @if (BoardTags.Count > 0)
+            {
+                <MudSelect T="Guid"
+                           MultiSelection="true"
+                           SelectedValues="_selectedTagIds"
+                           SelectedValuesChanged="OnTagFilterChanged"
+                           Placeholder="Any tag"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Dense="true"
+                           Clearable="true"
+                           Class="tag-filter"
+                           MultiSelectionTextFunc="@(selected => selected.Count == 1 ? "1 tag" : $"{selected.Count} tags")">
+                    @foreach (var tag in BoardTags)
+                    {
+                        <MudSelectItem T="Guid" Value="@tag.Id">@tag.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            }
+
             @if (IsCurrentBoardLoaded && BoardDetailsStore.Board is { IsArchived: false } && _workspaceRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
             {
                 <button class="btn" @onclick="OpenManageMembersDialog">
@@ -106,8 +126,8 @@
                           Items="VisibleTasks"
                           ItemsSelector="@((item, dropzone) => item.ColumnId.ToString() == dropzone)"
                           ItemDropped="TaskUpdated"
-                          ItemDisabled="@((item) => !CanReorder)"
-                          CanDrop="@((_, _) => CanReorder)"
+                          ItemDisabled="@((item) => !CanMoveTasks)"
+                          CanDrop="@((_, _) => CanMoveTasks)"
                           Class="board-drop-container">
             <ChildContent>
                 <div class="board-columns">
@@ -141,7 +161,7 @@
                 <TaskCard Task="context"
                           BoardId="@BoardId"
                           CanManageTasks="CanManageTasks"
-                          CanMoveTasks="CanReorder"
+                          CanMoveTasks="CanMoveTasks"
                           CanCompleteTasks="CanCompleteTasks"/>
             </ItemRenderer>
         </MudDropContainer>
@@ -178,16 +198,64 @@
 
     private bool CanCompleteTasks => CanMoveTasks;
 
-    // A drop reports its index within the rendered zone, which the server reads as the position among all
-    // tasks in the column. Those only agree when nothing is filtered out.
-    private bool CanReorder => CanMoveTasks && _completionFilter == CompletionFilter.All;
+    private bool IsFiltered => _completionFilter != CompletionFilter.All || _selectedTagIds.Count > 0;
 
-    private IEnumerable<TaskDto> VisibleTasks => _completionFilter switch
+    // Only tags actually in use on this board, so the control never offers a filter that matches nothing.
+    private List<TagDto> BoardTags =>
+        [.. BoardDetailsStore.Tasks
+            .SelectMany(task => task.Tags)
+            .DistinctBy(tag => tag.Id)
+            .OrderBy(tag => tag.Name)];
+
+    private IEnumerable<TaskDto> VisibleTasks => BoardDetailsStore.Tasks.Where(IsVisible);
+
+    private bool IsVisible(TaskDto task)
     {
-        CompletionFilter.Outstanding => BoardDetailsStore.Tasks.Where(task => !task.IsCompleted),
-        CompletionFilter.Completed => BoardDetailsStore.Tasks.Where(task => task.IsCompleted),
-        _ => BoardDetailsStore.Tasks
-    };
+        var matchesCompletion = _completionFilter switch
+        {
+            CompletionFilter.Outstanding => !task.IsCompleted,
+            CompletionFilter.Completed => task.IsCompleted,
+            _ => true
+        };
+
+        return matchesCompletion
+               && (_selectedTagIds.Count == 0 || task.Tags.Any(tag => _selectedTagIds.Contains(tag.Id)));
+    }
+
+    // A drop reports its index among the rendered cards, but the server reads the position as an index
+    // among all tasks in the column. Anchor on the card the task landed in front of and use its real
+    // index; with no filter the two lists are identical and this returns indexInZone unchanged.
+    private int ResolveDropPosition(Guid targetColumnId, int indexInZone)
+    {
+        if (!IsFiltered)
+        {
+            return indexInZone;
+        }
+
+        var columnTasks = BoardDetailsStore.Tasks
+            .Where(task => task.ColumnId == targetColumnId)
+            .OrderBy(task => task.Position)
+            .ToList();
+
+        var visible = columnTasks.Where(IsVisible).ToList();
+
+        if (indexInZone >= visible.Count)
+        {
+            return columnTasks.Count;
+        }
+
+        var anchor = visible[indexInZone];
+
+        return columnTasks.FindIndex(task => task.Id == anchor.Id);
+    }
+
+    private IReadOnlyCollection<Guid> _selectedTagIds = [];
+
+    private void OnTagFilterChanged(IReadOnlyCollection<Guid> selected)
+    {
+        _selectedTagIds = selected;
+        _dropContainer?.Refresh();
+    }
 
     private enum CompletionFilter
     {
@@ -328,13 +396,13 @@
 
     private async Task TaskUpdated(MudItemDropInfo<TaskDto> dropItem)
     {
-        if (!CanReorder) return;
+        if (!CanMoveTasks) return;
 
         var task = dropItem.Item;
         if (task == null) return;
 
         var targetColumnId = Guid.Parse(dropItem.DropzoneIdentifier);
-        var newPosition = dropItem.IndexInZone;
+        var newPosition = ResolveDropPosition(targetColumnId, dropItem.IndexInZone);
 
         try
         {

@@ -26,6 +26,10 @@ public interface ITaskDetailsStore
 
     Task SetTaskCompletionAsync(Guid boardId, Guid taskId, bool isCompleted, CancellationToken ct = default);
 
+    Task AttachTagAsync(Guid boardId, Guid taskId, Guid tagId, CancellationToken ct = default);
+
+    Task DetachTagAsync(Guid boardId, Guid taskId, Guid tagId, CancellationToken ct = default);
+
     Task DeleteTaskAsync(Guid boardId, Guid taskId, CancellationToken ct = default);
 
     Task<AttachmentDto> UploadAttachmentAsync(Guid boardId, Guid taskId, StreamPart filePart,

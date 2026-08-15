@@ -107,6 +107,10 @@
     width: 160px;
 }
 
+.tag-filter {
+    width: 150px;
+}
+
 .filter-input select {
     border: none;
     outline: none;

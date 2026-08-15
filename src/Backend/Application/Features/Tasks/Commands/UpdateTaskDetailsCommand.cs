@@ -1,4 +1,5 @@
 ﻿using Application.Common.Interfaces;
+using Application.Common.Mappings;
 using Application.Interfaces.Notifiers;
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
@@ -98,7 +99,8 @@ public class UpdateTaskCommandHandler(
             task.ColumnId, task.AssigneeId, task.Assignee?.DisplayName, task.Assignee?.AvatarUrl, task.ReporterId,
             task.Reporter?.DisplayName,
             task.Reporter?.AvatarUrl,
-            []);
+            [],
+            task.ToTagDtos());
     }
 }
 

@@ -43,6 +43,9 @@ public class BoardAccessService(
     public Task<BoardAccessContext> EnsureCanCompleteTasksAsync(Guid boardId, CancellationToken ct = default) =>
         EnsureAccessAsync(boardId, BoardRolePermissions.CanCompleteTasks, "You don't have permission to complete tasks.", requiresActiveBoard: true, ct);
 
+    public Task<BoardAccessContext> EnsureCanTagTasksAsync(Guid boardId, CancellationToken ct = default) =>
+        EnsureAccessAsync(boardId, BoardRolePermissions.CanTagTasks, "You don't have permission to tag tasks.", requiresActiveBoard: true, ct);
+
     public Task<BoardAccessContext> EnsureCanManageCommentsAsync(Guid boardId, CancellationToken ct = default) =>
         EnsureAccessAsync(boardId, BoardRolePermissions.CanManageComments, "You don't have permission to create comments.", requiresActiveBoard: true, ct);
 

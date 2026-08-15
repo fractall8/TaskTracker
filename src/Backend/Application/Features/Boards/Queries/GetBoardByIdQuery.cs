@@ -1,3 +1,4 @@
+using Application.Common.Mappings;
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Application.Options;
@@ -51,7 +52,8 @@ public class GetBoardByIdQueryHandler(
                     ReporterId: t.ReporterId,
                     ReporterName: t.Reporter?.DisplayName,
                     ReporterAvatarUrl: t.Reporter?.AvatarUrl,
-                    Attachments: new List<AttachmentDto>()
+                    Attachments: new List<AttachmentDto>(),
+                    Tags: t.ToTagDtos()
                 )).ToList()
             ))
             .ToList();

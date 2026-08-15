@@ -1,3 +1,4 @@
+using Application.Common.Mappings;
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Contracts.DTOs;
@@ -19,13 +20,8 @@ public class GetTasksByBoardIdQueryHandler(
 
         var tasks = await taskRepository.GetTasksByBoardIdAsync(request.BoardId, cancellationToken);
 
-        return [.. tasks.Select(task => new TaskDto(
-            task.Id, task.Title, task.Description, task.Position, task.DueDate,
-            task.IsCompleted, task.CompletedAt,
-            task.ColumnId, task.AssigneeId, task.Assignee?.DisplayName, task.Assignee?.AvatarUrl, task.ReporterId,
-            task.Reporter?.DisplayName,
-            task.Reporter?.AvatarUrl,
-            []))];
+        // Attachments are not loaded by this query, so ToDto yields an empty list here as it did before.
+        return [.. tasks.Select(task => task.ToDto())];
     }
 }
 

@@ -527,6 +527,8 @@ public class BoardDetailsStore(
             BoardActionNotificationType.TaskDeleted => ApplyTaskDeleted((TaskDeletedPayload)notification.Payload),
             BoardActionNotificationType.TaskCompletionChanged => ApplyTaskCompletionChanged(
                 (TaskCompletionChangedPayload)notification.Payload),
+            BoardActionNotificationType.TaskTagsChanged => ApplyTaskTagsChanged(
+                (TaskTagsChangedPayload)notification.Payload),
             BoardActionNotificationType.TasksReordered => ApplyTasksReordered(
                 (TasksReorderedPayload)notification.Payload),
 
@@ -668,7 +670,8 @@ public class BoardDetailsStore(
             ReporterId: Guid.Empty,
             ReporterName: null,
             ReporterAvatarUrl: null,
-            Attachments: []
+            Attachments: [],
+            Tags: []
         );
 
         Tasks.Add(newTask);
@@ -735,6 +738,20 @@ public class BoardDetailsStore(
             .Select(t => t.Id == payload.TaskId
                 ? t with { IsCompleted = payload.IsCompleted, CompletedAt = payload.CompletedAt }
                 : t)
+            .ToList();
+
+        return true;
+    }
+
+    private bool ApplyTaskTagsChanged(TaskTagsChangedPayload payload)
+    {
+        if (Tasks.All(t => t.Id != payload.TaskId))
+        {
+            return false;
+        }
+
+        Tasks = Tasks
+            .Select(t => t.Id == payload.TaskId ? t with { Tags = payload.Tags } : t)
             .ToList();
 
         return true;

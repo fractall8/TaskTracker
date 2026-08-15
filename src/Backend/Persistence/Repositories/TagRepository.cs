@@ -39,4 +39,12 @@ public class TagRepository(TaskTrackerDbContext dbContext) : Repository<Tag, Gui
 
         return links.Count;
     }
+
+    public async Task<TaskTag?> GetLinkAsync(Guid taskId, Guid tagId, CancellationToken ct = default) =>
+        await DbContext.TaskTags.FirstOrDefaultAsync(link => link.TaskId == taskId && link.TagId == tagId, ct);
+
+    public async Task AddLinkAsync(TaskTag link, CancellationToken ct = default) =>
+        await DbContext.TaskTags.AddAsync(link, ct);
+
+    public void RemoveLink(TaskTag link) => DbContext.TaskTags.Remove(link);
 }
