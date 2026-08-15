@@ -28,8 +28,19 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
             .HasForeignKey(t => t.ReporterId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne(t => t.CompletedBy)
+            .WithMany()
+            .HasForeignKey(t => t.CompletedById)
+            .OnDelete(DeleteBehavior.SetNull);
+
         builder.Property(t => t.DueDate)
             .IsRequired(false);
+
+        builder.Property(t => t.IsCompleted)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        builder.HasIndex(t => new { t.IsCompleted, t.DueDate });
 
         builder.HasQueryFilter(e => !e.IsDeleted);
 

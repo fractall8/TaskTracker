@@ -22,6 +22,10 @@ public static class BoardRolePermissions
     public static bool CanMoveTasks(BoardRole role) =>
         role is BoardRole.Admin or BoardRole.ScrumMaster or BoardRole.User;
 
+    // Matches CanMoveTasks, not CanManageTasks: a User can already drag a task into a "Done" column.
+    public static bool CanCompleteTasks(BoardRole role) =>
+        role is BoardRole.Admin or BoardRole.ScrumMaster or BoardRole.User;
+
     public static bool CanManageMembers(BoardRole role) =>
         role is BoardRole.Admin;
 
