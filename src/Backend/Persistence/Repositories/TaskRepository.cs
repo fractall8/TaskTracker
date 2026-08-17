@@ -29,6 +29,21 @@ public class TaskRepository(TaskTrackerDbContext dbContext) : Repository<TaskIte
             .FirstOrDefaultAsync(t => t.Id == taskId, ct);
     }
 
+    // For reading back after a write. A tracked query would resolve to entities already in the change
+    // tracker, so a soft-deleted TaskTag would stay in the task's navigation and leak into the response.
+    public async Task<TaskItem?> GetTaskWithDetailsNoTrackingAsync(Guid taskId, CancellationToken ct = default)
+    {
+        return await DbContext.Tasks
+            .AsNoTracking()
+            .Include(t => t.Column)
+            .Include(t => t.Attachments)
+            .Include(t => t.Reporter)
+            .Include(t => t.Assignee)
+            .Include(t => t.TaskTags)
+            .ThenInclude(link => link.Tag)
+            .FirstOrDefaultAsync(t => t.Id == taskId, ct);
+    }
+
     public async Task<IEnumerable<TaskItem>> GetTasksByBoardIdAsync(Guid boardId, CancellationToken ct = default)
     {
         return await DbContext.Tasks

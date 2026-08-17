@@ -50,7 +50,7 @@ public class AttachTagToTaskCommandHandler(
             await tagRepository.AddLinkAsync(new TaskTag { Id = Guid.NewGuid(), TaskId = task.Id, TagId = tag.Id }, ct);
             await unitOfWork.SaveChangesAsync(ct);
 
-            task = await taskRepository.GetTaskWithDetailsAsync(request.TaskId, ct)
+            task = await taskRepository.GetTaskWithDetailsNoTrackingAsync(request.TaskId, ct)
                    ?? throw new NotFoundException("Task not found.");
 
             await boardActionNotifier.NotifyAsync(new BoardActionNotification(
