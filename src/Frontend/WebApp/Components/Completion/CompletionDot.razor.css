@@ -1,0 +1,50 @@
+.completion-dot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border-radius: 50%;
+    border: 2px solid var(--mud-palette-lines-inputs);
+    background: transparent;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.completion-dot.small {
+    width: 20px;
+    height: 20px;
+}
+
+.completion-dot:hover:not(:disabled) {
+    border-color: #10b981;
+}
+
+.completion-dot.completed {
+    background: #10b981;
+    border-color: #10b981;
+}
+
+.completion-dot:disabled {
+    cursor: default;
+    opacity: 0.5;
+}
+
+.completion-check {
+    width: 13px;
+    height: 13px;
+    color: #fff;
+    transform: scale(0);
+    transition: transform 0.15s;
+}
+
+.completion-dot.small .completion-check {
+    width: 11px;
+    height: 11px;
+}
+
+.completion-dot.completed .completion-check {
+    transform: scale(1);
+}

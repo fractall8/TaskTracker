@@ -2,6 +2,7 @@ using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Contracts.DTOs;
+using Contracts.Tags;
 using Domain.Constants;
 using Domain.Exceptions;
 using FluentValidation;
@@ -64,7 +65,7 @@ public class UpdateTagCommandValidator : AbstractValidator<UpdateTagCommand>
 
         RuleFor(x => x.Color)
             .NotEmpty().WithMessage("Tag colour is required.")
-            .Matches(TagConstants.ColorPattern)
-            .WithMessage("Colour must be a hex value such as #4F46E5.");
+            .Must(TagColors.IsKnown)
+            .WithMessage($"Colour must be one of: {string.Join(", ", TagColors.All)}.");
     }
 }

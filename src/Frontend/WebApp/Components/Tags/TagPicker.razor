@@ -1,0 +1,159 @@
+@using Contracts.DTOs
+@using Contracts.Tags
+
+<div class="tag-picker" @onkeydown="OnKeyDown">
+    <button type="button" class="tag-picker-trigger @(_isOpen ? "open" : "")"
+            @onclick="Toggle" disabled="@Disabled">
+        @if (Selected.Count == 0)
+        {
+            <span class="tag-picker-placeholder">Add tags</span>
+        }
+        else
+        {
+            @foreach (var tag in Selected)
+            {
+                <TagChip Tag="tag" Small="true" @key="tag.Id"/>
+            }
+        }
+
+        <svg class="tag-picker-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+            <path d="M5 12h14M12 5v14"/>
+        </svg>
+    </button>
+
+    @if (_isOpen)
+    {
+        <div class="tag-picker-backdrop" @onclick="Close"></div>
+
+        <div class="tag-picker-menu">
+            <input class="tag-picker-search"
+                   placeholder="Search or create a tag..."
+                   maxlength="30"
+                   autofocus
+                   value="@_query"
+                   @oninput="@(e => _query = e.Value?.ToString() ?? string.Empty)"/>
+
+            <div class="tag-picker-list">
+                @foreach (var tag in Filtered)
+                {
+                    <button type="button" class="tag-picker-option" @key="tag.Id"
+                            @onclick="@(() => ToggleTagAsync(tag))" disabled="@Busy">
+                        <span class="tag-picker-dot @tag.Color"></span>
+                        <span class="tag-picker-option-name">@tag.Name</span>
+
+                        @if (Selected.Any(selected => selected.Id == tag.Id))
+                        {
+                            <svg class="tag-picker-tick" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M20 6 9 17l-5-5"/>
+                            </svg>
+                        }
+                    </button>
+                }
+
+                @if (Filtered.Count == 0)
+                {
+                    <p class="tag-picker-empty">No tags found</p>
+                }
+            </div>
+
+            @if (CanCreate && !string.IsNullOrWhiteSpace(_query) && !ExactMatchExists)
+            {
+                <div class="tag-picker-create">
+                    <p class="tag-picker-create-label">Create tag "@_query.Trim()"</p>
+
+                    <div class="tag-picker-swatches">
+                        @foreach (var color in TagColors.All)
+                        {
+                            <button type="button"
+                                    class="tag-picker-swatch @color @(_newColor == color ? "selected" : "")"
+                                    aria-label="@color"
+                                    @onclick="@(() => _newColor = color)"></button>
+                        }
+
+                        <button type="button" class="tag-picker-create-btn"
+                                @onclick="CreateAsync" disabled="@Busy">
+                            Create
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<TagDto> Selected { get; set; } = [];
+    [Parameter, EditorRequired] public IReadOnlyList<TagDto> Catalogue { get; set; } = [];
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public bool CanCreate { get; set; } = true;
+
+    [Parameter] public EventCallback<TagDto> OnAttach { get; set; }
+    [Parameter] public EventCallback<TagDto> OnDetach { get; set; }
+    [Parameter] public EventCallback<(string Name, string Color)> OnCreate { get; set; }
+
+    private bool _isOpen;
+    private string _query = string.Empty;
+    private string _newColor = TagColors.Violet;
+
+    private IReadOnlyList<TagDto> Filtered =>
+        [.. Catalogue.Where(tag => string.IsNullOrWhiteSpace(_query)
+                                   || tag.Name.Contains(_query.Trim(), StringComparison.OrdinalIgnoreCase))];
+
+    private bool ExactMatchExists =>
+        Catalogue.Any(tag => string.Equals(tag.Name, _query.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    private void Toggle()
+    {
+        if (Disabled) return;
+
+        _isOpen = !_isOpen;
+
+        if (!_isOpen) ResetQuery();
+    }
+
+    private void Close()
+    {
+        _isOpen = false;
+        ResetQuery();
+    }
+
+    private void ResetQuery()
+    {
+        _query = string.Empty;
+        _newColor = TagColors.Violet;
+    }
+
+    private void OnKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape") Close();
+    }
+
+    // The menu stays open so several tags can be attached in one visit.
+    private async Task ToggleTagAsync(TagDto tag)
+    {
+        if (Busy) return;
+
+        if (Selected.Any(selected => selected.Id == tag.Id))
+        {
+            await OnDetach.InvokeAsync(tag);
+        }
+        else
+        {
+            await OnAttach.InvokeAsync(tag);
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        var name = _query.Trim();
+
+        if (Busy || string.IsNullOrWhiteSpace(name)) return;
+
+        await OnCreate.InvokeAsync((name, _newColor));
+
+        ResetQuery();
+    }
+}

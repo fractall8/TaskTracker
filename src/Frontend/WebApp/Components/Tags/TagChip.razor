@@ -1,0 +1,30 @@
+@using Contracts.DTOs
+
+<span class="tag-chip @Tag.Color @(IsDarkMode ? "dark" : "") @(Small ? "small" : "")">
+    <span class="tag-dot"></span>
+    <span class="tag-name">@Tag.Name</span>
+
+    @if (OnRemove.HasDelegate)
+    {
+        <button type="button"
+                class="tag-remove"
+                aria-label="@($"Remove tag {Tag.Name}")"
+                @onclick="() => OnRemove.InvokeAsync(Tag)"
+                @onclick:stopPropagation="true"
+                disabled="@Disabled">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="3" stroke-linecap="round" aria-hidden="true">
+                <path d="M18 6 6 18M6 6l12 12"/>
+            </svg>
+        </button>
+    }
+</span>
+
+@code {
+    [CascadingParameter] public bool IsDarkMode { get; set; }
+
+    [Parameter, EditorRequired] public TagDto Tag { get; set; } = null!;
+    [Parameter] public bool Small { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public EventCallback<TagDto> OnRemove { get; set; }
+}

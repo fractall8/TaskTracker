@@ -1,0 +1,77 @@
+.tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.tag-chip.small {
+    padding: 1px 8px;
+    font-size: 11px;
+    gap: 4px;
+}
+
+.tag-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.tag-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    margin-right: -3px;
+    cursor: pointer;
+    opacity: 0.65;
+    font-size: 12px;
+}
+
+.tag-remove svg {
+    width: 11px;
+    height: 11px;
+}
+
+.tag-remove:hover {
+    opacity: 1;
+}
+
+.tag-remove:disabled {
+    cursor: default;
+    opacity: 0.3;
+}
+
+/* Each palette colour carries its own light and dark pair, so a chip is legible in both themes. */
+.tag-chip.violet { background: #ede9fe; color: #6d28d9; }
+.tag-chip.violet .tag-dot { background: #8b5cf6; }
+.tag-chip.violet.dark { background: #4c1d95; color: #c4b5fd; }
+
+.tag-chip.sky { background: #e0f2fe; color: #0369a1; }
+.tag-chip.sky .tag-dot { background: #0ea5e9; }
+.tag-chip.sky.dark { background: #0c4a6e; color: #7dd3fc; }
+
+.tag-chip.teal { background: #ccfbf1; color: #0f766e; }
+.tag-chip.teal .tag-dot { background: #14b8a6; }
+.tag-chip.teal.dark { background: #134e4a; color: #5eead4; }
+
+.tag-chip.amber { background: #fef3c7; color: #b45309; }
+.tag-chip.amber .tag-dot { background: #f59e0b; }
+.tag-chip.amber.dark { background: #78350f; color: #fcd34d; }
+
+.tag-chip.rose { background: #ffe4e6; color: #be123c; }
+.tag-chip.rose .tag-dot { background: #f43f5e; }
+.tag-chip.rose.dark { background: #881337; color: #fda4af; }
+
+.tag-chip.slate { background: #e2e8f0; color: #475569; }
+.tag-chip.slate .tag-dot { background: #94a3b8; }
+.tag-chip.slate.dark { background: #3f3f46; color: #d4d4d8; }

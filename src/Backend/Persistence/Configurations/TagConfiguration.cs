@@ -13,7 +13,7 @@ public class TagConfiguration : IEntityTypeConfiguration<Tag>
         builder.HasKey(e => e.Id);
 
         builder.Property(e => e.Name).IsRequired().HasMaxLength(TagConstants.MaxNameLength);
-        builder.Property(e => e.Color).IsRequired().HasMaxLength(TagConstants.ColorLength);
+        builder.Property(e => e.Color).IsRequired().HasMaxLength(TagConstants.MaxColorLength);
 
         builder.HasOne(e => e.Workspace)
             .WithMany(w => w.Tags)

@@ -1,0 +1,116 @@
+.app-select {
+    position: relative;
+    display: inline-block;
+}
+
+.app-select-trigger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    height: 36px;
+    padding: 0 10px 0 12px;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 8px;
+    background: var(--mud-palette-surface);
+    color: var(--mud-palette-text-primary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.app-select-trigger:hover:not(:disabled) {
+    border-color: var(--mud-palette-primary);
+}
+
+.app-select-trigger.open,
+.app-select-trigger:focus-visible {
+    border-color: var(--mud-palette-primary);
+    box-shadow: 0 0 0 1px var(--mud-palette-primary);
+    outline: none;
+}
+
+.app-select-trigger:disabled {
+    cursor: default;
+    opacity: 0.55;
+}
+
+.app-select-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: var(--mud-palette-text-secondary);
+}
+
+.app-select-label {
+    flex: 1;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.app-select-caret {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+    color: var(--mud-palette-text-secondary);
+    transition: transform 0.2s;
+}
+
+.app-select-tick {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+}
+
+.app-select-trigger.open .app-select-caret {
+    transform: rotate(180deg);
+}
+
+/* Catches the click that closes the menu without needing a JS document listener. */
+.app-select-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+}
+
+.app-select-menu {
+    position: absolute;
+    z-index: 1201;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 100%;
+    margin: 0;
+    padding: 4px;
+    list-style: none;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 8px;
+    background: var(--mud-palette-surface);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+
+.app-select-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding: 7px 10px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--mud-palette-text-primary);
+    font-size: 13px;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.app-select-option:hover {
+    background: var(--mud-palette-action-default-hover);
+}
+
+.app-select-option.selected {
+    color: var(--mud-palette-primary);
+    font-weight: 500;
+}

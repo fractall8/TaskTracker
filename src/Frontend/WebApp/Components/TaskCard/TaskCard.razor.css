@@ -1,4 +1,4 @@
-﻿.task-card {
+.task-card {
     background: var(--mud-palette-surface);
     border: 1px solid var(--mud-palette-lines-default);
     border-radius: 10px;
@@ -26,8 +26,15 @@
     opacity: 0.6;
 }
 
-.task-check {
-    margin: -6px 0 0 -6px;
+.task-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.task-card.completed .task-tags {
+    opacity: 0.6;
 }
 
 .task-card-top {

@@ -1,8 +1,12 @@
-﻿@page "/boards/{BoardId:guid}/tasks/{TaskId:guid}"
+@page "/boards/{BoardId:guid}/tasks/{TaskId:guid}"
 @implements IDisposable
+@using Contracts.DTOs
 @using Contracts.Enums
 @using Contracts.Requests.Tasks
+@using Services.Abstractions.Tags
 @using Services.Abstractions.Tasks
+@using WebApp.Components.Completion
+@using WebApp.Components.Tags
 @using WebApp.Components.TaskAttachment
 @using WebApp.Components.TaskComments
 @using WebApp.Shared.Dialogs
@@ -10,6 +14,7 @@
 @using WebApp.Shared.Toast
 @inject ITaskDetailsStore TaskStore
 @inject IBoardDetailsStore BoardDetailsStore
+@inject ITagStore TagStore
 @inject NavigationManager Navigation
 @inject CustomToastService Toast
 @inject IDialogService DialogService
@@ -128,14 +133,41 @@
                 <div class="side-meta-row mt-2">
                     <p class="info-label">Status</p>
 
-                    <MudCheckBox T="bool"
-                                 Value="TaskStore.Task.IsCompleted"
-                                 ValueChanged="OnCompletionChangedAsync"
-                                 Disabled="@(!CanCompleteTasks || _isTogglingCompletion)"
-                                 Dense="true"
-                                 Size="Size.Small"
-                                 Color="Color.Success"
-                                 Label="@CompletionLabel"/>
+                    <StatusToggle Completed="TaskStore.Task.IsCompleted"
+                                  CompletedChanged="OnCompletionChangedAsync"
+                                  Disabled="@(!CanCompleteTasks || _isTogglingCompletion)"/>
+
+                    @if (TaskStore.Task is { IsCompleted: true, CompletedAt: { } completedAt })
+                    {
+                        <p class="status-completed-at">Completed @completedAt.ToLocalTime().ToString("MMM d, yyyy")</p>
+                    }
+                </div>
+
+                <div class="side-meta-row mt-2">
+                    <p class="info-label">Tags</p>
+
+                    @if (CanTagTasks)
+                    {
+                        <TagPicker Selected="TaskStore.Task.Tags"
+                                   Catalogue="TagStore.Tags"
+                                   Busy="_isUpdatingTags"
+                                   OnAttach="AttachTagAsync"
+                                   OnDetach="DetachTagAsync"
+                                   OnCreate="CreateAndAttachTagAsync"/>
+                    }
+                    else if (TaskStore.Task.Tags.Count > 0)
+                    {
+                        <div class="task-tag-list">
+                            @foreach (var tag in TaskStore.Task.Tags)
+                            {
+                                <TagChip Tag="tag" Small="true" @key="tag.Id"/>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="task-tags-empty">No tags</p>
+                    }
                 </div>
 
                 <div class="side-meta-row mt-2" style="position: relative;">
@@ -193,15 +225,70 @@
     private bool CanCompleteTasks => !IsArchived &&
                                      BoardDetailsStore.Board?.BoardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster or BoardRoleDto.User;
 
-    private string CompletionLabel
-    {
-        get
-        {
-            if (TaskStore.Task is not { IsCompleted: true }) return "Not completed";
+    private bool _isUpdatingTags;
 
-            return TaskStore.Task.CompletedAt is { } completedAt
-                ? $"Completed {completedAt.ToLocalTime():MMM d, yyyy}"
-                : "Completed";
+    private bool CanTagTasks => CanCompleteTasks;
+
+    // Creating from the picker also attaches, so a new tag never needs a trip to workspace settings.
+    private async Task CreateAndAttachTagAsync((string Name, string Color) request)
+    {
+        if (_isUpdatingTags || BoardDetailsStore.Board is not { } board) return;
+
+        _isUpdatingTags = true;
+
+        try
+        {
+            var created = await TagStore.CreateAsync(board.WorkspaceId, request.Name, request.Color);
+
+            await TaskStore.AttachTagAsync(BoardId, TaskId, created.Id);
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Failed to create tag: {ex.Message}");
+        }
+        finally
+        {
+            _isUpdatingTags = false;
+        }
+    }
+
+    private async Task AttachTagAsync(TagDto tag)
+    {
+        if (_isUpdatingTags) return;
+
+        _isUpdatingTags = true;
+
+        try
+        {
+            await TaskStore.AttachTagAsync(BoardId, TaskId, tag.Id);
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Failed to add tag: {ex.Message}");
+        }
+        finally
+        {
+            _isUpdatingTags = false;
+        }
+    }
+
+    private async Task DetachTagAsync(TagDto tag)
+    {
+        if (_isUpdatingTags) return;
+
+        _isUpdatingTags = true;
+
+        try
+        {
+            await TaskStore.DetachTagAsync(BoardId, TaskId, tag.Id);
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Failed to remove tag: {ex.Message}");
+        }
+        finally
+        {
+            _isUpdatingTags = false;
         }
     }
 
@@ -263,6 +350,11 @@
         }
 
         await TaskStore.LoadAsync(BoardId, TaskId);
+
+        if (BoardDetailsStore.Board is { } board)
+        {
+            await TagStore.LoadAsync(board.WorkspaceId);
+        }
     }
 
     public void Dispose()

@@ -1,0 +1,100 @@
+.tags-head h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--mud-palette-text-primary);
+}
+
+.tags-hint {
+    margin: 4px 0 16px;
+    font-size: 12.5px;
+    color: var(--mud-palette-text-secondary);
+    max-width: 60ch;
+}
+
+.tag-create {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.tag-name-input {
+    border: 1px solid var(--mud-palette-lines-default);
+    background: var(--mud-palette-surface);
+    border-radius: 8px;
+    padding: 0 12px;
+    height: 36px;
+    font-size: 13px;
+    color: var(--mud-palette-text-primary);
+    outline: none;
+    min-width: 200px;
+}
+
+.tag-name-input:focus {
+    border-color: var(--mud-palette-primary);
+}
+
+.tag-swatches {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tag-swatch {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: box-shadow 0.15s;
+}
+
+.tag-swatch.selected {
+    box-shadow: 0 0 0 2px var(--mud-palette-surface), 0 0 0 4px var(--mud-palette-text-secondary);
+}
+
+.tag-swatch:disabled {
+    cursor: default;
+    opacity: 0.5;
+}
+
+/* Same palette as TagChip. */
+.violet { background: #8b5cf6; }
+.sky { background: #0ea5e9; }
+.teal { background: #14b8a6; }
+.amber { background: #f59e0b; }
+.rose { background: #f43f5e; }
+.slate { background: #94a3b8; }
+
+.tag-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.tag-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 8px;
+    background: var(--mud-palette-surface);
+}
+
+.tag-row-actions {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+}
+
+.tags-empty {
+    font-size: 13px;
+    color: var(--mud-palette-text-secondary);
+}

@@ -11,6 +11,7 @@ using Services.Abstractions.Hubs;
 using Services.Abstractions.Profile;
 using Services.Abstractions.Subscriptions;
 using Services.Abstractions.Subscriptions.Stores;
+using Services.Abstractions.Tags;
 using Services.Abstractions.Tasks;
 using Services.Abstractions.Workspaces;
 using Services.Api;
@@ -28,6 +29,8 @@ using Services.Hubs;
 using Services.Profile;
 using Services.Subscriptions;
 using Services.Subscriptions.Stores;
+using Services.Tags;
+using Services.Tags.Stores;
 using Services.Tasks;
 using Services.Tasks.Stores;
 using Services.Workspaces;
@@ -61,6 +64,10 @@ public static class ServiceCollectionExtensions
             .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
 
         services.AddRefitClient<ITasksApi>()
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
+            .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
+
+        services.AddRefitClient<ITagsApi>()
             .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
             .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
 
@@ -117,6 +124,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBoardDetailsStore, BoardDetailsStore>();
 
         services.AddScoped<ITaskDetailsStore, TaskDetailsStore>();
+
+        services.AddScoped<ITagApiService, TagApiService>();
+        services.AddScoped<ITagStore, TagStore>();
 
         services.AddScoped<ICurrentUserService, CurrentUserService>();
 

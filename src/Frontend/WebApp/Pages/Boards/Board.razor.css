@@ -1,4 +1,4 @@
-﻿.board-main {
+.board-main {
     box-sizing: border-box;
     padding: 24px 32px 0;
     height: 100vh;
@@ -101,24 +101,6 @@
     width: 220px;
     color: var(--mud-palette-text-secondary);
     transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.filter-input {
-    width: 160px;
-}
-
-.tag-filter {
-    width: 150px;
-}
-
-.filter-input select {
-    border: none;
-    outline: none;
-    background: transparent;
-    font-size: 13px;
-    color: var(--mud-palette-text-primary);
-    width: 100%;
-    cursor: pointer;
 }
 
 .search-input:focus-within {

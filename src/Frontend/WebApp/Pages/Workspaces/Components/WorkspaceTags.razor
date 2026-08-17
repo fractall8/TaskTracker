@@ -1,0 +1,235 @@
+@using Contracts.DTOs
+@using Contracts.Enums
+@using Contracts.Tags
+@using WebApp.Components.Tags
+@using Services.Abstractions.Tags
+@using WebApp.Shared.Dialogs
+@using WebApp.Shared.Toast
+@implements IDisposable
+@inject ITagStore TagStore
+@inject IDialogService DialogService
+@inject CustomToastService Toast
+
+<div class="tags-panel">
+    <div class="tags-head">
+        <div>
+            <h3>Tags</h3>
+            <p class="tags-hint">
+                Tags are shared across every board in this workspace. Any member can create one;
+                renaming and deleting are restricted to admins.
+            </p>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(TagStore.ErrorMessage))
+    {
+        <div class="custom-alert error mb-4">
+            <MudIcon Icon="@Icons.Material.Outlined.ErrorOutline" Size="Size.Small" Class="custom-alert-icon"/>
+            <div class="custom-alert-content">
+                <p>@TagStore.ErrorMessage</p>
+            </div>
+        </div>
+    }
+
+    <div class="tag-create">
+        <input class="tag-name-input"
+               placeholder="New tag name"
+               maxlength="30"
+               value="@_newName"
+               @oninput="@(e => _newName = e.Value?.ToString() ?? string.Empty)"
+               @onkeydown="OnCreateKeyDown"
+               disabled="@TagStore.IsProcessing"/>
+
+        <div class="tag-swatches">
+            @foreach (var color in TagColors.All)
+            {
+                <button type="button" class="tag-swatch @color @(_newColor == color ? "selected" : "")"
+                        aria-label="@color" @onclick="@(() => _newColor = color)"
+                        disabled="@TagStore.IsProcessing"></button>
+            }
+        </div>
+
+        <button class="btn btn-primary" @onclick="CreateAsync"
+                disabled="@(TagStore.IsProcessing || string.IsNullOrWhiteSpace(_newName))">
+            <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small"/>
+            Add tag
+        </button>
+    </div>
+
+    @if (TagStore.IsLoading)
+    {
+        <div class="d-flex justify-center pa-4">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+        </div>
+    }
+    else if (TagStore.Tags.Count == 0)
+    {
+        <p class="tags-empty">No tags yet. Create one above to start labelling work.</p>
+    }
+    else
+    {
+        <ul class="tag-list">
+            @foreach (var tag in TagStore.Tags)
+            {
+                <li class="tag-row" @key="tag.Id">
+                    @if (_editingTagId == tag.Id)
+                    {
+                        <input class="tag-name-input" maxlength="30"
+                               value="@_editName"
+                               @oninput="@(e => _editName = e.Value?.ToString() ?? string.Empty)"
+                               @onkeydown="@(e => OnEditKeyDown(e, tag))"/>
+
+                        <div class="tag-swatches">
+                            @foreach (var color in TagColors.All)
+                            {
+                                <button type="button" class="tag-swatch @color @(_editColor == color ? "selected" : "")"
+                                        aria-label="@color" @onclick="@(() => _editColor = color)"></button>
+                            }
+                        </div>
+
+                        <div class="tag-row-actions">
+                            <button class="btn btn-primary" @onclick="@(() => SaveAsync(tag))"
+                                    disabled="@(TagStore.IsProcessing || string.IsNullOrWhiteSpace(_editName))">
+                                Save
+                            </button>
+                            <button class="btn" @onclick="CancelEdit">Cancel</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <TagChip Tag="tag"/>
+
+                        @if (CanCurate)
+                        {
+                            <div class="tag-row-actions">
+                                <button class="icon-btn sm ghost" aria-label="Rename tag"
+                                        @onclick="@(() => BeginEdit(tag))">
+                                    <MudIcon Icon="@Icons.Material.Outlined.Edit" Size="Size.Small"/>
+                                </button>
+                                <button class="icon-btn sm ghost" aria-label="Delete tag"
+                                        @onclick="@(() => ConfirmDeleteAsync(tag))">
+                                    <MudIcon Icon="@Icons.Material.Outlined.Delete" Size="Size.Small"
+                                             Color="Color.Error"/>
+                                </button>
+                            </div>
+                        }
+                    }
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Guid WorkspaceId { get; set; }
+    [Parameter] public WorkspaceRoleDto? CurrentUserRole { get; set; }
+
+    private string _newName = string.Empty;
+    private string _newColor = TagColors.Default;
+
+    private Guid? _editingTagId;
+    private string _editName = string.Empty;
+    private string _editColor = TagColors.Default;
+
+    private bool CanCurate => CurrentUserRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner;
+
+    protected override async Task OnInitializedAsync()
+    {
+        TagStore.StateChanged += OnStateChanged;
+        await TagStore.LoadAsync(WorkspaceId);
+    }
+
+    private async Task CreateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newName)) return;
+
+        try
+        {
+            await TagStore.CreateAsync(WorkspaceId, _newName.Trim(), _newColor);
+
+            _newName = string.Empty;
+            _newColor = TagColors.Default;
+            Toast.ShowSuccess("Tag created.");
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError(ex.Message);
+        }
+    }
+
+    private async Task OnCreateKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter") await CreateAsync();
+    }
+
+    private void BeginEdit(TagDto tag)
+    {
+        _editingTagId = tag.Id;
+        _editName = tag.Name;
+        _editColor = tag.Color;
+    }
+
+    private void CancelEdit()
+    {
+        _editingTagId = null;
+        _editName = string.Empty;
+        _editColor = TagColors.Default;
+    }
+
+    private async Task SaveAsync(TagDto tag)
+    {
+        if (string.IsNullOrWhiteSpace(_editName)) return;
+
+        try
+        {
+            await TagStore.UpdateAsync(WorkspaceId, tag.Id, _editName.Trim(), _editColor);
+
+            CancelEdit();
+            Toast.ShowSuccess("Tag updated.");
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError(ex.Message);
+        }
+    }
+
+    private async Task OnEditKeyDown(KeyboardEventArgs args, TagDto tag)
+    {
+        if (args.Key == "Enter") await SaveAsync(tag);
+        if (args.Key == "Escape") CancelEdit();
+    }
+
+    private async Task ConfirmDeleteAsync(TagDto tag)
+    {
+        var parameters = new DialogParameters<ConfirmDeleteDialog>
+        {
+            { x => x.Title, "Delete tag" },
+            {
+                x => x.ContentText,
+                $"Delete \"{tag.Name}\"? It will be removed from every task in this workspace, across all boards."
+            },
+            { x => x.ConfirmText, "Delete tag" }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteDialog>("", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            try
+            {
+                await TagStore.DeleteAsync(WorkspaceId, tag.Id);
+                Toast.ShowSuccess("Tag deleted.");
+            }
+            catch (Exception ex)
+            {
+                Toast.ShowError(ex.Message);
+            }
+        }
+    }
+
+    private void OnStateChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => TagStore.StateChanged -= OnStateChanged;
+}

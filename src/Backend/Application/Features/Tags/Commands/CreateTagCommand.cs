@@ -2,6 +2,7 @@ using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Application.Interfaces.UOW;
 using Contracts.DTOs;
+using Contracts.Tags;
 using Domain.Constants;
 using Domain.Entities;
 using FluentValidation;
@@ -43,7 +44,7 @@ public class CreateTagCommandHandler(
                 Id = Guid.NewGuid(),
                 WorkspaceId = request.WorkspaceId,
                 Name = name,
-                Color = request.Color ?? TagConstants.DefaultColor
+                Color = request.Color ?? TagColors.Default
             };
 
             await tagRepository.AddAsync(tag, token);
@@ -66,8 +67,8 @@ public class CreateTagCommandValidator : AbstractValidator<CreateTagCommand>
             .WithMessage($"Tag name must not exceed {TagConstants.MaxNameLength} characters.");
 
         RuleFor(x => x.Color)
-            .Matches(TagConstants.ColorPattern)
+            .Must(TagColors.IsKnown)
             .When(x => x.Color is not null)
-            .WithMessage("Colour must be a hex value such as #4F46E5.");
+            .WithMessage($"Colour must be one of: {string.Join(", ", TagColors.All)}.");
     }
 }

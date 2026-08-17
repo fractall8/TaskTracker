@@ -4,6 +4,7 @@
 @using Contracts.Enums
 @using Services.Abstractions.BoardCalls
 @using Services.Abstractions.Hubs
+@using WebApp.Components.AppSelect
 @using WebApp.Components.BoardCallIndicator
 @using WebApp.Components.BoardColumn
 @using WebApp.Components.BoardExportControls
@@ -46,35 +47,24 @@
                        disabled="@(!IsCurrentBoardLoaded)"/>
             </div>
 
-            <div class="search-input filter-input">
-                <MudIcon Icon="@Icons.Material.Filled.FilterList" Size="Size.Small"/>
-                <select value="@_completionFilter"
-                        @onchange="OnCompletionFilterChanged"
-                        disabled="@(!IsCurrentBoardLoaded)">
-                    <option value="@nameof(CompletionFilter.All)">All tasks</option>
-                    <option value="@nameof(CompletionFilter.Outstanding)">Not completed</option>
-                    <option value="@nameof(CompletionFilter.Completed)">Completed</option>
-                </select>
-            </div>
+            <AppSelect TValue="CompletionFilter"
+                       Options="_completionFilterOptions"
+                       Value="_completionFilter"
+                       ValueChanged="OnCompletionFilterChanged"
+                       Icon="@Icons.Material.Filled.FilterList"
+                       Disabled="@(!IsCurrentBoardLoaded)"
+                       Width="170px"/>
 
             @if (BoardTags.Count > 0)
             {
-                <MudSelect T="Guid"
+                <AppSelect TValue="Guid"
                            MultiSelection="true"
+                           Options="TagFilterOptions"
                            SelectedValues="_selectedTagIds"
                            SelectedValuesChanged="OnTagFilterChanged"
+                           Icon="@Icons.Material.Filled.Sell"
                            Placeholder="Any tag"
-                           Variant="Variant.Outlined"
-                           Margin="Margin.Dense"
-                           Dense="true"
-                           Clearable="true"
-                           Class="tag-filter"
-                           MultiSelectionTextFunc="@(selected => selected.Count == 1 ? "1 tag" : $"{selected.Count} tags")">
-                    @foreach (var tag in BoardTags)
-                    {
-                        <MudSelectItem T="Guid" Value="@tag.Id">@tag.Name</MudSelectItem>
-                    }
-                </MudSelect>
+                           Width="160px"/>
             }
 
             @if (IsCurrentBoardLoaded && BoardDetailsStore.Board is { IsArchived: false } && _workspaceRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
@@ -251,6 +241,9 @@
 
     private IReadOnlyCollection<Guid> _selectedTagIds = [];
 
+    private IReadOnlyList<AppSelectOption<Guid>> TagFilterOptions =>
+        [.. BoardTags.Select(tag => new AppSelectOption<Guid>(tag.Id, tag.Name))];
+
     private void OnTagFilterChanged(IReadOnlyCollection<Guid> selected)
     {
         _selectedTagIds = selected;
@@ -266,12 +259,16 @@
 
     private CompletionFilter _completionFilter = CompletionFilter.All;
 
-    private void OnCompletionFilterChanged(ChangeEventArgs args)
-    {
-        _completionFilter = Enum.TryParse<CompletionFilter>(args.Value?.ToString(), out var parsed)
-            ? parsed
-            : CompletionFilter.All;
+    private readonly IReadOnlyList<AppSelectOption<CompletionFilter>> _completionFilterOptions =
+    [
+        new(CompletionFilter.All, "All tasks"),
+        new(CompletionFilter.Outstanding, "Not completed"),
+        new(CompletionFilter.Completed, "Completed")
+    ];
 
+    private void OnCompletionFilterChanged(CompletionFilter filter)
+    {
+        _completionFilter = filter;
         _dropContainer?.Refresh();
     }
 
