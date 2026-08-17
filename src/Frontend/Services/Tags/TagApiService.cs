@@ -14,6 +14,13 @@ public class TagApiService(ITagsApi tagsApi) : ITagApiService
         return await response.HandleResponseAsync();
     }
 
+    public async Task<List<TaggedTaskDto>> GetTagTasksAsync(Guid workspaceId, Guid tagId,
+        CancellationToken ct = default)
+    {
+        var response = await tagsApi.GetTasksAsync(workspaceId, tagId, ct);
+        return await response.HandleResponseAsync();
+    }
+
     public async Task<TagDto> CreateTagAsync(Guid workspaceId, CreateTagRequest request,
         CancellationToken ct = default)
     {

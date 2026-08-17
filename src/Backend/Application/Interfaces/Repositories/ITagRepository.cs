@@ -12,6 +12,12 @@ public interface ITagRepository : IRepository<Tag, Guid>
 
     Task<int> DetachFromAllTasksAsync(Guid tagId, CancellationToken ct = default);
 
+    Task<List<TaskItem>> GetTasksByTagAsync(
+        Guid tagId,
+        Guid workspaceId,
+        Guid currentUserId,
+        CancellationToken ct = default);
+
     Task<TaskTag?> GetLinkAsync(Guid taskId, Guid tagId, CancellationToken ct = default);
 
     Task AddLinkAsync(TaskTag link, CancellationToken ct = default);

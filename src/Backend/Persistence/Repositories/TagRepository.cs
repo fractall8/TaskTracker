@@ -40,6 +40,26 @@ public class TagRepository(TaskTrackerDbContext dbContext) : Repository<Tag, Gui
         return links.Count;
     }
 
+    // A tag spans the workspace, but a task is only visible to members of its board — a workspace role
+    // alone never grants board access (IBoardAccessService). Tasks on other boards are simply not returned.
+    public async Task<List<TaskItem>> GetTasksByTagAsync(
+        Guid tagId,
+        Guid workspaceId,
+        Guid currentUserId,
+        CancellationToken ct = default) =>
+        await DbContext.Tasks
+            .AsNoTracking()
+            .Include(task => task.Column)
+            .ThenInclude(column => column!.Board)
+            .Where(task => task.TaskTags.Any(link => link.TagId == tagId)
+                           && task.Column!.Board!.WorkspaceId == workspaceId
+                           && task.Column.Board.Members
+                               .Any(member => member.WorkspaceMember!.UserId == currentUserId))
+            .OrderBy(task => task.Column!.Board!.Name)
+            .ThenBy(task => task.Column!.Name)
+            .ThenBy(task => task.Position)
+            .ToListAsync(ct);
+
     public async Task<TaskTag?> GetLinkAsync(Guid taskId, Guid tagId, CancellationToken ct = default) =>
         await DbContext.TaskTags.FirstOrDefaultAsync(link => link.TaskId == taskId && link.TagId == tagId, ct);
 

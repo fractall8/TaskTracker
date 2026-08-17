@@ -20,6 +20,16 @@ public class TagsController(ISender sender) : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("{tagId:guid}/tasks")]
+    public async Task<ActionResult<List<TaggedTaskDto>>> GetTasks(
+        [FromRoute] Guid workspaceId,
+        [FromRoute] Guid tagId,
+        CancellationToken ct)
+    {
+        var result = await sender.Send(new GetTasksByTagQuery(workspaceId, tagId), ct);
+        return Ok(result);
+    }
+
     [HttpPost]
     public async Task<ActionResult<TagDto>> Create(
         [FromRoute] Guid workspaceId,

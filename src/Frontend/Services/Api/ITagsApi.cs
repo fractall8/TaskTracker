@@ -9,6 +9,10 @@ public interface ITagsApi
     [Get("/api/workspaces/{workspaceId}/tags")]
     Task<IApiResponse<List<TagDto>>> GetAllAsync(Guid workspaceId, CancellationToken ct = default);
 
+    [Get("/api/workspaces/{workspaceId}/tags/{tagId}/tasks")]
+    Task<IApiResponse<List<TaggedTaskDto>>> GetTasksAsync(Guid workspaceId, Guid tagId,
+        CancellationToken ct = default);
+
     [Post("/api/workspaces/{workspaceId}/tags")]
     Task<IApiResponse<TagDto>> CreateAsync(Guid workspaceId, [Body] CreateTagRequest request,
         CancellationToken ct = default);

@@ -7,6 +7,7 @@
 @using WebApp.Shared.Toast
 @implements IDisposable
 @inject ITagStore TagStore
+@inject NavigationManager Navigation
 @inject IDialogService DialogService
 @inject CustomToastService Toast
 
@@ -71,7 +72,8 @@
         <ul class="tag-list">
             @foreach (var tag in TagStore.Tags)
             {
-                <li class="tag-row" @key="tag.Id">
+                <li class="tag-item" @key="tag.Id">
+                  <div class="tag-row">
                     @if (_editingTagId == tag.Id)
                     {
                         <input class="tag-name-input" maxlength="30"
@@ -97,6 +99,16 @@
                     }
                     else
                     {
+                        <button class="tag-expand @(_expandedTagId == tag.Id ? "expanded" : "")"
+                                aria-label="@($"Show tasks tagged {tag.Name}")"
+                                aria-expanded="@(_expandedTagId == tag.Id)"
+                                @onclick="@(() => ToggleExpandAsync(tag))">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="m9 18 6-6-6-6"/>
+                            </svg>
+                        </button>
+
                         <TagChip Tag="tag"/>
 
                         @if (CanCurate)
@@ -114,6 +126,47 @@
                             </div>
                         }
                     }
+                  </div>
+
+                  @if (_expandedTagId == tag.Id)
+                  {
+                      <div class="tag-tasks">
+                          @if (TagStore.TasksLoadingForTagId == tag.Id)
+                          {
+                              <p class="tag-tasks-note">Loading tasks...</p>
+                          }
+                          else if (TagStore.GetLoadedTasks(tag.Id) is not { Count: > 0 } tasks)
+                          {
+                              <p class="tag-tasks-note">No tasks carry this tag on boards you can see.</p>
+                          }
+                          else
+                          {
+                              @foreach (var group in tasks.GroupBy(task => new { task.BoardId, task.BoardName, task.IsBoardArchived }))
+                              {
+                                  <div class="tag-board-group" @key="group.Key.BoardId">
+                                      <p class="tag-board-name">
+                                          <MudIcon Icon="@Icons.Material.Outlined.Dashboard" Size="Size.Small"/>
+                                          @group.Key.BoardName
+                                          @if (group.Key.IsBoardArchived)
+                                          {
+                                              <span class="badge badge-muted">Archived</span>
+                                          }
+                                      </p>
+
+                                      @foreach (var task in group)
+                                      {
+                                          <button class="tag-task @(task.IsCompleted ? "completed" : "")"
+                                                  @key="task.TaskId"
+                                                  @onclick="@(() => GoToTask(task))">
+                                              <span class="tag-task-title">@task.Title</span>
+                                              <span class="tag-task-column">@task.ColumnName</span>
+                                          </button>
+                                      }
+                                  </div>
+                              }
+                          }
+                      </div>
+                  }
                 </li>
             }
         </ul>
@@ -127,6 +180,7 @@
     private string _newName = string.Empty;
     private string _newColor = TagColors.Default;
 
+    private Guid? _expandedTagId;
     private Guid? _editingTagId;
     private string _editName = string.Empty;
     private string _editColor = TagColors.Default;
@@ -156,6 +210,22 @@
             Toast.ShowError(ex.Message);
         }
     }
+
+    private async Task ToggleExpandAsync(TagDto tag)
+    {
+        if (_expandedTagId == tag.Id)
+        {
+            _expandedTagId = null;
+            return;
+        }
+
+        _expandedTagId = tag.Id;
+
+        await TagStore.LoadTasksAsync(WorkspaceId, tag.Id);
+    }
+
+    private void GoToTask(TaggedTaskDto task) =>
+        Navigation.NavigateTo($"/boards/{task.BoardId}/tasks/{task.TaskId}");
 
     private async Task OnCreateKeyDown(KeyboardEventArgs args)
     {

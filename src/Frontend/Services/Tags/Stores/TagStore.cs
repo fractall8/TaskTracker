@@ -7,9 +7,11 @@ namespace Services.Tags.Stores;
 internal sealed class TagStore(ITagApiService apiService) : ITagStore
 {
     private List<TagDto> _tags = [];
+    private readonly Dictionary<Guid, IReadOnlyList<TaggedTaskDto>> _tasksByTag = [];
 
     public Guid? WorkspaceId { get; private set; }
     public IReadOnlyList<TagDto> Tags => _tags;
+    public Guid? TasksLoadingForTagId { get; private set; }
 
     public bool IsLoading { get; private set; }
     public bool IsProcessing { get; private set; }
@@ -27,6 +29,9 @@ internal sealed class TagStore(ITagApiService apiService) : ITagStore
         {
             _tags = await apiService.GetTagsAsync(workspaceId, ct);
             WorkspaceId = workspaceId;
+
+            // Tags may have been attached or detached from a task page since the last visit.
+            _tasksByTag.Clear();
         }
         catch (Exception ex)
         {
@@ -35,6 +40,36 @@ internal sealed class TagStore(ITagApiService apiService) : ITagStore
         finally
         {
             IsLoading = false;
+            NotifyStateChanged();
+        }
+    }
+
+    public IReadOnlyList<TaggedTaskDto>? GetLoadedTasks(Guid tagId) =>
+        _tasksByTag.TryGetValue(tagId, out var tasks) ? tasks : null;
+
+    public async Task LoadTasksAsync(Guid workspaceId, Guid tagId, bool force = false,
+        CancellationToken ct = default)
+    {
+        if (!force && _tasksByTag.ContainsKey(tagId))
+        {
+            return;
+        }
+
+        TasksLoadingForTagId = tagId;
+        ErrorMessage = null;
+        NotifyStateChanged();
+
+        try
+        {
+            _tasksByTag[tagId] = await apiService.GetTagTasksAsync(workspaceId, tagId, ct);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            TasksLoadingForTagId = null;
             NotifyStateChanged();
         }
     }
@@ -102,6 +137,7 @@ internal sealed class TagStore(ITagApiService apiService) : ITagStore
             await apiService.DeleteTagAsync(workspaceId, tagId, ct);
 
             _tags = [.. _tags.Where(tag => tag.Id != tagId)];
+            _tasksByTag.Remove(tagId);
         }
         catch (Exception ex)
         {
@@ -118,7 +154,9 @@ internal sealed class TagStore(ITagApiService apiService) : ITagStore
     public void Reset()
     {
         _tags = [];
+        _tasksByTag.Clear();
         WorkspaceId = null;
+        TasksLoadingForTagId = null;
         IsLoading = false;
         IsProcessing = false;
         ErrorMessage = null;
