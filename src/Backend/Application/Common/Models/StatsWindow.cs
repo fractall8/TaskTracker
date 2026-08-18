@@ -33,19 +33,21 @@ public record StatsWindow(
 
         if (period == StatsPeriodDto.AllTime)
         {
-            return new StatsWindow(period, null, localEnd, null, null, null, localEnd);
+            return new StatsWindow(period, null, localEnd.ToUniversalTime(), null, null, null, localEnd);
         }
 
         var days = DayCount(period);
         var localStart = new DateTimeOffset(today.AddDays(1 - days), offset);
         var localPreviousStart = new DateTimeOffset(today.AddDays(1 - days - days), offset);
 
+        // Query bounds are normalised to UTC: Npgsql refuses a DateTimeOffset with a non-zero offset when
+        // writing to timestamptz, so only the Local* pair keeps the caller's offset for labelling.
         return new StatsWindow(
             period,
-            localStart,
-            localEnd,
-            localPreviousStart,
-            localStart,
+            localStart.ToUniversalTime(),
+            localEnd.ToUniversalTime(),
+            localPreviousStart.ToUniversalTime(),
+            localStart.ToUniversalTime(),
             localStart,
             localEnd);
     }

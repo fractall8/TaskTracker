@@ -7,4 +7,6 @@ namespace Contracts.DTOs;
 public record WorkspaceStatsDto(
     StatsPeriodDto Period,
     DateTimeOffset? PeriodStart,
-    DateTimeOffset PeriodEnd);
+    DateTimeOffset PeriodEnd,
+    StatsSummaryDto Summary,
+    StatsTrendDto Trend);
