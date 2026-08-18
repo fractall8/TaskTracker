@@ -1,0 +1,25 @@
+<div class="stat-card">
+    <div class="stat-card-top">
+        <span class="stat-card-icon @Accent">
+            <LucideIcon Name="@Icon" SizePx="18"/>
+        </span>
+
+        @if (!string.IsNullOrEmpty(Delta))
+        {
+            <span class="stat-card-delta @(DeltaIsGood ? "good" : "bad")">@Delta</span>
+        }
+    </div>
+
+    <p class="stat-card-value">@Value</p>
+    <p class="stat-card-label">@Label</p>
+</div>
+
+@code {
+    // A LucideIcon name, not a MudBlazor icon string.
+    [Parameter, EditorRequired] public string Icon { get; set; } = null!;
+    [Parameter, EditorRequired] public string Label { get; set; } = null!;
+    [Parameter, EditorRequired] public string Value { get; set; } = null!;
+    [Parameter] public string? Delta { get; set; }
+    [Parameter] public bool DeltaIsGood { get; set; }
+    [Parameter] public string Accent { get; set; } = "indigo";
+}

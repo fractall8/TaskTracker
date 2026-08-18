@@ -1,0 +1,154 @@
+.trend {
+    display: flex;
+    flex-direction: column;
+}
+
+.trend-body {
+    display: flex;
+    gap: 8px;
+}
+
+.trend-y {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 220px;
+    flex-shrink: 0;
+    font-size: 10.5px;
+    color: var(--mud-palette-text-secondary);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    min-width: 18px;
+}
+
+.trend-canvas {
+    position: relative;
+    flex: 1;
+    height: 220px;
+    min-width: 0;
+}
+
+.trend-canvas svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+}
+
+.trend-grid {
+    stroke: var(--mud-palette-lines-default);
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+}
+
+.trend-line {
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+}
+
+.trend-line.done { stroke: #6366f1; }
+.trend-line.made { stroke: #94a3b8; }
+
+.trend-hit {
+    position: absolute;
+    inset: 0;
+}
+
+.trend-hit > div {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+}
+
+.trend-cursor {
+    stroke: var(--mud-palette-text-secondary);
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+    opacity: 0.7;
+}
+
+.trend-dot {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 2px solid var(--mud-palette-surface);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.trend-dot.done { background: #6366f1; }
+.trend-dot.made { background: #94a3b8; }
+
+.trend-tip {
+    position: absolute;
+    top: 8px;
+    pointer-events: none;
+    padding: 7px 10px;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 10px;
+    background: var(--mud-palette-surface);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+    white-space: nowrap;
+    z-index: 2;
+}
+
+.trend-tip p {
+    margin: 0;
+    font-size: 11.5px;
+    color: var(--mud-palette-text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.trend-tip-date {
+    font-weight: 600;
+    color: var(--mud-palette-text-primary) !important;
+    margin-bottom: 3px !important;
+}
+
+.trend-x {
+    display: flex;
+    margin: 6px 0 0 26px;
+}
+
+.trend-x span {
+    flex: 1;
+    font-size: 10.5px;
+    color: var(--mud-palette-text-secondary);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.trend-x span.hidden {
+    visibility: hidden;
+}
+
+.trend-legend {
+    display: flex;
+    gap: 16px;
+    margin: 10px 0 0 26px;
+}
+
+.trend-legend span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    color: var(--mud-palette-text-secondary);
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+}
+
+.dot.done { background: #6366f1; }
+.dot.made { background: #cbd5e1; }

@@ -1,0 +1,34 @@
+.stats-panel {
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 14px;
+    background: var(--mud-palette-surface);
+    padding: 16px;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.stats-panel-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+
+.stats-panel-head h3 {
+    margin: 0;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--mud-palette-text-primary);
+}
+
+.stats-panel-subtitle {
+    margin: 2px 0 0;
+    font-size: 11.5px;
+    color: var(--mud-palette-text-secondary);
+}
+
+.stats-panel-head-right {
+    flex-shrink: 0;
+}

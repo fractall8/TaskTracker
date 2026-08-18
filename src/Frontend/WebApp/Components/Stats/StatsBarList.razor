@@ -1,0 +1,81 @@
+@typeparam TItem
+
+@* Hand-rolled rather than a chart: MudChart's stacked bars are vertical only, and long board and person
+   names do not fit a vertical axis (EPIC 5 Decision 10). *@
+<div class="bar-list">
+    @if (Visible.Count == 0)
+    {
+        <p class="bar-empty">@(string.IsNullOrWhiteSpace(_query) ? EmptyText : $"Nothing matches \"{_query}\"")</p>
+    }
+    else
+    {
+        @foreach (var item in Visible)
+        {
+            var primary = Primary(item);
+            var secondary = Secondary(item);
+            var total = primary + secondary;
+
+            <div class="bar-row" @key="Label(item)">
+                <span class="bar-label" title="@Label(item)">@Label(item)</span>
+
+                <div class="bar-track">
+                    @if (total == 0)
+                    {
+                        <span class="bar-none">—</span>
+                    }
+                    else
+                    {
+                        <div class="bar-fill primary @PrimaryClass"
+                             style="width: @Percent(primary, Max)%"
+                             title="@($"{primary} {PrimaryLabel}")"></div>
+                        <div class="bar-fill secondary @SecondaryClass"
+                             style="width: @Percent(secondary, Max)%"
+                             title="@($"{secondary} {SecondaryLabel}")"></div>
+                    }
+                </div>
+
+                <span class="bar-count">@total</span>
+            </div>
+        }
+    }
+
+    @if (Filtered.Count > CollapsedCount)
+    {
+        <button type="button" class="bar-more" @onclick="@(() => _expanded = !_expanded)">
+            @(_expanded ? $"Show top {CollapsedCount}" : $"Show all ({Filtered.Count - CollapsedCount} more)")
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<TItem> Items { get; set; } = [];
+    [Parameter, EditorRequired] public Func<TItem, string> Label { get; set; } = null!;
+    [Parameter, EditorRequired] public Func<TItem, int> Primary { get; set; } = null!;
+    [Parameter, EditorRequired] public Func<TItem, int> Secondary { get; set; } = null!;
+
+    [Parameter] public string PrimaryLabel { get; set; } = "";
+    [Parameter] public string SecondaryLabel { get; set; } = "";
+    [Parameter] public string PrimaryClass { get; set; } = "";
+    [Parameter] public string SecondaryClass { get; set; } = "";
+    [Parameter] public string EmptyText { get; set; } = "Nothing to show yet.";
+    [Parameter] public int CollapsedCount { get; set; } = 6;
+
+    // Set by the parent so the search box can live in the panel header.
+    [Parameter] public string Query { get; set; } = string.Empty;
+
+    private bool _expanded;
+
+    private string _query => Query ?? string.Empty;
+
+    // Server order is already meaningful, so filtering never re-sorts.
+    private List<TItem> Filtered =>
+        [.. Items.Where(item => string.IsNullOrWhiteSpace(_query)
+                                || Label(item).Contains(_query.Trim(), StringComparison.OrdinalIgnoreCase))];
+
+    private List<TItem> Visible => _expanded ? Filtered : [.. Filtered.Take(CollapsedCount)];
+
+    // Scaled against the largest row so bars are comparable down the column rather than each filling itself.
+    private int Max => Filtered.Count == 0 ? 1 : Math.Max(1, Filtered.Max(item => Primary(item) + Secondary(item)));
+
+    private static int Percent(int value, int max) => max == 0 ? 0 : (int)Math.Round(value * 100.0 / max);
+}

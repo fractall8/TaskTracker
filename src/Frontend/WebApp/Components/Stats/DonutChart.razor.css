@@ -1,0 +1,60 @@
+.donut-ring {
+    position: relative;
+    width: 100%;
+    max-width: 190px;
+    margin: 0 auto;
+    aspect-ratio: 1;
+}
+
+.donut-ring svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.donut-track {
+    fill: none;
+    stroke: var(--mud-palette-action-default-hover);
+    stroke-width: 6.5;
+}
+
+.donut-slice {
+    fill: none;
+    stroke-width: 6.5;
+    transition: stroke-width 0.15s, opacity 0.15s;
+    cursor: default;
+}
+
+.donut-slice.hovered {
+    stroke-width: 8;
+}
+
+.donut-centre {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    text-align: center;
+    padding: 0 18%;
+}
+
+.donut-centre-value {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--mud-palette-text-primary);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+}
+
+.donut-centre-label {
+    margin-top: 2px;
+    font-size: 10.5px;
+    color: var(--mud-palette-text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
