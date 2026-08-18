@@ -13,4 +13,8 @@ public interface IWorkspaceAccessService
     Task EnsureCanManageInvitesAsync(Guid workspaceId, CancellationToken ct = default);
     Task EnsureCanManageBoardMembersAsync(Guid workspaceId, CancellationToken ct = default);
     Task EnsureCanManageSubscriptionsAsync(Guid workspaceId, CancellationToken ct = default);
+
+    Task<(Guid UserId, string Email)> EnsureCanCurateTagsAsync(Guid workspaceId, CancellationToken ct = default);
+
+    Task<(Guid UserId, string Email)> EnsureCanViewStatsAsync(Guid workspaceId, CancellationToken ct = default);
 }

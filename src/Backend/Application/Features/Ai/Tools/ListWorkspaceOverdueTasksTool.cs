@@ -1,5 +1,4 @@
 using Application.Ai.Projections;
-using Application.Common.Interfaces;
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Application.Options;
@@ -16,7 +15,7 @@ public class ListWorkspaceOverdueTasksToolHandler(
     IAiDataRepository aiDataRepository,
     IWorkspaceAccessService workspaceAccessService,
     IOptions<AiToolOptions> toolOptions,
-    IDateTimeProvider dateTimeProvider)
+    IBusinessCalendar calendar)
     : IRequestHandler<ListWorkspaceOverdueTasksTool, IReadOnlyList<AiTaskSummary>>
 {
     public async Task<IReadOnlyList<AiTaskSummary>> Handle(
@@ -29,7 +28,7 @@ public class ListWorkspaceOverdueTasksToolHandler(
         return await aiDataRepository.GetWorkspaceOverdueTasksAsync(
             request.WorkspaceId,
             userId,
-            dateTimeProvider.UtcNow,
+            calendar.StartOfTodayUtc(),
             Math.Clamp(request.Take ?? maxRows, 1, maxRows),
             ct);
     }

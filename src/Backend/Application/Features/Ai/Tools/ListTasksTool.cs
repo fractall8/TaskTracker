@@ -1,5 +1,4 @@
 using Application.Ai.Projections;
-using Application.Common.Interfaces;
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Application.Options;
@@ -21,7 +20,7 @@ public class ListTasksToolHandler(
     IAiDataRepository aiDataRepository,
     IBoardAccessService boardAccessService,
     IOptions<AiToolOptions> toolOptions,
-    IDateTimeProvider dateTimeProvider)
+    IBusinessCalendar calendar)
     : IRequestHandler<ListTasksTool, IReadOnlyList<AiTaskSummary>>
 {
     private const int _maxWindowDays = 90;
@@ -31,7 +30,8 @@ public class ListTasksToolHandler(
         var access = await boardAccessService.EnsureCanViewBoardAsync(request.BoardId, ct);
         var maxRows = toolOptions.Value.MaxRowsPerTool;
 
-        var now = dateTimeProvider.UtcNow;
+        // Start of today, not now: a due date is a day, so a task due today is upcoming rather than late.
+        var today = calendar.StartOfTodayUtc();
 
         // Both windows resolve to absolute bounds here, which is what keeps the repository clock-free.
         // OnlyOverdue wins if both are supplied: "overdue" and "due soon" are disjoint by definition.
@@ -40,12 +40,12 @@ public class ListTasksToolHandler(
 
         if (request.OnlyOverdue)
         {
-            dueBefore = now;
+            dueBefore = today;
         }
         else if (request.DueWithinDays is { } days)
         {
-            dueAfter = now;
-            dueBefore = now.AddDays(Math.Clamp(days, 1, _maxWindowDays));
+            dueAfter = today;
+            dueBefore = today.AddDays(Math.Clamp(days, 1, _maxWindowDays));
         }
 
         var filter = new AiTaskFilter(

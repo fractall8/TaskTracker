@@ -68,6 +68,9 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
             <button class="tab @(_activeTab == "members" ? "active" : "")" @onclick="@(() => _activeTab = "members")">
                 Members
             </button>
+            <button class="tab @(_activeTab == "tags" ? "active" : "")" @onclick="@(() => _activeTab = "tags")">
+                Tags
+            </button>
             @if (_currentUserRole is WorkspaceRoleDto.Owner)
             {
                 <button class="tab @(_activeTab == "invites" ? "active" : "")"
@@ -77,6 +80,10 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
                 <button class="tab @(_activeTab == "subscription" ? "active" : "")"
                         @onclick="@(() => _activeTab = "subscription")">
                     Subscriptions
+                </button>
+                <button class="tab @(_activeTab == "stats" ? "active" : "")"
+                        @onclick="@(() => _activeTab = "stats")">
+                    Stats
                 </button>
             }
         </nav>
@@ -99,6 +106,10 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
                                   CurrentUserId="_currentUserId"
                                   OnRefreshRequested="HandleMembersRefresh"/>
             }
+            else if (_activeTab == "tags")
+            {
+                <WorkspaceTags WorkspaceId="WorkspaceId" CurrentUserRole="_currentUserRole"/>
+            }
             else if (_activeTab == "invites" && _currentUserRole is WorkspaceRoleDto.Owner)
             {
                 <WorkspaceInvites WorkspaceId="WorkspaceId" CurrentUserRole="_currentUserRole"/>
@@ -106,6 +117,10 @@ else if (WorkspaceStore.CurrentWorkspace is { } workspace)
             else if (_activeTab == "subscription" && _currentUserRole is WorkspaceRoleDto.Owner)
             {
                 <WorkspaceSubscription WorkspaceId="WorkspaceId" />
+            }
+            else if (_activeTab == "stats" && _currentUserRole is WorkspaceRoleDto.Owner)
+            {
+                <WorkspaceStats WorkspaceId="WorkspaceId"/>
             }
         </div>
     </div>

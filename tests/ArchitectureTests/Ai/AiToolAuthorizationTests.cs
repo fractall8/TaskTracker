@@ -1,5 +1,4 @@
 using Application.Ai.Projections;
-using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Features.Ai.Tools;
 using Application.Interfaces.Repositories;
@@ -45,7 +44,7 @@ public class AiToolAuthorizationTests
         var workspace = new RefusingWorkspaceAccessService();
         var board = new RefusingBoardAccessService();
         var options = Options.Create(new AiToolOptions());
-        var clock = new FixedClock();
+        var clock = new FixedCalendar();
         var id = Guid.NewGuid();
 
         return tool switch
@@ -147,6 +146,12 @@ public class AiToolAuthorizationTests
         public Task EnsureCanManageSubscriptionsAsync(Guid workspaceId, CancellationToken ct = default) =>
             throw Forbidden();
 
+        public Task<(Guid UserId, string Email)> EnsureCanCurateTagsAsync(
+            Guid workspaceId, CancellationToken ct = default) => Refuse();
+
+        public Task<(Guid UserId, string Email)> EnsureCanViewStatsAsync(
+            Guid workspaceId, CancellationToken ct = default) => Refuse();
+
         private static Task<(Guid, string)> Refuse() => throw Forbidden();
     }
 
@@ -165,6 +170,12 @@ public class AiToolAuthorizationTests
             throw Forbidden();
 
         public Task<BoardAccessContext> EnsureCanManageTasksAsync(Guid b, CancellationToken ct = default) =>
+            throw Forbidden();
+
+        public Task<BoardAccessContext> EnsureCanCompleteTasksAsync(Guid b, CancellationToken ct = default) =>
+            throw Forbidden();
+
+        public Task<BoardAccessContext> EnsureCanTagTasksAsync(Guid b, CancellationToken ct = default) =>
             throw Forbidden();
 
         public Task<BoardAccessContext> EnsureCanManageCommentsAsync(Guid b, CancellationToken ct = default) =>
@@ -205,9 +216,22 @@ public class AiToolAuthorizationTests
             throw new InvalidOperationException("Plan catalog reached.");
     }
 
-    private sealed class FixedClock : IDateTimeProvider
+    // The tools take a calendar now, not a clock: overdue is a day in the configured zone, not an instant.
+    private sealed class FixedCalendar : IBusinessCalendar
     {
-        public DateTimeOffset UtcNow => new(2026, 06, 15, 12, 0, 0, TimeSpan.Zero);
+        public string TimeZoneId => "UTC";
+
+        public DateOnly Today => new(2026, 06, 15);
+
+        public DateTimeOffset StartOfDayUtc(DateOnly date) => new(date, TimeOnly.MinValue, TimeSpan.Zero);
+
+        public DateTimeOffset StartOfTodayUtc() => StartOfDayUtc(Today);
+
+        public DateTimeOffset StartOfDayLocal(DateOnly date) => StartOfDayUtc(date);
+
+        public DateOnly ToLocalDate(DateTimeOffset instant) => DateOnly.FromDateTime(instant.UtcDateTime);
+
+        public int DaysOverdue(DateTimeOffset dueDate) => Today.DayNumber - ToLocalDate(dueDate).DayNumber;
     }
 
     private static ForbiddenException Forbidden() => new("Not a member.");

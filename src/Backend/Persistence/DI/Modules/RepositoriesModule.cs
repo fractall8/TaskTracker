@@ -16,6 +16,8 @@ internal static class RepositoriesModule
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IColumnRepository, ColumnRepository>();
         services.AddScoped<ITaskRepository, TaskRepository>();
+        services.AddScoped<ITagRepository, TagRepository>();
+        services.AddScoped<IStatsRepository, StatsRepository>();
         services.AddScoped<ICommentRepository, CommentRepository>();
         services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
         services.AddScoped<IWorkspaceMemberRepository, WorkspaceMemberRepository>();

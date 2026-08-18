@@ -1,0 +1,381 @@
+@using Contracts.DTOs
+@using Contracts.Enums
+@using Services.Abstractions.Stats
+@using WebApp.Components.AppSelect
+@using WebApp.Components.Stats
+@implements IDisposable
+@inject IStatsStore StatsStore
+@inject NavigationManager Navigation
+
+<div class="stats-tab">
+    <div class="stats-head">
+        <div>
+            <p class="stats-scope">Across all active boards in this workspace. Archived boards are excluded.</p>
+            <p class="stats-scope-note">
+                Total, completion rate and time to complete cover the period. Overdue is as of now.
+                Days follow your local calendar.
+            </p>
+        </div>
+
+        <div class="stats-head-controls">
+            <AppSelect TValue="StatsPeriodDto"
+                       Options="_periodOptions"
+                       Value="StatsStore.Period"
+                       ValueChanged="OnPeriodChangedAsync"
+                       Disabled="StatsStore.IsLoading"
+                       Width="180px"/>
+
+            <button class="btn" @onclick="RefreshAsync" disabled="@StatsStore.IsLoading">
+                <LucideIcon Name="refresh" SizePx="15"/>
+                Refresh
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(StatsStore.ErrorMessage))
+    {
+        <div class="custom-alert error mb-4">
+            <MudIcon Icon="@Icons.Material.Outlined.ErrorOutline" Size="Size.Small" Class="custom-alert-icon"/>
+            <div class="custom-alert-content">
+                <p>@StatsStore.ErrorMessage</p>
+            </div>
+        </div>
+    }
+
+    @* One request, so the page is either loading or ready — per-panel skeletons would imply otherwise. *@
+    @if (StatsStore.IsLoading || StatsStore.Stats is null)
+    {
+        <div class="d-flex justify-center pa-8">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large"/>
+        </div>
+    }
+    else
+    {
+        var stats = StatsStore.Stats;
+        var summary = stats.Summary;
+
+        <div class="stats-cards">
+            <StatCard Icon="list-checks"
+                      Label="Tasks created"
+                      Value="@summary.TotalCreated.ToString()"
+                      Delta="@DeltaCount(summary.TotalCreated, summary.PreviousTotalCreated)"
+                      DeltaIsGood="@(summary.PreviousTotalCreated is null || summary.TotalCreated >= summary.PreviousTotalCreated)"
+                      Accent="indigo"/>
+
+            <StatCard Icon="circle-check"
+                      Label="Completed, of those created"
+                      Value="@Percent(summary.CompletionRate)"
+                      Delta="@DeltaPoints(summary.CompletionRate, summary.PreviousCompletionRate)"
+                      DeltaIsGood="@((summary.CompletionRate ?? 0) >= (summary.PreviousCompletionRate ?? 0))"
+                      Accent="emerald"/>
+
+            <StatCard Icon="triangle-alert"
+                      Label="Overdue now"
+                      Value="@summary.OverdueNow.ToString()"
+                      Delta="@(summary.NewlyOverdue > 0 ? $"{summary.NewlyOverdue} new" : null)"
+                      DeltaIsGood="false"
+                      Accent="rose"/>
+
+            <StatCard Icon="clock"
+                      Label="Median time to complete"
+                      Value="@Days(summary.MedianDaysToComplete)"
+                      Delta="@DeltaDays(summary.MedianDaysToComplete, summary.PreviousMedianDaysToComplete)"
+                      DeltaIsGood="@((summary.MedianDaysToComplete ?? 0) <= (summary.PreviousMedianDaysToComplete ?? double.MaxValue))"
+                      Accent="sky"/>
+        </div>
+
+        <div class="stats-row stats-row-trend">
+            <StatsPanel Title="Tasks created vs completed" Subtitle="@TrendSubtitle(stats)">
+                @if (stats.Trend.Points.Count == 0)
+                {
+                    <p class="stats-empty">No tasks created or completed yet.</p>
+                }
+                else
+                {
+                    <TrendChart Points="stats.Trend.Points" Bucket="stats.Trend.Bucket"/>
+                }
+            </StatsPanel>
+
+            <StatsPanel Title="Tags breakdown" Subtitle="@TagSubtitle(stats.Tags)">
+                @if (stats.Tags.Count == 0)
+                {
+                    <p class="stats-empty">No tags on open tasks.</p>
+                }
+                else
+                {
+                    <DonutChart Slices="@DonutSlices(stats.Tags)" CentreLabel="tag mentions"/>
+
+                    <ul class="tag-legend">
+                        @foreach (var tag in stats.Tags)
+                        {
+                            <li @key="tag.Name">
+                                <span class="tag-dot @(tag.Color ?? "untagged")"></span>
+                                <span class="tag-legend-name">@tag.Name</span>
+                                <span class="tag-legend-count">@tag.OpenTasks</span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </StatsPanel>
+        </div>
+
+        <div class="stats-row">
+            <StatsPanel Title="Tasks by board" Subtitle="@($"Completed in period · open now · {stats.Boards.Count} boards")">
+                <HeaderRight>
+                    <div class="stats-search">
+                        <LucideIcon Name="search" SizePx="13"/>
+                        <input placeholder="Find board..."
+                               value="@_boardQuery"
+                               @oninput="@(e => _boardQuery = e.Value?.ToString() ?? string.Empty)"/>
+                    </div>
+                </HeaderRight>
+                <ChildContent>
+                    <StatsBarList TItem="StatsBoardDto"
+                                  Items="stats.Boards"
+                                  Query="@_boardQuery"
+                                  Label="@(board => board.BoardName)"
+                                  Primary="@(board => board.CompletedInPeriod)"
+                                  Secondary="@(board => board.OpenNow)"
+                                  PrimaryLabel="completed" SecondaryLabel="open"
+                                  PrimaryClass="done" SecondaryClass="open"
+                                  EmptyText="No boards yet."/>
+                </ChildContent>
+            </StatsPanel>
+
+            <StatsPanel Title="Team workload" Subtitle="Open tasks per assignee, as of now">
+                <HeaderRight>
+                    <div class="stats-search">
+                        <LucideIcon Name="search" SizePx="13"/>
+                        <input placeholder="Find person..."
+                               value="@_workloadQuery"
+                               @oninput="@(e => _workloadQuery = e.Value?.ToString() ?? string.Empty)"/>
+                    </div>
+                </HeaderRight>
+                <ChildContent>
+                    <StatsBarList TItem="StatsWorkloadDto"
+                                  Items="stats.Workload"
+                                  Query="@_workloadQuery"
+                                  Label="@(row => row.Name)"
+                                  Primary="@(row => row.OnTrack)"
+                                  Secondary="@(row => row.Overdue)"
+                                  PrimaryLabel="on track" SecondaryLabel="overdue"
+                                  PrimaryClass="on-track" SecondaryClass="late"
+                                  EmptyText="No open tasks."/>
+                </ChildContent>
+            </StatsPanel>
+        </div>
+
+        <div class="stats-row">
+            <StatsPanel Title="Contributors" Subtitle="Reported and completed in this period">
+                <HeaderRight>
+                    <div class="stats-search">
+                        <LucideIcon Name="search" SizePx="13"/>
+                        <input placeholder="Find contributor..."
+                               value="@_contributorQuery"
+                               @oninput="@(e => _contributorQuery = e.Value?.ToString() ?? string.Empty)"/>
+                    </div>
+                </HeaderRight>
+                <ChildContent>
+                    @{ var contributors = FilteredContributors(stats.Contributors); }
+
+                    @if (contributors.Count == 0)
+                    {
+                        <p class="stats-empty">Nobody reported or completed a task in this period.</p>
+                    }
+                    else
+                    {
+                        var scale = Math.Max(1, contributors.Max(c => Math.Max(c.Reported, c.Completed)));
+
+                        <ul class="contributor-list">
+                            @foreach (var person in contributors)
+                            {
+                                <li @key="person.UserId">
+                                    <span class="contributor-avatar">
+                                        @if (!string.IsNullOrEmpty(person.AvatarUrl))
+                                        {
+                                            <img src="@person.AvatarUrl" alt=""/>
+                                        }
+                                        else
+                                        {
+                                            @Initials(person.Name)
+                                        }
+                                    </span>
+
+                                    <div class="contributor-body">
+                                        <div class="contributor-top">
+                                            <span class="contributor-name">@person.Name</span>
+                                            <span class="contributor-counts">
+                                                @person.Completed done · @person.Reported reported
+                                            </span>
+                                        </div>
+
+                                        @* Two magnitudes on one scale. A completed/reported ratio would
+                                           divide unrelated populations (EPIC 5 Decision 5). *@
+                                        <div class="contributor-bar">
+                                            <div class="contributor-fill done"
+                                                 style="width: @(person.Completed * 100 / scale)%"></div>
+                                        </div>
+                                        <div class="contributor-bar">
+                                            <div class="contributor-fill reported"
+                                                 style="width: @(person.Reported * 100 / scale)%"></div>
+                                        </div>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </ChildContent>
+            </StatsPanel>
+
+            <StatsPanel Title="Overdue tasks" Subtitle="Most overdue first, as of now">
+                <HeaderRight>
+                    <span class="overdue-badge">@stats.Overdue.Total overdue</span>
+                </HeaderRight>
+                <ChildContent>
+                    @if (stats.Overdue.Tasks.Count == 0)
+                    {
+                        <p class="stats-empty">Nothing is overdue.</p>
+                    }
+                    else
+                    {
+                        <ul class="overdue-list">
+                            @foreach (var task in stats.Overdue.Tasks)
+                            {
+                                <li @key="task.TaskId">
+                                    <button type="button" class="overdue-row" @onclick="@(() => OpenTask(task))">
+                                        <span class="overdue-main">
+                                            <span class="overdue-title">@task.Title</span>
+                                            <span class="overdue-meta">
+                                                @task.BoardName · @(task.AssigneeName ?? "Unassigned")
+                                            </span>
+                                        </span>
+                                        <span class="overdue-days">@task.DaysOverdue d</span>
+                                    </button>
+                                </li>
+                            }
+                        </ul>
+
+                        @if (stats.Overdue.Total > stats.Overdue.Tasks.Count)
+                        {
+                            <p class="stats-empty">
+                                Showing the @stats.Overdue.Tasks.Count most overdue of @stats.Overdue.Total.
+                            </p>
+                        }
+                    }
+                </ChildContent>
+            </StatsPanel>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Guid WorkspaceId { get; set; }
+
+    private string _boardQuery = string.Empty;
+    private string _workloadQuery = string.Empty;
+    private string _contributorQuery = string.Empty;
+
+    private readonly IReadOnlyList<AppSelectOption<StatsPeriodDto>> _periodOptions =
+    [
+        new(StatsPeriodDto.Last7Days, "Last 7 days"),
+        new(StatsPeriodDto.Last14Days, "Last 14 days"),
+        new(StatsPeriodDto.Last30Days, "Last 30 days"),
+        new(StatsPeriodDto.AllTime, "All time")
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        StatsStore.StateChanged += OnStateChanged;
+        await StatsStore.LoadAsync(WorkspaceId);
+    }
+
+    private Task OnPeriodChangedAsync(StatsPeriodDto period) => StatsStore.ChangePeriodAsync(period);
+
+    private Task RefreshAsync() => StatsStore.RefreshAsync();
+
+    private void OpenTask(StatsOverdueTaskDto task) =>
+        Navigation.NavigateTo($"/boards/{task.BoardId}/tasks/{task.TaskId}");
+
+    private List<StatsContributorDto> FilteredContributors(List<StatsContributorDto> all) =>
+        [.. all.Where(person => string.IsNullOrWhiteSpace(_contributorQuery)
+                               || person.Name.Contains(_contributorQuery.Trim(), StringComparison.OrdinalIgnoreCase))];
+
+    // Top five plus a remainder, so twenty tags still read. The remainder gets its own grey, distinct from
+    // the untagged bucket's.
+    private static List<DonutChart.Slice> DonutSlices(List<StatsTagDto> tags)
+    {
+        var slices = tags
+            .Take(5)
+            .Select(tag => new DonutChart.Slice(tag.Name, Hex(tag.Color), tag.OpenTasks))
+            .ToList();
+
+        var rest = tags.Skip(5).Sum(tag => tag.OpenTasks);
+
+        if (rest > 0)
+        {
+            slices.Add(new DonutChart.Slice("other tags", "#e2e8f0", rest));
+        }
+
+        return slices;
+    }
+
+    // The same six tokens the chips use, so a slice always matches its legend dot. Null is the untagged
+    // bucket, which is deliberately outside the palette.
+    private static string Hex(string? color) => color switch
+    {
+        "violet" => "#8b5cf6",
+        "sky" => "#0ea5e9",
+        "teal" => "#14b8a6",
+        "amber" => "#f59e0b",
+        "rose" => "#f43f5e",
+        "slate" => "#94a3b8",
+        _ => "#cbd5e1"
+    };
+
+    // "Mentions", not tasks: a task with several tags is counted under each, so the slices do not partition
+    // the open work (EPIC 5 Decision 7).
+    private static string TagSubtitle(List<StatsTagDto> tags) =>
+        $"Tag mentions on open tasks · {tags.Sum(tag => tag.OpenTasks)} across {tags.Count} labels";
+
+    private static string TrendSubtitle(WorkspaceStatsDto stats) => stats.Trend.Bucket switch
+    {
+        StatsTrendBucketDto.Month => "Grouped by month",
+        StatsTrendBucketDto.Week => "Grouped by week",
+        _ => "Grouped by day"
+    };
+
+    private static string Percent(double? rate) => rate is null ? "—" : $"{Math.Round(rate.Value * 100)}%";
+
+    private static string Days(double? days) => days is null ? "—" : $"{Math.Round(days.Value, 1)}d";
+
+    private static string? DeltaCount(int current, int? previous) =>
+        previous is null ? null : Signed(current - previous.Value);
+
+    private static string? DeltaPoints(double? current, double? previous) =>
+        current is null || previous is null
+            ? null
+            : $"{Signed((int)Math.Round((current.Value - previous.Value) * 100))} pts";
+
+    private static string? DeltaDays(double? current, double? previous) =>
+        current is null || previous is null
+            ? null
+            : $"{(current.Value - previous.Value >= 0 ? "+" : "")}{Math.Round(current.Value - previous.Value, 1)}d";
+
+    private static string Signed(int value) => value >= 0 ? $"+{value}" : value.ToString();
+
+    private static string Initials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        return parts.Length switch
+        {
+            0 => "?",
+            1 => parts[0][..1].ToUpperInvariant(),
+            _ => (parts[0][..1] + parts[1][..1]).ToUpperInvariant()
+        };
+    }
+
+    private void OnStateChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => StatsStore.StateChanged -= OnStateChanged;
+}

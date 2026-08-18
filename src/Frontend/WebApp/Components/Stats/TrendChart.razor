@@ -1,0 +1,172 @@
+@using Contracts.DTOs
+@using Contracts.Enums
+
+@* Percentage viewBox with non-scaling strokes, so the plot stretches to any width at an even line weight.
+   Axis labels are HTML, which keeps text crisp rather than stretching with the box. *@
+<div class="trend">
+    <div class="trend-body">
+        <div class="trend-y">
+            @foreach (var tick in YTicks)
+            {
+                <span>@tick</span>
+            }
+        </div>
+
+        <div class="trend-canvas">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                <defs>
+                    <linearGradient id="@($"done-{_id}")" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stop-color="#6366f1" stop-opacity="0.35"/>
+                        <stop offset="95%" stop-color="#6366f1" stop-opacity="0"/>
+                    </linearGradient>
+                    <linearGradient id="@($"made-{_id}")" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stop-color="#cbd5e1" stop-opacity="0.6"/>
+                        <stop offset="95%" stop-color="#cbd5e1" stop-opacity="0"/>
+                    </linearGradient>
+                </defs>
+
+                @foreach (var y in new[] { 0m, 25m, 50m, 75m, 100m })
+                {
+                    <line class="trend-grid" x1="0" y1="@y" x2="100" y2="@y" vector-effect="non-scaling-stroke"/>
+                }
+
+                @* Created sits behind, so the completed series stays readable where they overlap. *@
+                <path d="@Area(Created)" fill="@($"url(#made-{_id})")"/>
+                <path class="trend-line made" d="@Line(Created)" vector-effect="non-scaling-stroke"/>
+
+                <path d="@Area(Completed)" fill="@($"url(#done-{_id})")"/>
+                <path class="trend-line done" d="@Line(Completed)" vector-effect="non-scaling-stroke"/>
+
+                @if (_hovered is { } cursor)
+                {
+                    <line class="trend-cursor" x1="@S(Left(cursor))" y1="0" x2="@S(Left(cursor))" y2="100"
+                          vector-effect="non-scaling-stroke"/>
+                }
+            </svg>
+
+            @* Hit areas are centred on the points, not evenly divided, so the nearest bucket wins. *@
+            <div class="trend-hit">
+                @for (var index = 0; index < Points.Count; index++)
+                {
+                    var current = index;
+
+                    <div style="left: @S(HitLeft(current))%; width: @S(HitWidth(current))%;"
+                         @onmouseover="@(() => _hovered = current)"
+                         @onmouseout="@(() => _hovered = null)"></div>
+                }
+            </div>
+
+            @if (_hovered is { } hovered && hovered < Points.Count)
+            {
+                var point = Points[hovered];
+
+                @* Dots drawn in HTML: preserveAspectRatio="none" would stretch an SVG circle into an ellipse. *@
+                <div class="trend-dot done" style="left: @S(Left(hovered))%; top: @S(Top(point.Completed))%;"></div>
+                <div class="trend-dot made" style="left: @S(Left(hovered))%; top: @S(Top(point.Created))%;"></div>
+
+                <div class="trend-tip" style="left: @S(Left(hovered))%; transform: translateX(@TipShift);">
+                    <p class="trend-tip-date">@Label(point)</p>
+                    <p><span class="dot done"></span>@point.Completed completed</p>
+                    <p><span class="dot made"></span>@point.Created created</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="trend-x">
+        @for (var index = 0; index < Points.Count; index++)
+        {
+            <span class="@(index % LabelStep == 0 ? "" : "hidden")">@Label(Points[index])</span>
+        }
+    </div>
+
+    <div class="trend-legend">
+        <span><span class="dot done"></span>Completed</span>
+        <span><span class="dot made"></span>Created</span>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public List<StatsTrendPointDto> Points { get; set; } = [];
+    [Parameter] public StatsTrendBucketDto Bucket { get; set; }
+
+    // Gradient ids have to be unique on the page, or a second chart would reuse the first one's fill.
+    private readonly string _id = Guid.NewGuid().ToString("N")[..8];
+
+    private int? _hovered;
+
+    private List<int> Completed => [.. Points.Select(point => point.Completed)];
+
+    private List<int> Created => [.. Points.Select(point => point.Created)];
+
+    // One scale for both series; separate scales would invite comparing incomparable shapes.
+    private int Max => Math.Max(1, Points.Count == 0 ? 1 : Points.Max(point => Math.Max(point.Created, point.Completed)));
+
+    private IEnumerable<int> YTicks => new[] { Max, (int)Math.Round(Max / 2.0), 0 };
+
+    private int LabelStep => Points.Count <= 8 ? 1 : (int)Math.Ceiling(Points.Count / 7.0);
+
+    private double Left(int index) => Points.Count <= 1 ? 50 : index * 100.0 / (Points.Count - 1);
+
+    private double HitSpan => Points.Count <= 1 ? 100 : 100.0 / (Points.Count - 1);
+
+    private double HitLeft(int index) => Math.Clamp(Left(index) - HitSpan / 2, 0, 100);
+
+    private double HitWidth(int index) => Math.Min(HitSpan, 100 - HitLeft(index));
+
+    // Kept inside the plot at the edges, where a centred tooltip would hang over the side.
+    private string TipShift => _hovered switch
+    {
+        { } index when Left(index) < 18 => "0",
+        { } index when Left(index) > 82 => "-100%",
+        _ => "-50%"
+    };
+
+    // Leaves headroom at the top so the peak's stroke is not clipped by the viewBox.
+    private double Top(int value) => 96 - value * 92.0 / Max;
+
+    private string Line(List<int> values)
+    {
+        if (values.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        if (values.Count == 1)
+        {
+            return $"M 0,{F(Top(values[0]))} L 100,{F(Top(values[0]))}";
+        }
+
+        var path = new System.Text.StringBuilder($"M {F(Left(0))},{F(Top(values[0]))}");
+        var span = 100.0 / (values.Count - 1);
+
+        // Horizontal control points: smooth without the overshoot a Catmull-Rom spline would give.
+        for (var index = 1; index < values.Count; index++)
+        {
+            var x0 = Left(index - 1);
+            var x1 = Left(index);
+            var y0 = Top(values[index - 1]);
+            var y1 = Top(values[index]);
+
+            path.Append($" C {F(x0 + span / 3)},{F(y0)} {F(x1 - span / 3)},{F(y1)} {F(x1)},{F(y1)}");
+        }
+
+        return path.ToString();
+    }
+
+    private string Area(List<int> values) =>
+        values.Count == 0 ? string.Empty : $"{Line(values)} L 100,100 L 0,100 Z";
+
+    // Inline styles and path data must never pick up a comma decimal separator, or the CSS is discarded.
+    private static string S(double value) =>
+        value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+
+    private static string F(double value) => S(value);
+
+    private string Label(StatsTrendPointDto point) => Bucket switch
+    {
+        StatsTrendBucketDto.Month => point.BucketStart.ToString("MMM yy"),
+        StatsTrendBucketDto.Week => point.BucketStart.ToString("MMM d"),
+        _ => point.BucketStart.ToString("MMM d")
+    };
+}

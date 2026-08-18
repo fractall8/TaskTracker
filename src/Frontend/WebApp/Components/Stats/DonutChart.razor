@@ -1,0 +1,62 @@
+@* r=15.915 makes the circumference 100, so stroke-dasharray takes slice percentages directly. *@
+<div class="donut">
+    <div class="donut-ring">
+        <svg viewBox="0 0 42 42" role="img" aria-label="@AriaLabel">
+            <circle class="donut-track" cx="21" cy="21" r="15.915"/>
+
+            @{ var offset = 0.0; }
+            @for (var i = 0; i < Slices.Count; i++)
+            {
+                var index = i;
+                var slice = Slices[index];
+                var percent = Total == 0 ? 0 : slice.Value * 100.0 / Total;
+                var gap = percent > Gap ? Gap : 0;
+                var current = offset;
+
+                <circle class="donut-slice @(_hovered == index ? "hovered" : "")"
+                        cx="21" cy="21" r="15.915"
+                        stroke="@slice.Color"
+                        stroke-dasharray="@F(Math.Max(0, percent - gap)) @F(100 - Math.Max(0, percent - gap))"
+                        stroke-dashoffset="@F(25 - current)"
+                        @onmouseover="@(() => _hovered = index)"
+                        @onmouseout="@(() => _hovered = null)">
+                    <title>@slice.Name: @slice.Value</title>
+                </circle>
+
+                offset += percent;
+            }
+        </svg>
+
+        <div class="donut-centre">
+            @if (_hovered is { } hovered && hovered < Slices.Count)
+            {
+                <span class="donut-centre-value">@Slices[hovered].Value</span>
+                <span class="donut-centre-label">@Slices[hovered].Name</span>
+            }
+            else
+            {
+                <span class="donut-centre-value">@Total</span>
+                <span class="donut-centre-label">@CentreLabel</span>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    public record Slice(string Name, string Color, int Value);
+
+    [Parameter, EditorRequired] public List<Slice> Slices { get; set; } = [];
+    [Parameter] public string CentreLabel { get; set; } = "total";
+
+    // Percentage points shaved off each arc to leave the gap the design has between slices.
+    private const double Gap = 1.2;
+
+    private int? _hovered;
+
+    private int Total => Slices.Sum(slice => slice.Value);
+
+    private string AriaLabel => string.Join(", ", Slices.Select(slice => $"{slice.Name} {slice.Value}"));
+
+    private static string F(double value) =>
+        value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+}

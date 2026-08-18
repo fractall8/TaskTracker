@@ -1,0 +1,107 @@
+using Application.Common.Models;
+using Application.Interfaces.Services;
+using Contracts.DTOs;
+using Contracts.Enums;
+
+namespace Application.Features.Stats;
+
+// Bucketing happens here rather than in SQL: grouping by day in a named zone needs
+// date_trunc(... AT TIME ZONE ...), which EF Core cannot express. The row count is bounded by the window.
+internal static class StatsTrendFactory
+{
+    private const int _maxDaysForDailyBuckets = 31;
+
+    private const int _maxDaysForWeeklyBuckets = 182;
+
+    public static StatsTrendDto Build(
+        StatsWindow window,
+        IBusinessCalendar calendar,
+        IReadOnlyCollection<DateTimeOffset> created,
+        IReadOnlyCollection<DateTimeOffset> completed)
+    {
+        if (!TryGetFirstDay(window, calendar, created, completed, out var firstDay))
+        {
+            return new StatsTrendDto(StatsTrendBucketDto.Day, []);
+        }
+
+        var lastDay = window.LastDay;
+        var bucket = ChooseBucket(firstDay, lastDay);
+
+        var createdPerBucket = CountPerBucket(created, calendar, bucket);
+        var completedPerBucket = CountPerBucket(completed, calendar, bucket);
+
+        var points = new List<StatsTrendPointDto>();
+
+        for (var start = StartOfBucket(firstDay, bucket); start <= lastDay; start = NextBucket(start, bucket))
+        {
+            createdPerBucket.TryGetValue(start, out var createdCount);
+            completedPerBucket.TryGetValue(start, out var completedCount);
+
+            points.Add(new StatsTrendPointDto(calendar.StartOfDayLocal(start), createdCount, completedCount));
+        }
+
+        return new StatsTrendDto(bucket, points);
+    }
+
+    // A fixed period starts where the window starts. All time starts at the first sign of activity, so an
+    // empty workspace yields no points and a young one is not padded with months of zeroes.
+    private static bool TryGetFirstDay(
+        StatsWindow window,
+        IBusinessCalendar calendar,
+        IReadOnlyCollection<DateTimeOffset> created,
+        IReadOnlyCollection<DateTimeOffset> completed,
+        out DateOnly firstDay)
+    {
+        if (!window.IsAllTime)
+        {
+            firstDay = window.FirstDay;
+            return true;
+        }
+
+        if (created.Count == 0 && completed.Count == 0)
+        {
+            firstDay = default;
+            return false;
+        }
+
+        firstDay = calendar.ToLocalDate(created.Concat(completed).Min());
+
+        return true;
+    }
+
+    // Keeps the axis readable: a year of daily points is unreadable, a week of monthly points is useless.
+    private static StatsTrendBucketDto ChooseBucket(DateOnly firstDay, DateOnly lastDay)
+    {
+        var days = lastDay.DayNumber - firstDay.DayNumber + 1;
+
+        return days switch
+        {
+            <= _maxDaysForDailyBuckets => StatsTrendBucketDto.Day,
+            <= _maxDaysForWeeklyBuckets => StatsTrendBucketDto.Week,
+            _ => StatsTrendBucketDto.Month
+        };
+    }
+
+    private static Dictionary<DateOnly, int> CountPerBucket(
+        IReadOnlyCollection<DateTimeOffset> timestamps,
+        IBusinessCalendar calendar,
+        StatsTrendBucketDto bucket) =>
+        timestamps
+            .GroupBy(timestamp => StartOfBucket(calendar.ToLocalDate(timestamp), bucket))
+            .ToDictionary(group => group.Key, group => group.Count());
+
+    private static DateOnly StartOfBucket(DateOnly day, StatsTrendBucketDto bucket) => bucket switch
+    {
+        // Monday, so a week bucket reads as a working week.
+        StatsTrendBucketDto.Week => day.AddDays(-(((int)day.DayOfWeek + 6) % 7)),
+        StatsTrendBucketDto.Month => new DateOnly(day.Year, day.Month, 1),
+        _ => day
+    };
+
+    private static DateOnly NextBucket(DateOnly start, StatsTrendBucketDto bucket) => bucket switch
+    {
+        StatsTrendBucketDto.Week => start.AddDays(7),
+        StatsTrendBucketDto.Month => start.AddMonths(1),
+        _ => start.AddDays(1)
+    };
+}

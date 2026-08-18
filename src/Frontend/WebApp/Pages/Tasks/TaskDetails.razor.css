@@ -1,4 +1,4 @@
-﻿.task-main {
+.task-main {
     max-width: 1080px;
     padding: 24px 44px 60px;
     font-family: "Inter", sans-serif;
@@ -280,4 +280,17 @@
         border-bottom: 1px solid var(--mud-palette-lines-default);
         padding-bottom: 16px;
     }
+}
+
+.task-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.task-tags-empty,
+.status-completed-at {
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: var(--mud-palette-text-secondary);
 }

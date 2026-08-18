@@ -299,6 +299,19 @@ public class BoardDetailsStore(
         return updatedTask;
     }
 
+    public async Task SetTaskCompletionAsync(Guid taskId, bool isCompleted, CancellationToken ct = default)
+    {
+        if (BoardId == null)
+        {
+            return;
+        }
+
+        var updatedTask = await tasksApi.SetTaskCompletionAsync(BoardId.Value, taskId, isCompleted, ct);
+
+        Tasks = Tasks.Select(t => t.Id == taskId ? updatedTask : t).ToList();
+        NotifyStateChanged();
+    }
+
     public async Task DeleteTaskAsync(Guid taskId, CancellationToken ct = default)
     {
         if (BoardId == null)
@@ -512,6 +525,10 @@ public class BoardDetailsStore(
             BoardActionNotificationType.TaskCreated => ApplyTaskCreated((TaskCreatedPayload)notification.Payload),
             BoardActionNotificationType.TaskUpdated => ApplyTaskUpdated((TaskUpdatedPayload)notification.Payload),
             BoardActionNotificationType.TaskDeleted => ApplyTaskDeleted((TaskDeletedPayload)notification.Payload),
+            BoardActionNotificationType.TaskCompletionChanged => ApplyTaskCompletionChanged(
+                (TaskCompletionChangedPayload)notification.Payload),
+            BoardActionNotificationType.TaskTagsChanged => ApplyTaskTagsChanged(
+                (TaskTagsChangedPayload)notification.Payload),
             BoardActionNotificationType.TasksReordered => ApplyTasksReordered(
                 (TasksReorderedPayload)notification.Payload),
 
@@ -644,6 +661,8 @@ public class BoardDetailsStore(
             Description: null,
             Position: payload.Position,
             DueDate: null,
+            IsCompleted: false,
+            CompletedAt: null,
             ColumnId: payload.ColumnId,
             AssigneeId: payload.AssigneeId,
             AssigneeName: null,
@@ -651,7 +670,8 @@ public class BoardDetailsStore(
             ReporterId: Guid.Empty,
             ReporterName: null,
             ReporterAvatarUrl: null,
-            Attachments: []
+            Attachments: [],
+            Tags: []
         );
 
         Tasks.Add(newTask);
@@ -702,6 +722,37 @@ public class BoardDetailsStore(
         {
             ApplyColumnTaskPositions(payload.ColumnId, payload.RemainingTasks);
         }
+
+        return true;
+    }
+
+    private bool ApplyTaskCompletionChanged(TaskCompletionChangedPayload payload)
+    {
+        var task = Tasks.FirstOrDefault(t => t.Id == payload.TaskId);
+        if (task is null)
+        {
+            return false;
+        }
+
+        Tasks = Tasks
+            .Select(t => t.Id == payload.TaskId
+                ? t with { IsCompleted = payload.IsCompleted, CompletedAt = payload.CompletedAt }
+                : t)
+            .ToList();
+
+        return true;
+    }
+
+    private bool ApplyTaskTagsChanged(TaskTagsChangedPayload payload)
+    {
+        if (Tasks.All(t => t.Id != payload.TaskId))
+        {
+            return false;
+        }
+
+        Tasks = Tasks
+            .Select(t => t.Id == payload.TaskId ? t with { Tags = payload.Tags } : t)
+            .ToList();
 
         return true;
     }

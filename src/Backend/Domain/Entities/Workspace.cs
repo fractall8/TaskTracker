@@ -9,4 +9,6 @@ public class Workspace : BaseEntity<Guid>
     public ICollection<Board> Boards { get; set; } = [];
 
     public ICollection<WorkspaceMember> Members { get; set; } = [];
+
+    public ICollection<Tag> Tags { get; set; } = [];
 }

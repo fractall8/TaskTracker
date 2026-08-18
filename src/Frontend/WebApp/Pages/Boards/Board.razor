@@ -4,6 +4,7 @@
 @using Contracts.Enums
 @using Services.Abstractions.BoardCalls
 @using Services.Abstractions.Hubs
+@using WebApp.Components.AppSelect
 @using WebApp.Components.BoardCallIndicator
 @using WebApp.Components.BoardColumn
 @using WebApp.Components.BoardExportControls
@@ -45,6 +46,26 @@
                        @oninput="OnSearchInput"
                        disabled="@(!IsCurrentBoardLoaded)"/>
             </div>
+
+            <AppSelect TValue="CompletionFilter"
+                       Options="_completionFilterOptions"
+                       Value="_completionFilter"
+                       ValueChanged="OnCompletionFilterChanged"
+                       Icon="@Icons.Material.Filled.FilterList"
+                       Disabled="@(!IsCurrentBoardLoaded)"
+                       Width="170px"/>
+
+            @if (BoardTags.Count > 0)
+            {
+                <AppSelect TValue="Guid"
+                           MultiSelection="true"
+                           Options="TagFilterOptions"
+                           SelectedValues="_selectedTagIds"
+                           SelectedValuesChanged="OnTagFilterChanged"
+                           Icon="@Icons.Material.Filled.Sell"
+                           Placeholder="Any tag"
+                           Width="160px"/>
+            }
 
             @if (IsCurrentBoardLoaded && BoardDetailsStore.Board is { IsArchived: false } && _workspaceRole is WorkspaceRoleDto.Admin or WorkspaceRoleDto.Owner)
             {
@@ -92,7 +113,7 @@
     {
         <MudDropContainer @ref="_dropContainer"
                           T="TaskDto"
-                          Items="BoardDetailsStore.Tasks"
+                          Items="VisibleTasks"
                           ItemsSelector="@((item, dropzone) => item.ColumnId.ToString() == dropzone)"
                           ItemDropped="TaskUpdated"
                           ItemDisabled="@((item) => !CanMoveTasks)"
@@ -130,7 +151,8 @@
                 <TaskCard Task="context"
                           BoardId="@BoardId"
                           CanManageTasks="CanManageTasks"
-                          CanMoveTasks="CanMoveTasks"/>
+                          CanMoveTasks="CanMoveTasks"
+                          CanCompleteTasks="CanCompleteTasks"/>
             </ItemRenderer>
         </MudDropContainer>
     }
@@ -163,6 +185,92 @@
 
     private bool CanMoveTasks => IsCurrentBoardLoaded && BoardDetailsStore.Board is { IsArchived: false } &&
                                  _boardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster or BoardRoleDto.User;
+
+    private bool CanCompleteTasks => CanMoveTasks;
+
+    private bool IsFiltered => _completionFilter != CompletionFilter.All || _selectedTagIds.Count > 0;
+
+    // Only tags actually in use on this board, so the control never offers a filter that matches nothing.
+    private List<TagDto> BoardTags =>
+        [.. BoardDetailsStore.Tasks
+            .SelectMany(task => task.Tags)
+            .DistinctBy(tag => tag.Id)
+            .OrderBy(tag => tag.Name)];
+
+    private IEnumerable<TaskDto> VisibleTasks => BoardDetailsStore.Tasks.Where(IsVisible);
+
+    private bool IsVisible(TaskDto task)
+    {
+        var matchesCompletion = _completionFilter switch
+        {
+            CompletionFilter.Outstanding => !task.IsCompleted,
+            CompletionFilter.Completed => task.IsCompleted,
+            _ => true
+        };
+
+        return matchesCompletion
+               && (_selectedTagIds.Count == 0 || task.Tags.Any(tag => _selectedTagIds.Contains(tag.Id)));
+    }
+
+    // A drop reports its index among the rendered cards, but the server reads the position as an index
+    // among all tasks in the column. Anchor on the card the task landed in front of and use its real
+    // index; with no filter the two lists are identical and this returns indexInZone unchanged.
+    private int ResolveDropPosition(Guid targetColumnId, int indexInZone)
+    {
+        if (!IsFiltered)
+        {
+            return indexInZone;
+        }
+
+        var columnTasks = BoardDetailsStore.Tasks
+            .Where(task => task.ColumnId == targetColumnId)
+            .OrderBy(task => task.Position)
+            .ToList();
+
+        var visible = columnTasks.Where(IsVisible).ToList();
+
+        if (indexInZone >= visible.Count)
+        {
+            return columnTasks.Count;
+        }
+
+        var anchor = visible[indexInZone];
+
+        return columnTasks.FindIndex(task => task.Id == anchor.Id);
+    }
+
+    private IReadOnlyCollection<Guid> _selectedTagIds = [];
+
+    private IReadOnlyList<AppSelectOption<Guid>> TagFilterOptions =>
+        [.. BoardTags.Select(tag => new AppSelectOption<Guid>(tag.Id, tag.Name))];
+
+    private void OnTagFilterChanged(IReadOnlyCollection<Guid> selected)
+    {
+        _selectedTagIds = selected;
+        _dropContainer?.Refresh();
+    }
+
+    private enum CompletionFilter
+    {
+        All,
+        Outstanding,
+        Completed
+    }
+
+    private CompletionFilter _completionFilter = CompletionFilter.All;
+
+    private readonly IReadOnlyList<AppSelectOption<CompletionFilter>> _completionFilterOptions =
+    [
+        new(CompletionFilter.All, "All tasks"),
+        new(CompletionFilter.Outstanding, "Not completed"),
+        new(CompletionFilter.Completed, "Completed")
+    ];
+
+    private void OnCompletionFilterChanged(CompletionFilter filter)
+    {
+        _completionFilter = filter;
+        _dropContainer?.Refresh();
+    }
 
     protected override void OnInitialized()
     {
@@ -291,7 +399,7 @@
         if (task == null) return;
 
         var targetColumnId = Guid.Parse(dropItem.DropzoneIdentifier);
-        var newPosition = dropItem.IndexInZone;
+        var newPosition = ResolveDropPosition(targetColumnId, dropItem.IndexInZone);
 
         try
         {

@@ -1,0 +1,206 @@
+.tag-picker {
+    position: relative;
+}
+
+.tag-picker-trigger {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 42px;
+    padding: 8px 12px;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 12px;
+    background: var(--mud-palette-surface);
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.2s;
+}
+
+.tag-picker-trigger:hover:not(:disabled),
+.tag-picker-trigger.open {
+    border-color: var(--mud-palette-primary);
+}
+
+.tag-picker-trigger:disabled {
+    cursor: default;
+    opacity: 0.55;
+}
+
+.tag-picker-placeholder {
+    font-size: 13px;
+    color: var(--mud-palette-text-secondary);
+    opacity: 0.85;
+}
+
+.tag-picker-plus {
+    width: 14px;
+    height: 14px;
+    margin-left: auto;
+    flex-shrink: 0;
+    color: var(--mud-palette-text-secondary);
+}
+
+.tag-picker-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+}
+
+.tag-picker-menu {
+    position: absolute;
+    z-index: 1201;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 288px;
+    max-width: 100vw;
+    box-sizing: border-box;
+    padding: 8px;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 16px;
+    background: var(--mud-palette-surface);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+}
+
+.tag-picker-search {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 8px;
+    background: var(--mud-palette-background);
+    color: var(--mud-palette-text-primary);
+    font-size: 13px;
+    outline: none;
+}
+
+.tag-picker-search::placeholder {
+    color: var(--mud-palette-text-secondary);
+    opacity: 0.7;
+}
+
+.tag-picker-search:focus {
+    border-color: var(--mud-palette-primary);
+    box-shadow: 0 0 0 2px var(--mud-palette-primary);
+}
+
+.tag-picker-list {
+    max-height: 160px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.tag-picker-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 6px 8px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--mud-palette-text-primary);
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.tag-picker-option:hover:not(:disabled) {
+    background: var(--mud-palette-action-default-hover);
+}
+
+.tag-picker-option:disabled {
+    cursor: default;
+    opacity: 0.6;
+}
+
+.tag-picker-option-name {
+    flex: 1;
+    word-break: break-word;
+}
+
+.tag-picker-tick {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+    color: var(--mud-palette-primary);
+}
+
+.tag-picker-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.tag-picker-empty {
+    margin: 0;
+    padding: 6px 8px;
+    font-size: 12px;
+    color: var(--mud-palette-text-secondary);
+}
+
+.tag-picker-create {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--mud-palette-lines-default);
+}
+
+.tag-picker-create-label {
+    margin: 0 0 6px;
+    padding: 0 4px;
+    font-size: 12px;
+    color: var(--mud-palette-text-secondary);
+    word-break: break-word;
+}
+
+.tag-picker-swatches {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 4px;
+}
+
+.tag-picker-swatch {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: box-shadow 0.15s;
+}
+
+.tag-picker-swatch.selected {
+    box-shadow: 0 0 0 2px var(--mud-palette-surface), 0 0 0 4px var(--mud-palette-text-secondary);
+}
+
+.tag-picker-create-btn {
+    margin-left: auto;
+    padding: 4px 12px;
+    border: none;
+    border-radius: 8px;
+    background: var(--mud-palette-primary);
+    color: var(--mud-palette-primary-text);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.tag-picker-create-btn:disabled {
+    cursor: default;
+    opacity: 0.6;
+}
+
+/* Same palette as TagChip, used for the option dots and the create swatches. */
+.violet { background: #8b5cf6; }
+.sky { background: #0ea5e9; }
+.teal { background: #14b8a6; }
+.amber { background: #f59e0b; }
+.rose { background: #f43f5e; }
+.slate { background: #94a3b8; }

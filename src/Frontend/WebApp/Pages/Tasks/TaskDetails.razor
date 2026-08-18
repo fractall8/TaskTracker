@@ -1,8 +1,13 @@
-﻿@page "/boards/{BoardId:guid}/tasks/{TaskId:guid}"
+@page "/boards/{BoardId:guid}/tasks/{TaskId:guid}"
 @implements IDisposable
+@using Contracts.DTOs
 @using Contracts.Enums
 @using Contracts.Requests.Tasks
+@using Services.Abstractions.Config
+@using Services.Abstractions.Tags
 @using Services.Abstractions.Tasks
+@using WebApp.Components.Completion
+@using WebApp.Components.Tags
 @using WebApp.Components.TaskAttachment
 @using WebApp.Components.TaskComments
 @using WebApp.Shared.Dialogs
@@ -10,6 +15,8 @@
 @using WebApp.Shared.Toast
 @inject ITaskDetailsStore TaskStore
 @inject IBoardDetailsStore BoardDetailsStore
+@inject ITagStore TagStore
+@inject IAppConfigStore AppConfig
 @inject NavigationManager Navigation
 @inject CustomToastService Toast
 @inject IDialogService DialogService
@@ -125,6 +132,46 @@
                     </button>
                 </div>
 
+                <div class="side-meta-row mt-2">
+                    <p class="info-label">Status</p>
+
+                    <StatusToggle Completed="TaskStore.Task.IsCompleted"
+                                  CompletedChanged="OnCompletionChangedAsync"
+                                  Disabled="@(!CanCompleteTasks || _isTogglingCompletion)"/>
+
+                    @if (TaskStore.Task is { IsCompleted: true, CompletedAt: { } completedAt })
+                    {
+                        <p class="status-completed-at">Completed @completedAt.ToLocalTime().ToString("MMM d, yyyy")</p>
+                    }
+                </div>
+
+                <div class="side-meta-row mt-2">
+                    <p class="info-label">Tags</p>
+
+                    @if (CanTagTasks)
+                    {
+                        <TagPicker Selected="TaskStore.Task.Tags"
+                                   Catalogue="TagStore.Tags"
+                                   Busy="_isUpdatingTags"
+                                   OnAttach="AttachTagAsync"
+                                   OnDetach="DetachTagAsync"
+                                   OnCreate="CreateAndAttachTagAsync"/>
+                    }
+                    else if (TaskStore.Task.Tags.Count > 0)
+                    {
+                        <div class="task-tag-list">
+                            @foreach (var tag in TaskStore.Task.Tags)
+                            {
+                                <TagChip Tag="tag" Small="true" @key="tag.Id"/>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="task-tags-empty">No tags</p>
+                    }
+                </div>
+
                 <div class="side-meta-row mt-2" style="position: relative;">
                     <p class="info-label">Due date</p>
 
@@ -142,7 +189,7 @@
                         <span style="display: flex; align-items: center; gap: 8px;">
                             <MudIcon Icon="@Icons.Material.Outlined.CalendarToday" Size="Size.Small"
                                      Style="flex-shrink: 0;"/>
-                            @{ var due = GetDueInfo(TaskStore.Task.DueDate); }
+                            @{ var due = GetDueInfo(TaskStore.Task.DueDate, TaskStore.Task.IsCompleted); }
 
                             <span class="d-flex flex-column align-start text-left" style="line-height: 1.3;">
                                 <span class="due-text due-@due.tone">@due.dateStr</span>
@@ -171,8 +218,101 @@
 
     private MudDatePicker _datePicker = null!;
 
+    private bool _isTogglingCompletion;
+
     private bool IsArchived => BoardDetailsStore.Board?.IsArchived == true;
     private bool CanManageTasks => !IsArchived && BoardDetailsStore.Board?.BoardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster;
+
+    // Matches the server: completing is permitted wherever moving is, so a User can close their own work.
+    private bool CanCompleteTasks => !IsArchived &&
+                                     BoardDetailsStore.Board?.BoardRole is BoardRoleDto.Admin or BoardRoleDto.ScrumMaster or BoardRoleDto.User;
+
+    private bool _isUpdatingTags;
+
+    private bool CanTagTasks => CanCompleteTasks;
+
+    // Creating from the picker also attaches, so a new tag never needs a trip to workspace settings.
+    private async Task CreateAndAttachTagAsync((string Name, string Color) request)
+    {
+        if (_isUpdatingTags || BoardDetailsStore.Board is not { } board) return;
+
+        _isUpdatingTags = true;
+
+        try
+        {
+            var created = await TagStore.CreateAsync(board.WorkspaceId, request.Name, request.Color);
+
+            await TaskStore.AttachTagAsync(BoardId, TaskId, created.Id);
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Failed to create tag: {ex.Message}");
+        }
+        finally
+        {
+            _isUpdatingTags = false;
+        }
+    }
+
+    private async Task AttachTagAsync(TagDto tag)
+    {
+        if (_isUpdatingTags) return;
+
+        _isUpdatingTags = true;
+
+        try
+        {
+            await TaskStore.AttachTagAsync(BoardId, TaskId, tag.Id);
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Failed to add tag: {ex.Message}");
+        }
+        finally
+        {
+            _isUpdatingTags = false;
+        }
+    }
+
+    private async Task DetachTagAsync(TagDto tag)
+    {
+        if (_isUpdatingTags) return;
+
+        _isUpdatingTags = true;
+
+        try
+        {
+            await TaskStore.DetachTagAsync(BoardId, TaskId, tag.Id);
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Failed to remove tag: {ex.Message}");
+        }
+        finally
+        {
+            _isUpdatingTags = false;
+        }
+    }
+
+    private async Task OnCompletionChangedAsync(bool isCompleted)
+    {
+        if (!CanCompleteTasks || _isTogglingCompletion) return;
+
+        _isTogglingCompletion = true;
+
+        try
+        {
+            await TaskStore.SetTaskCompletionAsync(BoardId, TaskId, isCompleted);
+        }
+        catch (Exception ex)
+        {
+            Toast.ShowError($"Failed to update task: {ex.Message}");
+        }
+        finally
+        {
+            _isTogglingCompletion = false;
+        }
+    }
 
     private string GetInitials(string? name)
     {
@@ -182,15 +322,21 @@
         return (parts[0][..1] + parts[1][..1]).ToUpper();
     }
 
-    private (string dateStr, string statusStr, string tone) GetDueInfo(DateTimeOffset? dueDate)
+    private (string dateStr, string statusStr, string tone) GetDueInfo(DateTimeOffset? dueDate, bool isCompleted)
     {
         if (!dueDate.HasValue) return ("No due date", "", "muted");
 
-        var today = DateTimeOffset.Now.Date;
-        var due = dueDate.Value.ToLocalTime().Date;
+        // The deployment's business zone, not the browser's, so this agrees with the stats tab and the
+        // assistant about which day it is (see resources/FIX-overdue-timezone.md).
+        var zone = TimeSpan.FromMinutes(AppConfig.UtcOffsetMinutes);
+        var today = DateTimeOffset.UtcNow.ToOffset(zone).Date;
+        var due = dueDate.Value.ToOffset(zone).Date;
         var diff = (int)(due - today).TotalDays;
 
         var dateStr = due.ToString("MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture);
+
+        // A due date only describes outstanding work, so a finished task is never late or upcoming.
+        if (isCompleted) return (dateStr, "", "muted");
 
         if (diff < 0) return (dateStr, $"Overdue by {-diff} day{(-diff == 1 ? "" : "s")}", "danger");
         if (diff == 0) return (dateStr, "Due today", "warning");
@@ -208,7 +354,13 @@
             await BoardDetailsStore.LoadAsync(BoardId);
         }
 
+        await AppConfig.EnsureLoadedAsync();
         await TaskStore.LoadAsync(BoardId, TaskId);
+
+        if (BoardDetailsStore.Board is { } board)
+        {
+            await TagStore.LoadAsync(board.WorkspaceId);
+        }
     }
 
     public void Dispose()

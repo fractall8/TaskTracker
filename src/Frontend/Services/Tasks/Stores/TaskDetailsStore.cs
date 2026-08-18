@@ -83,6 +83,32 @@ public class TaskDetailsStore(
         NotifyStateChanged();
     }
 
+    public async Task SetTaskCompletionAsync(Guid boardId, Guid taskId, bool isCompleted,
+        CancellationToken ct = default)
+    {
+        var updatedTask = await taskApi.SetTaskCompletionAsync(boardId, taskId, isCompleted, ct);
+
+        var currentAttachments = Task?.Attachments ?? [];
+        Task = updatedTask with { Attachments = currentAttachments };
+        NotifyStateChanged();
+    }
+
+    public async Task AttachTagAsync(Guid boardId, Guid taskId, Guid tagId, CancellationToken ct = default)
+    {
+        var updatedTask = await taskApi.AttachTagAsync(boardId, taskId, tagId, ct);
+
+        Task = Task is null ? updatedTask : Task with { Tags = updatedTask.Tags };
+        NotifyStateChanged();
+    }
+
+    public async Task DetachTagAsync(Guid boardId, Guid taskId, Guid tagId, CancellationToken ct = default)
+    {
+        var updatedTask = await taskApi.DetachTagAsync(boardId, taskId, tagId, ct);
+
+        Task = Task is null ? updatedTask : Task with { Tags = updatedTask.Tags };
+        NotifyStateChanged();
+    }
+
     public async Task DeleteTaskAsync(Guid boardId, Guid taskId, CancellationToken ct = default)
     {
         await taskApi.DeleteTaskAsync(boardId, taskId, ct);
@@ -173,6 +199,10 @@ public class TaskDetailsStore(
                 (AttachmentDeletedPayload)notification.Payload),
             BoardActionNotificationType.TaskDetailsUpdated => ApplyTaskDetailsUpdated((TaskDetailsUpdatedPayload)notification.Payload),
             BoardActionNotificationType.TaskDueDateUpdated => ApplyTaskDueDateUpdated((TaskDueDateUpdatedPayload)notification.Payload),
+            BoardActionNotificationType.TaskCompletionChanged => ApplyTaskCompletionChanged(
+                (TaskCompletionChangedPayload)notification.Payload),
+            BoardActionNotificationType.TaskTagsChanged => ApplyTaskTagsChanged(
+                (TaskTagsChangedPayload)notification.Payload),
             _ => false
         };
 
@@ -292,6 +322,35 @@ public class TaskDetailsStore(
         Task = Task with
         {
             DueDate = payload.DueDate
+        };
+        return true;
+    }
+
+    private bool ApplyTaskCompletionChanged(TaskCompletionChangedPayload payload)
+    {
+        if (Task == null || Task.Id != payload.TaskId)
+        {
+            return false;
+        }
+
+        Task = Task with
+        {
+            IsCompleted = payload.IsCompleted,
+            CompletedAt = payload.CompletedAt
+        };
+        return true;
+    }
+
+    private bool ApplyTaskTagsChanged(TaskTagsChangedPayload payload)
+    {
+        if (Task == null || Task.Id != payload.TaskId)
+        {
+            return false;
+        }
+
+        Task = Task with
+        {
+            Tags = payload.Tags
         };
         return true;
     }

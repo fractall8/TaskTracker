@@ -1,0 +1,29 @@
+<section class="stats-panel">
+    <header class="stats-panel-head">
+        <div>
+            <h3>@Title</h3>
+            @if (!string.IsNullOrEmpty(Subtitle))
+            {
+                <p class="stats-panel-subtitle">@Subtitle</p>
+            }
+        </div>
+
+        @if (HeaderRight is not null)
+        {
+            <div class="stats-panel-head-right">@HeaderRight</div>
+        }
+    </header>
+
+    @ChildContent
+</section>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = null!;
+
+    // Every panel states its period rule here: an unlabelled number beside a period selector will be
+    // misread (EPIC 5 Decision 4).
+    [Parameter] public string? Subtitle { get; set; }
+
+    [Parameter] public RenderFragment? HeaderRight { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

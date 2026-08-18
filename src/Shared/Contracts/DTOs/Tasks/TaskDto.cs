@@ -6,6 +6,8 @@ public record TaskDto(
     string? Description,
     int Position,
     DateTimeOffset? DueDate,
+    bool IsCompleted,
+    DateTimeOffset? CompletedAt,
     Guid ColumnId,
 
     Guid? AssigneeId,
@@ -16,4 +18,5 @@ public record TaskDto(
     string? ReporterName,
     string? ReporterAvatarUrl,
 
-    List<AttachmentDto> Attachments);
+    List<AttachmentDto> Attachments,
+    List<TagDto> Tags);

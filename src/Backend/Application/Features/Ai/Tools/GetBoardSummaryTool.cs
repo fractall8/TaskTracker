@@ -1,5 +1,4 @@
 using Application.Ai.Projections;
-using Application.Common.Interfaces;
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Domain.Exceptions;
@@ -13,7 +12,7 @@ public record GetBoardSummaryTool(Guid BoardId) : IRequest<AiBoardDetail>;
 public class GetBoardSummaryToolHandler(
     IAiDataRepository aiDataRepository,
     IBoardAccessService boardAccessService,
-    IDateTimeProvider dateTimeProvider)
+    IBusinessCalendar calendar)
     : IRequestHandler<GetBoardSummaryTool, AiBoardDetail>
 {
     public async Task<AiBoardDetail> Handle(GetBoardSummaryTool request, CancellationToken ct)
@@ -23,7 +22,7 @@ public class GetBoardSummaryToolHandler(
         return await aiDataRepository.GetBoardDetailAsync(
                    request.BoardId,
                    access.UserId,
-                   dateTimeProvider.UtcNow,
+                   calendar.StartOfTodayUtc(),
                    ct)
                ?? throw new NotFoundException("Board not found.");
     }

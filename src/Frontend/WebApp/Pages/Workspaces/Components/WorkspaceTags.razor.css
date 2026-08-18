@@ -1,0 +1,209 @@
+.tags-head h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--mud-palette-text-primary);
+}
+
+.tags-hint {
+    margin: 4px 0 16px;
+    font-size: 12.5px;
+    color: var(--mud-palette-text-secondary);
+    max-width: 60ch;
+}
+
+.tag-create {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.tag-name-input {
+    border: 1px solid var(--mud-palette-lines-default);
+    background: var(--mud-palette-surface);
+    border-radius: 8px;
+    padding: 0 12px;
+    height: 36px;
+    font-size: 13px;
+    color: var(--mud-palette-text-primary);
+    outline: none;
+    min-width: 200px;
+}
+
+.tag-name-input:focus {
+    border-color: var(--mud-palette-primary);
+}
+
+.tag-swatches {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tag-swatch {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: box-shadow 0.15s;
+}
+
+.tag-swatch.selected {
+    box-shadow: 0 0 0 2px var(--mud-palette-surface), 0 0 0 4px var(--mud-palette-text-secondary);
+}
+
+.tag-swatch:disabled {
+    cursor: default;
+    opacity: 0.5;
+}
+
+/* Same palette as TagChip. */
+.violet { background: #8b5cf6; }
+.sky { background: #0ea5e9; }
+.teal { background: #14b8a6; }
+.amber { background: #f59e0b; }
+.rose { background: #f43f5e; }
+.slate { background: #94a3b8; }
+
+.tag-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.tag-item {
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 8px;
+    background: var(--mud-palette-surface);
+    overflow: hidden;
+}
+
+.tag-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+}
+
+.tag-expand {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--mud-palette-text-secondary);
+    cursor: pointer;
+}
+
+.tag-expand:hover {
+    background: var(--mud-palette-action-default-hover);
+    color: var(--mud-palette-text-primary);
+}
+
+.tag-expand svg {
+    width: 14px;
+    height: 14px;
+    transition: transform 0.2s;
+}
+
+.tag-expand.expanded svg {
+    transform: rotate(90deg);
+}
+
+.tag-tasks {
+    padding: 4px 10px 10px 38px;
+    border-top: 1px solid var(--mud-palette-lines-default);
+    background: var(--mud-palette-background);
+}
+
+.tag-tasks-note {
+    margin: 8px 0 0;
+    font-size: 12.5px;
+    color: var(--mud-palette-text-secondary);
+}
+
+.tag-board-group {
+    margin-top: 10px;
+}
+
+.tag-board-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 4px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--mud-palette-text-secondary);
+}
+
+.tag-task {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding: 6px 8px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--mud-palette-text-primary);
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.tag-task:hover {
+    background: var(--mud-palette-action-default-hover);
+}
+
+.tag-task.completed .tag-task-title {
+    text-decoration: line-through;
+    color: var(--mud-palette-text-secondary);
+}
+
+.tag-task-title {
+    flex: 1;
+    word-break: break-word;
+}
+
+.tag-task-column {
+    flex-shrink: 0;
+    font-size: 11.5px;
+    color: var(--mud-palette-text-secondary);
+}
+
+.badge-muted {
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    background: var(--mud-palette-action-default-hover);
+    color: var(--mud-palette-text-secondary);
+}
+
+.tag-row-actions {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+}
+
+.tags-empty {
+    font-size: 13px;
+    color: var(--mud-palette-text-secondary);
+}

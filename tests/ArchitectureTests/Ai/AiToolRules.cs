@@ -16,7 +16,9 @@ public static class AiToolRules
         "IPlanCatalog",
         "IOptions`1",
         "ILogger`1",
-        "IDateTimeProvider"
+        "IDateTimeProvider",
+        // Reads a clock and configuration to resolve which day it is; nothing mutable.
+        "IBusinessCalendar"
     ];
 
     // Handlers only. Request records and validators share the namespace (AD-2) but their constructor

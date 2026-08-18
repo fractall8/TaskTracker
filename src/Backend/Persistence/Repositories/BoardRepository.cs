@@ -102,7 +102,11 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
                         t.Title.ToLower().Contains(lowerSearchTerm) ||
                         (t.Description != null && t.Description.ToLower().Contains(lowerSearchTerm)))
                     .OrderBy(t => t.Position))
-                .ThenInclude(t => t.Reporter);
+                .ThenInclude(t => t.Reporter)
+                .Include(b => b.Columns)
+                .ThenInclude(c => c.Tasks)
+                .ThenInclude(t => t.TaskTags)
+                .ThenInclude(link => link.Tag);
         }
         else
         {
@@ -112,7 +116,11 @@ public class BoardRepository(TaskTrackerDbContext dbContext) : Repository<Board,
                 .ThenInclude(t => t.Assignee)
                 .Include(b => b.Columns)
                 .ThenInclude(c => c.Tasks.OrderBy(t => t.Position))
-                .ThenInclude(t => t.Reporter);
+                .ThenInclude(t => t.Reporter)
+                .Include(b => b.Columns)
+                .ThenInclude(c => c.Tasks)
+                .ThenInclude(t => t.TaskTags)
+                .ThenInclude(link => link.Tag);
         }
 
         return await query.FirstOrDefaultAsync(b => b.Id == boardId, cancellationToken);

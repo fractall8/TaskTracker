@@ -1,0 +1,131 @@
+@typeparam TValue
+
+@* A native select renders its options with OS colours, which breaks the dark theme. This draws the
+   list itself so it inherits the app palette. *@
+<div class="app-select" style="@(Width is null ? null : $"width: {Width};")" @onkeydown="OnKeyDown">
+    <button type="button"
+            class="app-select-trigger @(_isOpen ? "open" : "")"
+            @onclick="Toggle"
+            disabled="@Disabled"
+            aria-haspopup="listbox"
+            aria-expanded="@_isOpen">
+        @if (!string.IsNullOrEmpty(Icon))
+        {
+            @* Wrapped in a span because scoped CSS cannot reach a child component's own root element. *@
+            <span class="app-select-icon"><MudIcon Icon="@Icon" Size="Size.Small"/></span>
+        }
+
+        <span class="app-select-label">@SelectedLabel</span>
+
+        <svg class="app-select-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m6 9 6 6 6-6"/>
+        </svg>
+    </button>
+
+    @if (_isOpen)
+    {
+        <div class="app-select-backdrop" @onclick="Close"></div>
+
+        <ul class="app-select-menu" role="listbox" aria-multiselectable="@MultiSelection">
+            @foreach (var option in Options)
+            {
+                var isSelected = IsSelected(option.Value);
+
+                <li @key="option.Label">
+                    <button type="button"
+                            class="app-select-option @(isSelected ? "selected" : "")"
+                            role="option"
+                            aria-selected="@isSelected"
+                            @onclick="@(() => SelectAsync(option.Value))">
+                        <span>@option.Label</span>
+
+                        @if (isSelected)
+                        {
+                            <svg class="app-select-tick" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M20 6 9 17l-5-5"/>
+                            </svg>
+                        }
+                    </button>
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<AppSelectOption<TValue>> Options { get; set; } = [];
+    [Parameter] public TValue? Value { get; set; }
+    [Parameter] public EventCallback<TValue> ValueChanged { get; set; }
+    [Parameter] public bool MultiSelection { get; set; }
+    [Parameter] public IReadOnlyCollection<TValue> SelectedValues { get; set; } = [];
+    [Parameter] public EventCallback<IReadOnlyCollection<TValue>> SelectedValuesChanged { get; set; }
+    [Parameter] public string? Icon { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Select";
+    [Parameter] public string? Width { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+
+    private bool _isOpen;
+
+    private static readonly EqualityComparer<TValue> _comparer = EqualityComparer<TValue>.Default;
+
+    private string SelectedLabel
+    {
+        get
+        {
+            if (!MultiSelection)
+            {
+                return Options.FirstOrDefault(option => _comparer.Equals(option.Value, Value))?.Label ?? Placeholder;
+            }
+
+            return SelectedValues.Count switch
+            {
+                0 => Placeholder,
+                1 => Options.FirstOrDefault(option => _comparer.Equals(option.Value, SelectedValues.First()))?.Label
+                     ?? Placeholder,
+                _ => $"{SelectedValues.Count} selected"
+            };
+        }
+    }
+
+    private bool IsSelected(TValue value) => MultiSelection
+        ? SelectedValues.Any(selected => _comparer.Equals(selected, value))
+        : _comparer.Equals(value, Value);
+
+    private void Toggle()
+    {
+        if (Disabled) return;
+
+        _isOpen = !_isOpen;
+    }
+
+    private void Close() => _isOpen = false;
+
+    private void OnKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape") Close();
+    }
+
+    private async Task SelectAsync(TValue value)
+    {
+        if (MultiSelection)
+        {
+            // Stays open so several can be picked in one go.
+            var next = IsSelected(value)
+                ? SelectedValues.Where(selected => !_comparer.Equals(selected, value)).ToList()
+                : SelectedValues.Append(value).ToList();
+
+            SelectedValues = next;
+            await SelectedValuesChanged.InvokeAsync(next);
+            return;
+        }
+
+        _isOpen = false;
+
+        if (_comparer.Equals(value, Value)) return;
+
+        Value = value;
+        await ValueChanged.InvokeAsync(value);
+    }
+}

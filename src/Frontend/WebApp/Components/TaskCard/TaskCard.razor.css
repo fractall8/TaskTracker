@@ -1,4 +1,4 @@
-﻿.task-card {
+.task-card {
     background: var(--mud-palette-surface);
     border: 1px solid var(--mud-palette-lines-default);
     border-radius: 10px;
@@ -9,6 +9,32 @@
 .task-card:hover {
     border-color: var(--mud-palette-primary);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Completion is independent of column, so the card itself has to carry the state. */
+.task-card.completed {
+    background: var(--mud-palette-background-grey);
+    border-style: dashed;
+}
+
+.task-card.completed .task-title {
+    text-decoration: line-through;
+    color: var(--mud-palette-text-secondary);
+}
+
+.task-card.completed .task-desc {
+    opacity: 0.6;
+}
+
+.task-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.task-card.completed .task-tags {
+    opacity: 0.6;
 }
 
 .task-card-top {

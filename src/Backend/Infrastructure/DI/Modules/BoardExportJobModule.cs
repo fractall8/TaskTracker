@@ -1,4 +1,4 @@
-﻿using Application.Common.Interfaces;
+using Application.Common.Interfaces;
 using Application.Interfaces.Notifiers;
 using Application.Interfaces.Services;
 using Application.Options;
@@ -72,6 +72,17 @@ internal static class BoardExportJobModule
         services.AddScoped<IBoardExportQueueSender, AzureBoardExportQueueSender>();
         services.AddScoped<IBoardExportService, CosmosBoardExportService>();
         services.AddScoped<IDateTimeProvider, DateTimeProvider>();
+
+        services.AddOptions<BusinessCalendarOptions>()
+            .BindConfiguration(BusinessCalendarOptions.SectionName)
+            .Validate(options =>
+            {
+                options.Validate();
+                return true;
+            })
+            .ValidateOnStart();
+
+        services.AddScoped<IBusinessCalendar, BusinessCalendar>();
         services.AddScoped<IBoardExportStatusNotifier, BoardExportStatusNotifier>();
         services.AddScoped<IBoardExportSchedulerJob, BoardExportSchedulerJob>();
         services.AddScoped<IBoardExportRecoverySchedulerJob, BoardExportRecoverySchedulerJob>();

@@ -1,5 +1,4 @@
 using Application.Ai.Projections;
-using Application.Common.Interfaces;
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using FluentValidation;
@@ -13,7 +12,7 @@ public record CountWorkspaceTasksTool(Guid WorkspaceId, Guid? BoardId = null) : 
 public class CountWorkspaceTasksToolHandler(
     IAiDataRepository aiDataRepository,
     IWorkspaceAccessService workspaceAccessService,
-    IDateTimeProvider dateTimeProvider)
+    IBusinessCalendar calendar)
     : IRequestHandler<CountWorkspaceTasksTool, AiTaskCounts>
 {
     public async Task<AiTaskCounts> Handle(CountWorkspaceTasksTool request, CancellationToken ct)
@@ -24,7 +23,7 @@ public class CountWorkspaceTasksToolHandler(
             request.WorkspaceId,
             userId,
             request.BoardId,
-            dateTimeProvider.UtcNow,
+            calendar.StartOfTodayUtc(),
             ct);
     }
 }
