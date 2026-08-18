@@ -9,4 +9,8 @@ public record WorkspaceStatsDto(
     DateTimeOffset? PeriodStart,
     DateTimeOffset PeriodEnd,
     StatsSummaryDto Summary,
-    StatsTrendDto Trend);
+    StatsTrendDto Trend,
+    List<StatsBoardDto> Boards,
+    List<StatsTagDto> Tags,
+    List<StatsWorkloadDto> Workload,
+    List<StatsContributorDto> Contributors);

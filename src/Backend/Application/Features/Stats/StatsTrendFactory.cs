@@ -9,9 +9,9 @@ namespace Application.Features.Stats;
 // so the timestamps are cheap to fetch and group in memory.
 internal static class StatsTrendFactory
 {
-    private const int MaxDaysForDailyBuckets = 31;
+    private const int _maxDaysForDailyBuckets = 31;
 
-    private const int MaxDaysForWeeklyBuckets = 182;
+    private const int _maxDaysForWeeklyBuckets = 182;
 
     public static StatsTrendDto Build(
         StatsWindow window,
@@ -81,8 +81,8 @@ internal static class StatsTrendFactory
 
         return days switch
         {
-            <= MaxDaysForDailyBuckets => StatsTrendBucketDto.Day,
-            <= MaxDaysForWeeklyBuckets => StatsTrendBucketDto.Week,
+            <= _maxDaysForDailyBuckets => StatsTrendBucketDto.Day,
+            <= _maxDaysForWeeklyBuckets => StatsTrendBucketDto.Week,
             _ => StatsTrendBucketDto.Month
         };
     }

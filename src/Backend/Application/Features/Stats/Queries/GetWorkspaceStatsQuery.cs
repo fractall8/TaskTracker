@@ -56,8 +56,88 @@ public class GetWorkspaceStatsQueryHandler(
             createdTimestamps,
             [.. samples.Where(sample => InWindow(sample, window.Start, window.End)).Select(s => s.CompletedAt)]);
 
-        return new WorkspaceStatsDto(window.Period, window.LocalStart, window.LocalEnd, summary, trend);
+        var boards = await statsRepository.GetBoardBreakdownAsync(
+            request.WorkspaceId, window.Start, window.End, ct);
+
+        var tags = await BuildTagsAsync(request.WorkspaceId, ct);
+
+        var workload = await BuildWorkloadAsync(request.WorkspaceId, now, ct);
+        var contributors = await BuildContributorsAsync(request.WorkspaceId, window, ct);
+
+        return new WorkspaceStatsDto(
+            window.Period, window.LocalStart, window.LocalEnd, summary, trend, boards, tags,
+            workload, contributors);
     }
+
+    // Unassigned is pinned first, then whoever is most at risk. Overdue dominates the sort because an
+    // overdue task needs attention regardless of how much else the person is carrying.
+    private async Task<List<StatsWorkloadDto>> BuildWorkloadAsync(
+        Guid workspaceId,
+        DateTimeOffset now,
+        CancellationToken ct)
+    {
+        var rows = await statsRepository.GetWorkloadAsync(workspaceId, now, ct);
+
+        return
+        [
+            .. rows
+                .Select(row => row.UserId is null ? row with { Name = _unassignedLabel } : row)
+                .OrderByDescending(row => row.UserId is null)
+                .ThenByDescending(row => row.Overdue)
+                .ThenByDescending(row => row.OnTrack)
+                .ThenBy(row => row.Name)
+        ];
+    }
+
+    // Only people who did something in the window appear: a roster padded with zeroes is not a contributor
+    // list. Reported and completed come from different columns, so they are merged here by user.
+    private async Task<List<StatsContributorDto>> BuildContributorsAsync(
+        Guid workspaceId,
+        StatsWindow window,
+        CancellationToken ct)
+    {
+        var reported = await statsRepository.GetReportedCountsAsync(workspaceId, window.Start, window.End, ct);
+        var completed = await statsRepository.GetCompletedCountsAsync(workspaceId, window.Start, window.End, ct);
+
+        var byUser = new Dictionary<Guid, StatsContributorDto>();
+
+        foreach (var row in reported)
+        {
+            byUser[row.UserId] = new StatsContributorDto(row.UserId, row.Name, row.AvatarUrl, row.Count, 0);
+        }
+
+        foreach (var row in completed)
+        {
+            byUser[row.UserId] = byUser.TryGetValue(row.UserId, out var existing)
+                ? existing with { Completed = row.Count }
+                : new StatsContributorDto(row.UserId, row.Name, row.AvatarUrl, 0, row.Count);
+        }
+
+        return
+        [
+            .. byUser.Values
+                .OrderByDescending(contributor => contributor.Completed)
+                .ThenByDescending(contributor => contributor.Reported)
+                .ThenBy(contributor => contributor.Name)
+        ];
+    }
+
+    // Untagged is folded in and sorted alongside the real tags, so the largest bucket leads whether or not
+    // it happens to be "no tag at all". Zero buckets are dropped: an empty slice says nothing.
+    private async Task<List<StatsTagDto>> BuildTagsAsync(Guid workspaceId, CancellationToken ct)
+    {
+        var tags = await statsRepository.GetTagBreakdownAsync(workspaceId, ct);
+        var untagged = await statsRepository.CountUntaggedOpenTasksAsync(workspaceId, ct);
+
+        if (untagged > 0)
+        {
+            tags.Add(new StatsTagDto(null, "untagged", null, untagged));
+        }
+
+        return [.. tags.OrderByDescending(tag => tag.OpenTasks).ThenBy(tag => tag.Name)];
+    }
+
+    private const string _unassignedLabel = "Unassigned";
 
     private static bool InWindow(TaskCompletionSample sample, DateTimeOffset? from, DateTimeOffset? to) =>
         (from is null || sample.CompletedAt >= from) && (to is null || sample.CompletedAt < to);
