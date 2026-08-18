@@ -13,4 +13,5 @@ public record WorkspaceStatsDto(
     List<StatsBoardDto> Boards,
     List<StatsTagDto> Tags,
     List<StatsWorkloadDto> Workload,
-    List<StatsContributorDto> Contributors);
+    List<StatsContributorDto> Contributors,
+    StatsOverdueDto Overdue);

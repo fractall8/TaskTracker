@@ -172,6 +172,27 @@ public class StatsRepository(TaskTrackerDbContext dbContext) : IStatsRepository
                 group.Count()))
             .ToListAsync(ct);
 
+    // Oldest due date first, so the worst offenders survive the cap.
+    public async Task<List<OverdueTaskRow>> GetOverdueTasksAsync(
+        Guid workspaceId,
+        DateTimeOffset overdueBefore,
+        int take,
+        CancellationToken ct = default) =>
+        await ScopedTasks(workspaceId)
+            .Where(task => !task.IsCompleted && task.DueDate != null && task.DueDate < overdueBefore)
+            .OrderBy(task => task.DueDate)
+            .ThenBy(task => task.Title)
+            .Take(take)
+            .Select(task => new OverdueTaskRow(
+                task.Id,
+                task.Title,
+                task.Column!.BoardId,
+                task.Column.Board!.Name,
+                task.Assignee!.DisplayName,
+                task.Assignee.AvatarUrl,
+                task.DueDate!.Value))
+            .ToListAsync(ct);
+
     // Stats are Owner-only and therefore scoped by workspace with no board-membership join
     // (EPIC 5 Decision 1). Archived boards are excluded from every figure (Decision 3).
     private IQueryable<Domain.Entities.TaskItem> ScopedTasks(Guid workspaceId) =>

@@ -13,6 +13,20 @@ public record StatsWindow(
     DateTimeOffset? LocalStart,
     DateTimeOffset LocalEnd)
 {
+    // Due dates are stored as local midnight, so they are date-only in practice. A task due today is
+    // therefore not overdue — which is what the task page already says ("Due today", not "Overdue").
+    // Comparing against now instead would call it overdue from 00:01, and report it as "0 days overdue".
+    public DateTimeOffset OverdueBefore => LocalEnd.AddDays(-1).ToUniversalTime();
+
+    // Calendar days between a due date and today, both read in the caller's offset. At least 1 for anything
+    // this counts as overdue.
+    public int DaysOverdue(DateTimeOffset dueDate, int utcOffsetMinutes)
+    {
+        var offset = TimeSpan.FromMinutes(utcOffsetMinutes);
+
+        return (int)(LocalEnd.AddDays(-1).Date - dueDate.ToOffset(offset).Date).TotalDays;
+    }
+
     public const int MinUtcOffsetMinutes = -720;
 
     public const int MaxUtcOffsetMinutes = 840;

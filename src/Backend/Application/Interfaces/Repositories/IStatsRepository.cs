@@ -49,4 +49,10 @@ public interface IStatsRepository
         DateTimeOffset? from,
         DateTimeOffset to,
         CancellationToken ct = default);
+
+    Task<List<OverdueTaskRow>> GetOverdueTasksAsync(
+        Guid workspaceId,
+        DateTimeOffset overdueBefore,
+        int take,
+        CancellationToken ct = default);
 }

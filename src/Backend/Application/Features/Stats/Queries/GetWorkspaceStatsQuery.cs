@@ -27,7 +27,8 @@ public class GetWorkspaceStatsQueryHandler(
         var now = dateTimeProvider.UtcNow;
         var window = StatsWindow.Resolve(request.Period, request.UtcOffsetMinutes, now);
 
-        var counts = await statsRepository.GetCountsAsync(request.WorkspaceId, window, now, ct);
+        var counts = await statsRepository.GetCountsAsync(
+            request.WorkspaceId, window, window.OverdueBefore, ct);
 
         // One fetch spanning both windows: they are contiguous, so the split happens in memory.
         var samples = await statsRepository.GetCompletionSamplesAsync(
@@ -61,22 +62,51 @@ public class GetWorkspaceStatsQueryHandler(
 
         var tags = await BuildTagsAsync(request.WorkspaceId, ct);
 
-        var workload = await BuildWorkloadAsync(request.WorkspaceId, now, ct);
+        var workload = await BuildWorkloadAsync(request.WorkspaceId, window.OverdueBefore, ct);
         var contributors = await BuildContributorsAsync(request.WorkspaceId, window, ct);
+        var overdue = await BuildOverdueAsync(request.WorkspaceId, window, request.UtcOffsetMinutes,
+            counts.OverdueNow, ct);
 
         return new WorkspaceStatsDto(
             window.Period, window.LocalStart, window.LocalEnd, summary, trend, boards, tags,
-            workload, contributors);
+            workload, contributors, overdue);
+    }
+
+    // Total comes from the summary count rather than a second query, so a truncated list still reports the
+    // real figure and the two can never drift apart.
+    private async Task<StatsOverdueDto> BuildOverdueAsync(
+        Guid workspaceId,
+        StatsWindow window,
+        int utcOffsetMinutes,
+        int total,
+        CancellationToken ct)
+    {
+        var rows = await statsRepository.GetOverdueTasksAsync(
+            workspaceId, window.OverdueBefore, _maxOverdueRows, ct);
+
+        return new StatsOverdueDto(
+            total,
+            [
+                .. rows.Select(row => new StatsOverdueTaskDto(
+                    row.TaskId,
+                    row.Title,
+                    row.BoardId,
+                    row.BoardName,
+                    row.AssigneeName,
+                    row.AssigneeAvatarUrl,
+                    row.DueDate,
+                    window.DaysOverdue(row.DueDate, utcOffsetMinutes)))
+            ]);
     }
 
     // Unassigned is pinned first, then whoever is most at risk. Overdue dominates the sort because an
     // overdue task needs attention regardless of how much else the person is carrying.
     private async Task<List<StatsWorkloadDto>> BuildWorkloadAsync(
         Guid workspaceId,
-        DateTimeOffset now,
+        DateTimeOffset overdueBefore,
         CancellationToken ct)
     {
-        var rows = await statsRepository.GetWorkloadAsync(workspaceId, now, ct);
+        var rows = await statsRepository.GetWorkloadAsync(workspaceId, overdueBefore, ct);
 
         return
         [
@@ -138,6 +168,8 @@ public class GetWorkspaceStatsQueryHandler(
     }
 
     private const string _unassignedLabel = "Unassigned";
+
+    private const int _maxOverdueRows = 50;
 
     private static bool InWindow(TaskCompletionSample sample, DateTimeOffset? from, DateTimeOffset? to) =>
         (from is null || sample.CompletedAt >= from) && (to is null || sample.CompletedAt < to);
