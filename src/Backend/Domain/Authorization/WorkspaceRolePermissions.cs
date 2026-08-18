@@ -1,4 +1,4 @@
-﻿using Domain.Enums;
+using Domain.Enums;
 
 namespace Domain.Authorization;
 
@@ -29,4 +29,10 @@ public static class WorkspaceRolePermissions
     // curator actions. Creating is not: any member may add to the vocabulary.
     public static bool CanCurateTags(WorkspaceRole role) =>
         role is WorkspaceRole.Admin or WorkspaceRole.Owner;
+
+    // Stats aggregate every board in the workspace without a per-board membership check, which is only
+    // safe for a role enrolled on every board by construction. Widening this requires switching the stats
+    // queries to a membership filter first (EPIC 5 Decision 1).
+    public static bool CanViewStats(WorkspaceRole role) =>
+        role is WorkspaceRole.Owner;
 }

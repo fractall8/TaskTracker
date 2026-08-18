@@ -150,6 +150,9 @@ public class AiToolAuthorizationTests
         public Task<(Guid UserId, string Email)> EnsureCanCurateTagsAsync(
             Guid workspaceId, CancellationToken ct = default) => Refuse();
 
+        public Task<(Guid UserId, string Email)> EnsureCanViewStatsAsync(
+            Guid workspaceId, CancellationToken ct = default) => Refuse();
+
         private static Task<(Guid, string)> Refuse() => throw Forbidden();
     }
 
