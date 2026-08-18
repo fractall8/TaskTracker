@@ -1,4 +1,3 @@
-using Application.Common.Interfaces;
 using Application.Common.Models;
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
@@ -9,13 +8,12 @@ using MediatR;
 
 namespace Application.Features.Stats.Queries;
 
-public record GetWorkspaceStatsQuery(Guid WorkspaceId, StatsPeriodDto Period, int UtcOffsetMinutes)
-    : IRequest<WorkspaceStatsDto>;
+public record GetWorkspaceStatsQuery(Guid WorkspaceId, StatsPeriodDto Period) : IRequest<WorkspaceStatsDto>;
 
 public class GetWorkspaceStatsQueryHandler(
     IWorkspaceAccessService workspaceAccessService,
     IStatsRepository statsRepository,
-    IDateTimeProvider dateTimeProvider)
+    IBusinessCalendar calendar)
     : IRequestHandler<GetWorkspaceStatsQuery, WorkspaceStatsDto>
 {
     public async Task<WorkspaceStatsDto> Handle(GetWorkspaceStatsQuery request, CancellationToken ct)
@@ -24,11 +22,10 @@ public class GetWorkspaceStatsQueryHandler(
         // membership check, so the gate is the only thing keeping it from being a cross-board read.
         await workspaceAccessService.EnsureCanViewStatsAsync(request.WorkspaceId, ct);
 
-        var now = dateTimeProvider.UtcNow;
-        var window = StatsWindow.Resolve(request.Period, request.UtcOffsetMinutes, now);
+        var window = StatsWindow.Resolve(request.Period, calendar);
 
         var counts = await statsRepository.GetCountsAsync(
-            request.WorkspaceId, window, window.OverdueBefore, ct);
+            request.WorkspaceId, window, calendar.StartOfTodayUtc(), ct);
 
         // One fetch spanning both windows: they are contiguous, so the split happens in memory.
         var samples = await statsRepository.GetCompletionSamplesAsync(
@@ -53,7 +50,7 @@ public class GetWorkspaceStatsQueryHandler(
 
         var trend = StatsTrendFactory.Build(
             window,
-            request.UtcOffsetMinutes,
+            calendar,
             createdTimestamps,
             [.. samples.Where(sample => InWindow(sample, window.Start, window.End)).Select(s => s.CompletedAt)]);
 
@@ -62,10 +59,9 @@ public class GetWorkspaceStatsQueryHandler(
 
         var tags = await BuildTagsAsync(request.WorkspaceId, ct);
 
-        var workload = await BuildWorkloadAsync(request.WorkspaceId, window.OverdueBefore, ct);
+        var workload = await BuildWorkloadAsync(request.WorkspaceId, calendar.StartOfTodayUtc(), ct);
         var contributors = await BuildContributorsAsync(request.WorkspaceId, window, ct);
-        var overdue = await BuildOverdueAsync(request.WorkspaceId, window, request.UtcOffsetMinutes,
-            counts.OverdueNow, ct);
+        var overdue = await BuildOverdueAsync(request.WorkspaceId, counts.OverdueNow, ct);
 
         return new WorkspaceStatsDto(
             window.Period, window.LocalStart, window.LocalEnd, summary, trend, boards, tags,
@@ -74,15 +70,10 @@ public class GetWorkspaceStatsQueryHandler(
 
     // Total comes from the summary count rather than a second query, so a truncated list still reports the
     // real figure and the two can never drift apart.
-    private async Task<StatsOverdueDto> BuildOverdueAsync(
-        Guid workspaceId,
-        StatsWindow window,
-        int utcOffsetMinutes,
-        int total,
-        CancellationToken ct)
+    private async Task<StatsOverdueDto> BuildOverdueAsync(Guid workspaceId, int total, CancellationToken ct)
     {
         var rows = await statsRepository.GetOverdueTasksAsync(
-            workspaceId, window.OverdueBefore, _maxOverdueRows, ct);
+            workspaceId, calendar.StartOfTodayUtc(), _maxOverdueRows, ct);
 
         return new StatsOverdueDto(
             total,
@@ -95,7 +86,7 @@ public class GetWorkspaceStatsQueryHandler(
                     row.AssigneeName,
                     row.AssigneeAvatarUrl,
                     row.DueDate,
-                    window.DaysOverdue(row.DueDate, utcOffsetMinutes)))
+                    calendar.DaysOverdue(row.DueDate)))
             ]);
     }
 
@@ -203,10 +194,5 @@ public class GetWorkspaceStatsQueryValidator : AbstractValidator<GetWorkspaceSta
         RuleFor(x => x.WorkspaceId).NotEmpty();
 
         RuleFor(x => x.Period).IsInEnum();
-
-        // The real range of civil offsets. Outside it DateTimeOffset itself would throw.
-        RuleFor(x => x.UtcOffsetMinutes)
-            .InclusiveBetween(StatsWindow.MinUtcOffsetMinutes, StatsWindow.MaxUtcOffsetMinutes)
-            .WithMessage("UTC offset must be between -720 and 840 minutes.");
     }
 }

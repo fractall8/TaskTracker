@@ -61,10 +61,9 @@ internal sealed class StatsStore(IStatsApiService apiService) : IStatsStore
 
         try
         {
-            // The browser's offset, so day buckets land on the reader's own calendar.
-            var offsetMinutes = (int)DateTimeOffset.Now.Offset.TotalMinutes;
-
-            Stats = await apiService.GetStatsAsync(workspaceId, Period, offsetMinutes, ct);
+            // Days are resolved server-side in the deployment's business zone, so every reader sees the
+            // same window (see resources/FIX-overdue-timezone.md).
+            Stats = await apiService.GetStatsAsync(workspaceId, Period, ct);
         }
         catch (Exception ex)
         {

@@ -5,9 +5,5 @@ namespace Services.Abstractions.Stats;
 
 public interface IStatsApiService
 {
-    Task<WorkspaceStatsDto> GetStatsAsync(
-        Guid workspaceId,
-        StatsPeriodDto period,
-        int utcOffsetMinutes,
-        CancellationToken ct = default);
+    Task<WorkspaceStatsDto> GetStatsAsync(Guid workspaceId, StatsPeriodDto period, CancellationToken ct = default);
 }

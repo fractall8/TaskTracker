@@ -1,9 +1,10 @@
+using Application.Interfaces.Services;
 using Contracts.Enums;
 
 namespace Application.Common.Models;
 
-// Both bounds are UTC instants for querying; LocalStart and LocalEnd carry the caller's offset so the
-// response can label the range the way the caller sees it. End is exclusive.
+// Start and End are UTC instants for querying; LocalStart and LocalEnd carry the configured zone's offset so
+// the response can label the range. End is exclusive.
 public record StatsWindow(
     StatsPeriodDto Period,
     DateTimeOffset? Start,
@@ -11,59 +12,36 @@ public record StatsWindow(
     DateTimeOffset? PreviousStart,
     DateTimeOffset? PreviousEnd,
     DateTimeOffset? LocalStart,
-    DateTimeOffset LocalEnd)
+    DateTimeOffset LocalEnd,
+    DateOnly FirstDay,
+    DateOnly LastDay)
 {
-    // Due dates are stored as local midnight, so they are date-only in practice. A task due today is
-    // therefore not overdue — which is what the task page already says ("Due today", not "Overdue").
-    // Comparing against now instead would call it overdue from 00:01, and report it as "0 days overdue".
-    public DateTimeOffset OverdueBefore => LocalEnd.AddDays(-1).ToUniversalTime();
-
-    // Calendar days between a due date and today, both read in the caller's offset. At least 1 for anything
-    // this counts as overdue.
-    public int DaysOverdue(DateTimeOffset dueDate, int utcOffsetMinutes)
-    {
-        var offset = TimeSpan.FromMinutes(utcOffsetMinutes);
-
-        return (int)(LocalEnd.AddDays(-1).Date - dueDate.ToOffset(offset).Date).TotalDays;
-    }
-
-    public const int MinUtcOffsetMinutes = -720;
-
-    public const int MaxUtcOffsetMinutes = 840;
-
     public bool IsAllTime => Start is null;
 
     public bool HasPreviousWindow => PreviousStart is not null;
 
-    // A period is a run of whole calendar days in the caller's timezone, not a rolling block of hours:
-    // a bucket labelled "Aug 15" has to mean the caller's Aug 15 (EPIC 5 Decision 4a).
-    public static StatsWindow Resolve(StatsPeriodDto period, int utcOffsetMinutes, DateTimeOffset nowUtc)
+    // A period is a run of whole days in the configured zone, so every reader gets the same window.
+    public static StatsWindow Resolve(StatsPeriodDto period, IBusinessCalendar calendar)
     {
-        var offset = TimeSpan.FromMinutes(utcOffsetMinutes);
-        var today = nowUtc.ToOffset(offset).Date;
+        var today = calendar.Today;
 
         // Exclusive, so today counts in full however late in the day the request arrives.
-        var localEnd = new DateTimeOffset(today.AddDays(1), offset);
+        var endUtc = calendar.StartOfDayUtc(today.AddDays(1));
+        var endLocal = calendar.StartOfDayLocal(today.AddDays(1));
 
         if (period == StatsPeriodDto.AllTime)
         {
-            return new StatsWindow(period, null, localEnd.ToUniversalTime(), null, null, null, localEnd);
+            return new StatsWindow(period, null, endUtc, null, null, null, endLocal, today, today);
         }
 
         var days = DayCount(period);
-        var localStart = new DateTimeOffset(today.AddDays(1 - days), offset);
-        var localPreviousStart = new DateTimeOffset(today.AddDays(1 - days - days), offset);
+        var firstDay = today.AddDays(1 - days);
+        var startUtc = calendar.StartOfDayUtc(firstDay);
+        var previousStartUtc = calendar.StartOfDayUtc(today.AddDays(1 - days - days));
 
-        // Query bounds are normalised to UTC: Npgsql refuses a DateTimeOffset with a non-zero offset when
-        // writing to timestamptz, so only the Local* pair keeps the caller's offset for labelling.
         return new StatsWindow(
-            period,
-            localStart.ToUniversalTime(),
-            localEnd.ToUniversalTime(),
-            localPreviousStart.ToUniversalTime(),
-            localStart.ToUniversalTime(),
-            localStart,
-            localEnd);
+            period, startUtc, endUtc, previousStartUtc, startUtc,
+            calendar.StartOfDayLocal(firstDay), endLocal, firstDay, today);
     }
 
     public static int DayCount(StatsPeriodDto period) => period switch

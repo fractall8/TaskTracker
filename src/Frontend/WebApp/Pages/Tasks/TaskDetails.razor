@@ -3,6 +3,7 @@
 @using Contracts.DTOs
 @using Contracts.Enums
 @using Contracts.Requests.Tasks
+@using Services.Abstractions.Config
 @using Services.Abstractions.Tags
 @using Services.Abstractions.Tasks
 @using WebApp.Components.Completion
@@ -15,6 +16,7 @@
 @inject ITaskDetailsStore TaskStore
 @inject IBoardDetailsStore BoardDetailsStore
 @inject ITagStore TagStore
+@inject IAppConfigStore AppConfig
 @inject NavigationManager Navigation
 @inject CustomToastService Toast
 @inject IDialogService DialogService
@@ -324,8 +326,11 @@
     {
         if (!dueDate.HasValue) return ("No due date", "", "muted");
 
-        var today = DateTimeOffset.Now.Date;
-        var due = dueDate.Value.ToLocalTime().Date;
+        // The deployment's business zone, not the browser's, so this agrees with the stats tab and the
+        // assistant about which day it is (see resources/FIX-overdue-timezone.md).
+        var zone = TimeSpan.FromMinutes(AppConfig.UtcOffsetMinutes);
+        var today = DateTimeOffset.UtcNow.ToOffset(zone).Date;
+        var due = dueDate.Value.ToOffset(zone).Date;
         var diff = (int)(due - today).TotalDays;
 
         var dateStr = due.ToString("MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture);
@@ -349,6 +354,7 @@
             await BoardDetailsStore.LoadAsync(BoardId);
         }
 
+        await AppConfig.EnsureLoadedAsync();
         await TaskStore.LoadAsync(BoardId, TaskId);
 
         if (BoardDetailsStore.Board is { } board)

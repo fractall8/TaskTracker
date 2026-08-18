@@ -1,5 +1,4 @@
 using Application.Ai.Projections;
-using Application.Common.Interfaces;
 using Application.Interfaces.Repositories;
 using Application.Interfaces.Services;
 using Application.Options;
@@ -16,7 +15,7 @@ public class ListWorkspaceTasksDueSoonToolHandler(
     IAiDataRepository aiDataRepository,
     IWorkspaceAccessService workspaceAccessService,
     IOptions<AiToolOptions> toolOptions,
-    IDateTimeProvider dateTimeProvider)
+    IBusinessCalendar calendar)
     : IRequestHandler<ListWorkspaceTasksDueSoonTool, IReadOnlyList<AiTaskSummary>>
 {
     private const int _maxWindowDays = 90;
@@ -31,7 +30,7 @@ public class ListWorkspaceTasksDueSoonToolHandler(
         return await aiDataRepository.GetWorkspaceTasksDueSoonAsync(
             request.WorkspaceId,
             userId,
-            dateTimeProvider.UtcNow,
+            calendar.StartOfTodayUtc(),
             TimeSpan.FromDays(Math.Clamp(request.WithinDays, 1, _maxWindowDays)),
             Math.Clamp(request.Take ?? maxRows, 1, maxRows),
             ct);

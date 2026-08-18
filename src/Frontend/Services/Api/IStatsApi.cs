@@ -10,6 +10,5 @@ public interface IStatsApi
     Task<IApiResponse<WorkspaceStatsDto>> GetAsync(
         Guid workspaceId,
         StatsPeriodDto period,
-        int utcOffsetMinutes,
         CancellationToken ct = default);
 }

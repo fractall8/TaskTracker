@@ -7,6 +7,7 @@ using Services.Abstractions.BoardCalls;
 using Services.Abstractions.FaqChat;
 using Services.Abstractions.Boards;
 using Services.Abstractions.Columns;
+using Services.Abstractions.Config;
 using Services.Abstractions.Hubs;
 using Services.Abstractions.Profile;
 using Services.Abstractions.Subscriptions;
@@ -25,6 +26,7 @@ using Services.FaqChat.Stores;
 using Services.Boards;
 using Services.Boards.Stores;
 using Services.Columns;
+using Services.Config;
 using Services.Configuration;
 using Services.Hubs;
 using Services.Profile;
@@ -67,6 +69,10 @@ public static class ServiceCollectionExtensions
             .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
 
         services.AddRefitClient<ITasksApi>()
+            .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
+            .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
+
+        services.AddRefitClient<IAppConfigApi>()
             .ConfigureHttpClient(c => c.BaseAddress = new Uri(options.BaseUrl))
             .AddHttpMessageHandler<ApiAuthorizationMessageHandler>();
 
@@ -131,6 +137,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBoardDetailsStore, BoardDetailsStore>();
 
         services.AddScoped<ITaskDetailsStore, TaskDetailsStore>();
+
+        services.AddScoped<IAppConfigStore, AppConfigStore>();
 
         services.AddScoped<IStatsApiService, StatsApiService>();
         services.AddScoped<IStatsStore, StatsStore>();
