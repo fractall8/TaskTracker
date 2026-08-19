@@ -1,4 +1,4 @@
-﻿.home-container {
+.home-container {
     min-height: calc(100vh - 64px);
     display: flex;
     align-items: center;
@@ -34,6 +34,24 @@
     line-height: 1.6;
     color: var(--mud-palette-text-secondary);
     margin-bottom: 40px;
+}
+
+.hero-actions {
+    display: flex;
+}
+
+/* ::deep because the button's root element belongs to MudButton, which scoped CSS cannot reach directly. */
+.hero-actions ::deep .hero-cta {
+    padding: 12px 36px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    text-transform: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.hero-actions ::deep .hero-cta:hover {
+    transform: translateY(-1px);
 }
 
 .hero-graphic {
@@ -97,7 +115,8 @@
         font-size: 36px;
     }
 
-    .hero-content .mud-button-root {
+    .hero-actions,
+    .hero-actions ::deep .hero-cta {
         width: 100%;
     }
 }

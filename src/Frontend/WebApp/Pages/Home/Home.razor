@@ -1,4 +1,4 @@
-﻿@page "/"
+@page "/"
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager NavigationManager
 @layout BlankLayout
@@ -13,23 +13,13 @@
                 TaskTracker is your personal productivity space. Create tasks, track
                 your progress, and achieve your goals without the extra stress.
             </p>
-            <div class="d-flex gap-4 flex-wrap">
+            <div class="hero-actions">
                 <MudButton Href="authentication/login"
                            Variant="Variant.Filled"
                            Color="Color.Primary"
                            Size="Size.Large"
-                           Class="px-8 py-3 rounded-lg"
-                           Style="font-weight: 600; text-transform: none; font-size: 15px;">
+                           Class="hero-cta">
                     Get started
-                </MudButton>
-
-                <MudButton Href="about"
-                           Variant="Variant.Outlined"
-                           Color="Color.Default"
-                           Size="Size.Large"
-                           Class="px-8 py-3 rounded-lg"
-                           Style="font-weight: 600; text-transform: none; font-size: 15px; border-color: var(--mud-palette-lines-default);">
-                    Learn more
                 </MudButton>
             </div>
         </div>
