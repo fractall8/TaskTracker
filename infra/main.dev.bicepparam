@@ -1,24 +1,40 @@
 using 'main.bicep'
 
+// GitHub Actions sets every one of these, so an unset repository variable arrives as an empty
+// string rather than as an absent variable -- and readEnvironmentVariable only falls back to its
+// default when the variable is absent. Anything with a meaningful default is therefore read into
+// a var first and emptiness-checked, so a blank variable does not silently win.
+
+var envLocation = readEnvironmentVariable('AZURE_LOCATION', '')
+var envImageTag = readEnvironmentVariable('IMAGE_TAG', '')
+var envDeployApps = readEnvironmentVariable('DEPLOY_APPS', '')
+var envOpenAiDeployment = readEnvironmentVariable('AZURE_OPENAI_DEPLOYMENT', '')
+var envSearchIndex = readEnvironmentVariable('AZURE_AI_SEARCH_INDEX', '')
+
 param appName = 'tasktracker'
 param env = 'dev'
-param imageTag = readEnvironmentVariable('IMAGE_TAG', 'latest')
 
-// Leave false for the very first deploy, before any image is pushed to ACR.
-param deployApps = bool(readEnvironmentVariable('DEPLOY_APPS', 'true'))
+// Azure for Students restricts which regions a subscription may deploy to; Poland Central is
+// known good for this one. Set AZURE_LOCATION to move it.
+param location = empty(envLocation) ? 'polandcentral' : envLocation
+
+param imageTag = empty(envImageTag) ? 'latest' : envImageTag
+
+// Left false on the very first deploy, before any image is pushed to the registry.
+param deployApps = empty(envDeployApps) ? true : bool(envDeployApps)
 
 param postgresVersion = '16'
 param clientIpAddress = readEnvironmentVariable('CLIENT_IP', '')
 
-// From the Entra app registrations, created manually. See README.
+// From the Entra app registration for the app itself. See README section 1.
 param azureTenantId = readEnvironmentVariable('AZURE_TENANT_ID')
 param azureClientId = readEnvironmentVariable('AZURE_CLIENT_ID')
 
-// Resources you already own.
+// Existing resources, referenced rather than created.
 param openAiEndpoint = readEnvironmentVariable('AZURE_OPENAI_ENDPOINT')
-param openAiChatDeployment = readEnvironmentVariable('AZURE_OPENAI_DEPLOYMENT', 'gpt-4o-mini')
+param openAiChatDeployment = empty(envOpenAiDeployment) ? 'gpt-5-mini' : envOpenAiDeployment
 param aiSearchEndpoint = readEnvironmentVariable('AZURE_AI_SEARCH_ENDPOINT')
-param aiSearchIndexName = readEnvironmentVariable('AZURE_AI_SEARCH_INDEX', 'faq-index')
+param aiSearchIndexName = empty(envSearchIndex) ? 'faq-index' : envSearchIndex
 
 param businessCalendarTimeZoneId = 'Europe/Kyiv'
 

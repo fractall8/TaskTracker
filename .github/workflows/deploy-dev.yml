@@ -27,6 +27,7 @@ permissions:
 
 env:
   RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+  AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
   # Everything the parameter file reads. Shared by both deployment jobs.
   AZURE_TENANT_ID: ${{ vars.APP_AZURE_TENANT_ID }}
   AZURE_CLIENT_ID: ${{ vars.APP_AZURE_CLIENT_ID }}
