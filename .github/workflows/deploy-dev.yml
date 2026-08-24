@@ -40,6 +40,7 @@ env:
   INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
   AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
   AZURE_AI_SEARCH_API_KEY: ${{ secrets.AZURE_AI_SEARCH_API_KEY }}
+  COSMOS_CONNECTION_STRING: ${{ secrets.COSMOS_CONNECTION_STRING }}
 
 jobs:
   # Runs first so the registry exists before anything tries to push to it. This is also what

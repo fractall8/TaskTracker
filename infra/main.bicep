@@ -34,6 +34,11 @@ param openAiChatDeployment string
 param aiSearchEndpoint string
 param aiSearchIndexName string
 
+// Cosmos is an existing account, not created here: the subscription's one free-tier account
+// is already claimed, so a second would be billed.
+param cosmosDatabaseName string = 'TaskTrackerCosmosDB'
+param cosmosContainerName string = 'BoardExports'
+
 param businessCalendarTimeZoneId string = 'Europe/Kyiv'
 
 // --- secrets, supplied as secure parameters ---
@@ -49,6 +54,8 @@ param internalApiKey string
 param openAiApiKey string
 @secure()
 param aiSearchApiKey string
+@secure()
+param cosmosConnectionString string
 
 var suffix = take(uniqueString(resourceGroup().id), 6)
 var tags = {
@@ -115,15 +122,6 @@ module serviceBus 'modules/servicebus.bicep' = {
   name: 'serviceBus'
   params: {
     name: 'sb-${appName}-${env}-${suffix}'
-    location: location
-    tags: tags
-  }
-}
-
-module cosmos 'modules/cosmos.bicep' = {
-  name: 'cosmos'
-  params: {
-    name: 'cosmos-${appName}-${env}-${suffix}'
     location: location
     tags: tags
   }
@@ -211,9 +209,9 @@ module apps 'modules/apps.bicep' = if (deployApps) {
     postgresAdminPassword: postgresAdminPassword
     serviceBusName: serviceBus.outputs.name
     queueName: serviceBus.outputs.queueName
-    cosmosName: cosmos.outputs.name
-    cosmosDatabaseName: cosmos.outputs.databaseName
-    cosmosContainerName: cosmos.outputs.containerName
+    cosmosConnectionString: cosmosConnectionString
+    cosmosDatabaseName: cosmosDatabaseName
+    cosmosContainerName: cosmosContainerName
     communicationName: communication.outputs.name
     azureTenantId: azureTenantId
     azureClientId: azureClientId

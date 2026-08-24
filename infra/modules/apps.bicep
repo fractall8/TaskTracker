@@ -21,7 +21,6 @@ param postgresAdminUser string
 param postgresAdminPassword string
 param serviceBusName string
 param queueName string
-param cosmosName string
 param cosmosDatabaseName string
 param cosmosContainerName string
 param communicationName string
@@ -38,6 +37,8 @@ param businessCalendarTimeZoneId string
 param openAiApiKey string
 @secure()
 param aiSearchApiKey string
+@secure()
+param cosmosConnectionString string
 @secure()
 param stripeSecretKey string
 @secure()
@@ -63,17 +64,12 @@ resource serviceBusRootRule 'Microsoft.ServiceBus/namespaces/authorizationRules@
   name: 'RootManageSharedAccessKey'
 }
 
-resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2024-11-15' existing = {
-  name: cosmosName
-}
-
 resource acs 'Microsoft.Communication/communicationServices@2023-04-01' existing = {
   name: communicationName
 }
 
 var storageConnectionString = 'DefaultEndpointsProtocol=https;AccountName=${storage.name};AccountKey=${storage.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
 var serviceBusConnectionString = serviceBusRootRule.listKeys().primaryConnectionString
-var cosmosConnectionString = cosmosAccount.listConnectionStrings().connectionStrings[0].connectionString
 var acsConnectionString = acs.listKeys().primaryConnectionString
 var postgresConnectionString = 'Host=${postgresFqdn};Port=5432;Database=${postgresDatabase};Username=${postgresAdminUser};Password=${postgresAdminPassword};SSL Mode=Require;Trust Server Certificate=true;'
 
