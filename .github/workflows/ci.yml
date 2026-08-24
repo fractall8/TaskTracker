@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Restore
+        run: dotnet restore TaskTracker.sln
+
+      - name: Build
+        run: dotnet build TaskTracker.sln -c Release --no-restore
+
+      # The integration tests spin up postgres:17-alpine via Testcontainers; the runner has Docker.
+      - name: Test
+        run: dotnet test TaskTracker.sln -c Release --no-build --logger "trx;LogFileName=results.trx" --results-directory ./test-results
+
+      - name: Publish test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ./test-results
+          if-no-files-found: ignore
+
+  bicep:
+    name: Validate Bicep
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Compile only. No Azure login, so this runs on forks and needs no secrets.
+      - name: Build templates
+        run: |
+          az bicep install
+          az bicep build --file infra/main.bicep --outfile /tmp/main.json
+          echo "Compiled $(wc -c < /tmp/main.json) bytes of ARM."
+
+  images:
+    name: Build images
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api
+            dockerfile: src/Backend/Presentation/Dockerfile
+          - name: frontend
+            dockerfile: src/Frontend/WebApp/Dockerfile
+          - name: functions
+            dockerfile: src/Microservices/TaskTracker.Functions/Dockerfile
+          - name: migration
+            dockerfile: src/Backend/Database/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Build only, never push: proves the Dockerfile is sound before merge.
+      - name: Build ${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: false
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
