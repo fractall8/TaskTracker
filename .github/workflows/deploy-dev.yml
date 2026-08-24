@@ -1,0 +1,222 @@
+name: Deploy dev
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      imageTag:
+        description: 'Existing tag to roll to (leave blank to build this commit). Use this to roll back.'
+        required: false
+        type: string
+      skipMigration:
+        description: 'Skip the DbUp job. Only when you know no script was added.'
+        required: false
+        default: false
+        type: boolean
+
+# Never let two deploys touch the same environment at once, and never cancel one midway:
+# an interrupted deploy can leave the schema ahead of the running API.
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+
+jobs:
+  images:
+    name: Push images
+    runs-on: ubuntu-latest
+    # Skipped when rolling back to a tag that is already in the registry.
+    if: ${{ inputs.imageTag == '' }}
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - name: api
+            dockerfile: src/Backend/Presentation/Dockerfile
+          - name: frontend
+            dockerfile: src/Frontend/WebApp/Dockerfile
+          - name: functions
+            dockerfile: src/Microservices/TaskTracker.Functions/Dockerfile
+          - name: migration
+            dockerfile: src/Backend/Database/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: tag
+        run: echo "tag=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_DEPLOY_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_DEPLOY_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Log in to ACR
+        run: az acr login --name ${{ vars.AZURE_REGISTRY_NAME }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push ${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ vars.AZURE_REGISTRY_NAME }}.azurecr.io/tasktracker-${{ matrix.name }}:${{ steps.tag.outputs.tag }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  deploy:
+    name: Deploy
+    needs: images
+    # Runs even when `images` was skipped for a rollback, but not if it actually failed.
+    if: ${{ always() && !failure() && !cancelled() }}
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      IMAGE_TAG: ${{ inputs.imageTag || needs.images.outputs.tag }}
+      AZURE_TENANT_ID: ${{ vars.APP_AZURE_TENANT_ID }}
+      AZURE_CLIENT_ID: ${{ vars.APP_AZURE_CLIENT_ID }}
+      AZURE_OPENAI_ENDPOINT: ${{ vars.AZURE_OPENAI_ENDPOINT }}
+      AZURE_OPENAI_DEPLOYMENT: ${{ vars.AZURE_OPENAI_DEPLOYMENT }}
+      AZURE_AI_SEARCH_ENDPOINT: ${{ vars.AZURE_AI_SEARCH_ENDPOINT }}
+      AZURE_AI_SEARCH_INDEX: ${{ vars.AZURE_AI_SEARCH_INDEX }}
+      POSTGRES_ADMIN_PASSWORD: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
+      AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+      AZURE_AI_SEARCH_API_KEY: ${{ secrets.AZURE_AI_SEARCH_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_DEPLOY_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_DEPLOY_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Prepare CLI
+        run: |
+          az config set extension.use_dynamic_install=yes_without_prompt --only-show-errors
+          az extension add --name containerapp --upgrade --only-show-errors
+          az bicep install
+
+      - name: Confirm images exist
+        run: |
+          for img in api frontend functions migration; do
+            az acr repository show-tags \
+              --name "${{ vars.AZURE_REGISTRY_NAME }}" \
+              --repository "tasktracker-$img" \
+              --query "contains(@, '$IMAGE_TAG')" -o tsv | grep -qi true \
+              || { echo "::error::tasktracker-$img:$IMAGE_TAG is not in the registry"; exit 1; }
+          done
+          echo "All four images present at tag $IMAGE_TAG."
+
+      # Step 1 of 2. deployApps=false updates infrastructure and the migration job only.
+      # Incremental mode leaves the already-running apps untouched, so the API keeps serving
+      # the old image while the new schema goes on.
+      - name: Deploy infrastructure and migration job
+        env:
+          DEPLOY_APPS: 'false'
+        run: |
+          az deployment group create \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "infra-$IMAGE_TAG-${{ github.run_number }}" \
+            --template-file infra/main.bicep \
+            --parameters infra/main.dev.bicepparam \
+            --only-show-errors
+
+      - name: Run database migration
+        if: ${{ inputs.skipMigration != true }}
+        run: |
+          JOB="job-migrate-dev"
+          EXEC=$(az containerapp job start -g "$RESOURCE_GROUP" -n "$JOB" --query name -o tsv)
+          echo "Started $EXEC"
+
+          for attempt in $(seq 1 90); do
+            STATUS=$(az containerapp job execution show \
+              -g "$RESOURCE_GROUP" -n "$JOB" --job-execution-name "$EXEC" \
+              --query properties.status -o tsv 2>/dev/null || echo Unknown)
+            case "$STATUS" in
+              Succeeded)
+                echo "Migration succeeded."
+                exit 0
+                ;;
+              Failed|Degraded|Stopped)
+                echo "::error::Migration $STATUS. Logs:"
+                az containerapp job logs show -g "$RESOURCE_GROUP" -n "$JOB" \
+                  --execution "$EXEC" --container migrate --tail 200 || true
+                exit 1
+                ;;
+              *)
+                echo "  [$attempt/90] $STATUS"
+                sleep 10
+                ;;
+            esac
+          done
+
+          echo "::error::Migration did not finish within 15 minutes."
+          exit 1
+
+      # Step 2 of 2. Only now do the apps move onto the new image, against a schema
+      # that is already in place.
+      - name: Deploy applications
+        env:
+          DEPLOY_APPS: 'true'
+        run: |
+          az deployment group create \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "apps-$IMAGE_TAG-${{ github.run_number }}" \
+            --template-file infra/main.bicep \
+            --parameters infra/main.dev.bicepparam \
+            --only-show-errors \
+            --query properties.outputs -o json > outputs.json
+          cat outputs.json
+
+      - name: Smoke check
+        run: |
+          FRONTEND=$(jq -r .frontendUrl.value outputs.json)
+          API=$(jq -r .apiUrl.value outputs.json)
+
+          CODE=000
+          for i in $(seq 1 20); do
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$FRONTEND" || echo 000)
+            [ "$CODE" = "200" ] && break
+            echo "  frontend [$i/20] HTTP $CODE"
+            sleep 15
+          done
+          [ "$CODE" = "200" ] || { echo "::error::Frontend returned $CODE"; exit 1; }
+
+          # 401 is a pass here: it means the API is up and rejecting an unauthenticated call.
+          CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$API/api/workspaces" || echo 000)
+          case "$CODE" in
+            200|401|403) echo "API reachable (HTTP $CODE)" ;;
+            *) echo "::error::API returned $CODE"; exit 1 ;;
+          esac
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Deploy dev"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Tag | $IMAGE_TAG |"
+            echo "| Commit | ${{ github.sha }} |"
+            if [ -f outputs.json ]; then
+              echo "| Frontend | $(jq -r .frontendUrl.value outputs.json) |"
+              echo "| API | $(jq -r .apiUrl.value outputs.json) |"
+              echo "| Stripe webhook | $(jq -r .stripeWebhookUrl.value outputs.json) |"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
