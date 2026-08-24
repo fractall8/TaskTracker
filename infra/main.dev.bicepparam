@@ -8,6 +8,7 @@ using 'main.bicep'
 var envLocation = readEnvironmentVariable('AZURE_LOCATION', '')
 var envImageTag = readEnvironmentVariable('IMAGE_TAG', '')
 var envDeployApps = readEnvironmentVariable('DEPLOY_APPS', '')
+var envDeployJob = readEnvironmentVariable('DEPLOY_JOB', '')
 var envOpenAiDeployment = readEnvironmentVariable('AZURE_OPENAI_DEPLOYMENT', '')
 var envSearchIndex = readEnvironmentVariable('AZURE_AI_SEARCH_INDEX', '')
 var envPostgresSku = readEnvironmentVariable('POSTGRES_SKU', '')
@@ -25,6 +26,7 @@ param imageTag = empty(envImageTag) ? 'latest' : envImageTag
 
 // Left false on the very first deploy, before any image is pushed to the registry.
 param deployApps = empty(envDeployApps) ? true : bool(envDeployApps)
+param deployJob = empty(envDeployJob) ? true : bool(envDeployJob)
 
 param postgresVersion = empty(envPostgresVersion) ? '16' : envPostgresVersion
 param postgresSkuName = empty(envPostgresSku) ? 'Standard_B1ms' : envPostgresSku

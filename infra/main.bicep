@@ -18,6 +18,10 @@ param imageTag string = 'latest'
 @description('False on the very first deploy, before any image exists in ACR.')
 param deployApps bool = true
 
+// Container Apps validates the image reference when a job is created, so the job cannot exist
+// before its image is in the registry. False until the images have been pushed.
+param deployJob bool = true
+
 @description('Postgres major version. Bump to 17 only if the region supports it.')
 param postgresVersion string = '16'
 
@@ -175,9 +179,9 @@ module environment 'modules/environment.bicep' = {
 var apiFqdn = '${apiAppName}.${environment.outputs.defaultDomain}'
 var webFqdn = '${webAppName}.${environment.outputs.defaultDomain}'
 
-// Deployed unconditionally: a job definition only pulls its image when started, so it can
-// exist before any image does. This is what lets the pipeline migrate before the apps roll.
-module migrateJob 'modules/job-migrate.bicep' = {
+// Gated separately from the apps: the job must be created after its image is pushed but
+// before the apps roll, so the schema is applied while the old API is still serving.
+module migrateJob 'modules/job-migrate.bicep' = if (deployJob) {
   name: 'migrateJob'
   params: {
     name: 'job-migrate-${env}'
@@ -242,4 +246,4 @@ output frontendUrl string = 'https://${webFqdn}'
 output apiUrl string = 'https://${apiFqdn}'
 output stripeWebhookUrl string = 'https://${apiFqdn}/webhooks/stripe'
 output spaRedirectUri string = 'https://${webFqdn}/authentication/login-callback'
-output migrationJobName string = migrateJob.outputs.name
+output migrationJobName string = 'job-migrate-${env}'

@@ -108,13 +108,14 @@ jobs:
           fi
           echo "Provider check passed."
 
-      # deployApps=false: infrastructure and the migration job only. Incremental mode leaves the
-      # already-running apps on their current image, so the API keeps serving while the schema moves.
+      # Infrastructure only. Neither the apps nor the migration job can be created yet: Container
+      # Apps validates the image reference, and nothing has been pushed to the registry at this point.
       - id: deploy
-        name: Deploy infrastructure and migration job
+        name: Deploy infrastructure
         env:
           IMAGE_TAG: ${{ steps.tag.outputs.tag }}
           DEPLOY_APPS: 'false'
+          DEPLOY_JOB: 'false'
         run: |
           az bicep install
           az deployment group create \
@@ -214,6 +215,15 @@ jobs:
           done
           echo "All four images present at $IMAGE_TAG."
 
+      # Container Apps validates the image when the job is created, so this cannot happen
+      # until the images job has pushed. Apps stay on their old image until the step after next.
+      - name: Create the migration job
+        env:
+          DEPLOY_APPS: 'false'
+          DEPLOY_JOB: 'true'
+        run: |
+          az deployment group create             --resource-group "$RESOURCE_GROUP"             --name "job-${IMAGE_TAG}-${{ github.run_number }}"             --template-file infra/main.bicep             --parameters infra/main.dev.bicepparam             --only-show-errors -o none
+
       - name: Apply the schema
         if: ${{ inputs.skipMigration != true }}
         run: |
@@ -250,6 +260,7 @@ jobs:
       - name: Release the apps
         env:
           DEPLOY_APPS: 'true'
+          DEPLOY_JOB: 'true'
         run: |
           az deployment group create \
             --resource-group "$RESOURCE_GROUP" \
