@@ -10,6 +10,9 @@ var envImageTag = readEnvironmentVariable('IMAGE_TAG', '')
 var envDeployApps = readEnvironmentVariable('DEPLOY_APPS', '')
 var envOpenAiDeployment = readEnvironmentVariable('AZURE_OPENAI_DEPLOYMENT', '')
 var envSearchIndex = readEnvironmentVariable('AZURE_AI_SEARCH_INDEX', '')
+var envPostgresSku = readEnvironmentVariable('POSTGRES_SKU', '')
+var envPostgresTier = readEnvironmentVariable('POSTGRES_TIER', '')
+var envPostgresVersion = readEnvironmentVariable('POSTGRES_VERSION', '')
 
 param appName = 'tasktracker'
 param env = 'dev'
@@ -23,7 +26,9 @@ param imageTag = empty(envImageTag) ? 'latest' : envImageTag
 // Left false on the very first deploy, before any image is pushed to the registry.
 param deployApps = empty(envDeployApps) ? true : bool(envDeployApps)
 
-param postgresVersion = '16'
+param postgresVersion = empty(envPostgresVersion) ? '16' : envPostgresVersion
+param postgresSkuName = empty(envPostgresSku) ? 'Standard_B1ms' : envPostgresSku
+param postgresSkuTier = empty(envPostgresTier) ? 'Burstable' : envPostgresTier
 param clientIpAddress = readEnvironmentVariable('CLIENT_IP', '')
 
 // From the Entra app registration for the app itself. See README section 1.

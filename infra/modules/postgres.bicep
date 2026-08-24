@@ -2,6 +2,9 @@ param name string
 param location string
 param tags object
 param postgresVersion string
+param skuName string = 'Standard_B1ms'
+param skuTier string = 'Burstable'
+param storageSizeGB int = 32
 param administratorLogin string = 'ttadmin'
 @secure()
 param administratorPassword string
@@ -13,23 +16,20 @@ resource server 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' = {
   location: location
   tags: tags
   sku: {
-    name: 'Standard_B1ms'
-    tier: 'Burstable'
+    name: skuName
+    tier: skuTier
   }
   properties: {
     version: postgresVersion
     administratorLogin: administratorLogin
     administratorLoginPassword: administratorPassword
     storage: {
-      storageSizeGB: 32
+      storageSizeGB: storageSizeGB
       autoGrow: 'Disabled'
     }
     backup: {
       backupRetentionDays: 7
       geoRedundantBackup: 'Disabled'
-    }
-    highAvailability: {
-      mode: 'Disabled'
     }
     network: {
       publicNetworkAccess: 'Enabled'

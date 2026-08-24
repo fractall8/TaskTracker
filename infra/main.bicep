@@ -21,6 +21,11 @@ param deployApps bool = true
 @description('Postgres major version. Bump to 17 only if the region supports it.')
 param postgresVersion string = '16'
 
+// Student and trial subscriptions have thin regional quota, so the tier is adjustable
+// without touching the module. Check with: az postgres flexible-server list-skus -l <region>
+param postgresSkuName string = 'Standard_B1ms'
+param postgresSkuTier string = 'Burstable'
+
 @description('Optional client IP allowed through the Postgres firewall, for psql from your machine.')
 param clientIpAddress string = ''
 
@@ -113,6 +118,8 @@ module postgres 'modules/postgres.bicep' = {
     location: location
     tags: tags
     postgresVersion: postgresVersion
+    skuName: postgresSkuName
+    skuTier: postgresSkuTier
     administratorPassword: postgresAdminPassword
     clientIpAddress: clientIpAddress
   }

@@ -28,6 +28,9 @@ permissions:
 env:
   RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
   AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+  POSTGRES_SKU: ${{ vars.POSTGRES_SKU }}
+  POSTGRES_TIER: ${{ vars.POSTGRES_TIER }}
+  POSTGRES_VERSION: ${{ vars.POSTGRES_VERSION }}
   # Everything the parameter file reads. Shared by both deployment jobs.
   AZURE_TENANT_ID: ${{ vars.APP_AZURE_TENANT_ID }}
   AZURE_CLIENT_ID: ${{ vars.APP_AZURE_CLIENT_ID }}
@@ -75,6 +78,35 @@ jobs:
             echo "The group is created once during bootstrap, because a role assignment needs it as a scope."
             exit 1
           }
+
+      # A missing provider surfaces as a Conflict nested three levels inside the ARM error,
+      # which reads like a template bug. Name it up front instead. Registration is a
+      # subscription-scope operation, so the deployer cannot fix it itself.
+      - name: Check resource providers
+        run: |
+          MISSING=""
+          UNREADABLE=""
+          for ns in Microsoft.App Microsoft.ContainerRegistry Microsoft.DBforPostgreSQL                     Microsoft.ServiceBus Microsoft.Communication Microsoft.KeyVault                     Microsoft.OperationalInsights Microsoft.Insights                     Microsoft.ManagedIdentity Microsoft.Storage; do
+            STATE=$(az provider show -n "$ns" --query registrationState -o tsv 2>/dev/null || echo Unreadable)
+            case "$STATE" in
+              Registered)  ;;
+              Unreadable)  UNREADABLE="$UNREADABLE $ns" ;;
+              *)           MISSING="$MISSING $ns($STATE)" ;;
+            esac
+          done
+
+          if [ -n "$UNREADABLE" ]; then
+            echo "::warning::Could not read provider state for:$UNREADABLE (the deployer has no subscription-scope read). Skipping the check for those."
+          fi
+
+          if [ -n "$MISSING" ]; then
+            echo "::error::Resource providers not registered:$MISSING"
+            echo "Register them once from an account with subscription-scope rights, then re-run:"
+            echo "  az account set --subscription <id>"
+            echo "  az provider register --namespace <name> --wait"
+            exit 1
+          fi
+          echo "Provider check passed."
 
       # deployApps=false: infrastructure and the migration job only. Incremental mode leaves the
       # already-running apps on their current image, so the API keeps serving while the schema moves.
