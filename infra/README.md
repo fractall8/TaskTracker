@@ -53,6 +53,10 @@ status back to the API, and both apps get it from the same parameter.
 
 ## 3. First deploy — infrastructure only
 
+> Sections 3–5 are optional. Once section 7 is wired up the pipeline does all of it itself,
+> including the first run against an empty resource group. Do them by hand only to deploy
+> without GitHub, or to debug a template change locally.
+
 No image exists in ACR yet, so skip the apps on the first pass:
 
 ```bash
@@ -137,9 +141,18 @@ Two workflows:
 | Workflow | Trigger | Does |
 |---|---|---|
 | `ci.yml` | PR, push to main | builds, tests, compiles Bicep, builds all four images without pushing |
-| `deploy-dev.yml` | push to main, manual | pushes images, deploys, migrates, rolls apps, smoke-checks |
+| `deploy-dev.yml` | push to main, manual | infra → images → migrate → release, then smoke-checks |
 
 `ci.yml` needs no secrets at all — `az bicep build` is offline, so it works on forks.
+
+`deploy-dev.yml` runs three jobs in order, and that order is what enforces the
+schema-ahead-of-code rule:
+
+| Job | Does | Why here |
+|---|---|---|
+| `infra` | deploys with `deployApps=false` | creates the registry before anything pushes to it, and moves the migration job to the new tag while the apps stay on the old one |
+| `images` | builds and pushes four images in parallel | needs the registry from `infra`; skipped entirely on a rollback |
+| `release` | runs DbUp, waits, then deploys with `deployApps=true` | the apps only move once the schema is already in place |
 
 ### 7.1 Deployer identity (OIDC, no stored password)
 
@@ -196,7 +209,6 @@ gh variable set AZURE_DEPLOY_CLIENT_ID   --body "$APP_ID"
 gh variable set AZURE_DEPLOY_TENANT_ID   --body "$(az account show --query tenantId -o tsv)"
 gh variable set AZURE_SUBSCRIPTION_ID    --body "$(az account show --query id -o tsv)"
 gh variable set AZURE_RESOURCE_GROUP     --body "$RG"
-gh variable set AZURE_REGISTRY_NAME      --body "<from the step 3 output>"
 
 gh variable set APP_AZURE_CLIENT_ID      --body "<app registration client id>"
 gh variable set APP_AZURE_TENANT_ID      --body "<tenant id>"
@@ -213,8 +225,9 @@ gh secret set AZURE_OPENAI_API_KEY
 gh secret set AZURE_AI_SEARCH_API_KEY
 ```
 
-`AZURE_REGISTRY_NAME` is only known after the first deploy creates the ACR, which is why
-sections 3–5 are done by hand once before the pipeline can take over.
+The registry is deliberately not a variable: the pipeline reads it from its own deployment
+output, so the first run works against an empty resource group. Sections 3–5 are the manual
+equivalent, kept as a reference and an escape hatch.
 
 Optional: repo Settings → Environments → `dev` → required reviewers, to gate deploys behind
 an approval click.
