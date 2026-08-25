@@ -244,6 +244,6 @@ output registryName string = registry.outputs.name
 output keyVaultName string = vault.outputs.name
 output frontendUrl string = 'https://${webFqdn}'
 output apiUrl string = 'https://${apiFqdn}'
-output stripeWebhookUrl string = 'https://${apiFqdn}/webhooks/stripe'
+output stripeWebhookUrl string = 'https://${apiFqdn}/api/webhooks/stripe'
 output spaRedirectUri string = 'https://${webFqdn}/authentication/login-callback'
 output migrationJobName string = 'job-migrate-${env}'
